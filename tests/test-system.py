@@ -370,6 +370,6 @@ def test_legacy():
     ax.set_ylabel("Flux anomaly [ppm]")
     Extra.prynglesMark(ax)
 
-    ax.legend();
+    ax.legend()
 
     Verbose.VERBOSITY=VERB_NONE

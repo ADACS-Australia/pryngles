@@ -73,7 +73,7 @@ def test_lambsurface():
     ax.plot(etas,LA.get_albedo(etas,0,0,0))
     ax.set_xlabel(r"$\zeta = \cos Z$")
     ax.set_ylabel(r"$\alpha$")
-    ax.set_title(rf"Planetary Lambertian Albedo, $A_L=${LA.AL}");
+    ax.set_title(rf"Planetary Lambertian Albedo, $A_L=${LA.AL}")
 
     fig.tight_layout()
     Verbose.VERBOSITY=VERB_NONE
@@ -92,7 +92,7 @@ def test_lambatmos():
     ax.plot(etas,LA.get_albedo(etas,0,0,0))
     ax.set_xlabel(r"$\zeta = \cos Z$")
     ax.set_ylabel(r"$\alpha$")
-    ax.set_title(rf"Atmospheric Lambertian Albedo, $A_S=${LA.AS}");
+    ax.set_title(rf"Atmospheric Lambertian Albedo, $A_S=${LA.AS}")
 
     fig.tight_layout()
     Verbose.VERBOSITY=VERB_NONE

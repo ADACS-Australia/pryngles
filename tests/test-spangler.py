@@ -333,8 +333,7 @@ def test_upint():
 
     Verbose.VERBOSITY=VERB_NONE
 
-    """Shadow-test
-    """
+    # Shadow-test
     nspangles=500
     sps=[]
     sg=Spangler(nspangles=nspangles,name="Star",n_equ=[0,0,1],center_equ=[-7,0,0])
@@ -352,18 +351,14 @@ def test_upint():
 
     sg=Spangler(spanglers=sps)
 
-    #"""
     sg.set_observer(nvec=sci.direction(40,0))
     sg.update_visibility_state()
-    #""";
 
-    #"""
     sg.set_luz(nvec=sci.direction(0,0))
     #sg.update_illumination_state(excluded=[])
     sg.update_illumination_state(included=["Moon","Planet"])
     #sg.update_illumination_state(included=["Ring","Star"])
     #sg.update_illumination_state(excluded=["Star"])
-    #""";
 
     SHADOW_COLOR_LUZ=[90,0.2,1.0]
     sg.plot3d(center_at="Ring")
@@ -395,11 +390,9 @@ def test_muluz():
     sg.set_luz(nvec=[1,0,0],name=name)
     sg.update_illumination_state()
 
-    #"""
     name="Moon1"
     sg.set_luz(nvec=[-2,1,0],name=name)
     sg.update_illumination_state()
-    #"""
 
     sg.plot3d()
 

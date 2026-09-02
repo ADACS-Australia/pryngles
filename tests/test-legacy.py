@@ -74,7 +74,6 @@ def test_system_ensamble():
     #print(max(1e6*(Rps+Rrs)))
 
     #Plot
-    #"""
     fig=plt.figure()
     ax=fig.gca()
     ax.plot(ts,1e6*Rps,label="Planet")
@@ -84,10 +83,8 @@ def test_system_ensamble():
     ax.set_xlabel("Time since VE [days]")
     ax.set_ylabel("Flux anomaly [ppm]")
 
-    ax.legend();
-    #"""
+    ax.legend()
 
-    #"""
     #LEGACY
     attributes=dict(
         #Behavior
@@ -157,20 +154,16 @@ def test_system_ensamble():
     ax.set_xlabel("Time since VE [days]")
     ax.set_ylabel("Flux anomaly [ppm]")
 
-    ax.legend();
-    #""";
+    ax.legend()
 
-    """
     self.assertEqual(np.isclose([P.physics.wrot],
                                 [2*np.pi/PlanetDefaults.physics["prot"]],
                                 rtol=1e-7),
                         [True]*1)
     #Check exception: primary could not be different from None or Body
     self.assertRaises(AssertionError,lambda:Observer(primary="Nada"))
-    """
 
 
-#"""
 #===========================================
 # TEST INITIALIZATION
 #===========================================
@@ -789,91 +782,3 @@ def test_shining_light():
                                 #[1.2011829720061195e-07,1.0222522655068123e-07],
                                 rtol=1e-5).tolist(),
                         [True]*2)
-#"""
-def blank():pass
-
-
-# ### The End
-
-#@end:module
-
-# ## Play ground
-
-# DEBUG PLOT RINGED PLANET
-"""
-P=RingedPlanet(Nr=1000,Np=1000,Nb=0,
-            i=30*DEG,a=0.1,e=0.0,
-            lambq=0*DEG,
-            physics=dict(AL=1,AS=1,taug=1))
-
-P.changeObserver([90*DEG,90*DEG])
-fig1,fig2,fig3=P.plotRingedPlanet(view='top',showfig=0,axis=False,showtitle=0,bgdark=1)
-fig1
-#""";
-
-# DEBUG DIFFUSE REFLECTED LIGHT
-"""
-P=RingedPlanet(Nr=1000,Np=1000,Nb=0,physics=dict(AL=1,AS=1))
-P.changeObserver([90*DEG,90*DEG])
-P.changeStellarPosition(160.0*DEG)
-P.updateOpticalFactors()
-fig1,fig2,fig3=P.plotRingedPlanet(view='top',showfig=0)
-
-#Planet
-P.updateDiffuseReflection()
-Fcp=P.Rip.sum()
-print(f"Planetary simulated flux: {Fcp}")
-Fep=(P.Ap/2*(1-P.sp.sum()/P.Np))/(4*np.pi*P.rstar**2)
-print(f"Planetary lambertian flux: {Fep}")
-
-#Ring
-P.updateDiffuseReflection()
-Fcr=P.Rir.sum()
-print(f"Ring simulated flux: {Fcr}")
-Fer=(P.Ar*np.sin(P.estar_equ[1])*(1-P.sr.sum()/P.Nr))/(4*np.pi*P.rstar**2)
-print(f"Ring lambertian flux: {Fer}")
-#""";
-
-# DEBUG TRANSIT DEPTH
-"""
-#NORMAL CASE
-print(f"\nNormal case:\n")
-
-P=RingedPlanet(Nr=1000,Np=1000,Nb=0,i=90*DEG,physics=dict(AL=1,AS=1,taug=1,limb_cs=[]))
-P.changeObserver([90*DEG,0*DEG])
-P.changeStellarPosition(+270.0*DEG+0.0*DEG)
-P.updateOpticalFactors()
-
-print(f"Optical depth: geometric = {P.taug}, effective = {P.taueff}")
-beta=1-Util.attenuationFactor([np.cos(P.io)],P.taueff)[0]
-print(f"Attenuation factor: beta = {beta}")
-Io=Util.limbDarkening(0,cs=P.limb_cs,N=P.normlimb)
-print(f"Intensity of disk in center: {Io}")
-
-P.updateTransit()
-Tep=P.Tip.sum()
-print(f"Numerical planet transit depth: {Tep}")
-Tcp=P.Ap*Io
-print(f"Theoretical planet transit depth: {Tcp}")
-
-Ter=P.Tir.sum()
-print(f"Numerical ring transit depth: {Ter}")
-Tcr=P.Ar*Io*beta
-print(f"Theoretical ring transit depth: {Tcr}")
-
-print(f"\nTilted case:\n")
-P=RingedPlanet(Nr=1000,Np=1000,Nb=0,i=40*DEG,physics=dict(AL=1,AS=1,taug=1,limb_cs=[]))
-P.changeObserver([90*DEG,0*DEG])
-P.changeStellarPosition(+270.0*DEG+0.0*DEG)
-P.updateOpticalFactors()
-
-beta=1-Util.attenuationFactor([np.cos(P.io)],P.taug)[0]
-print(f"Attenuation factor: beta = {beta}")
-
-P.updateTransit()
-Ter=P.Tip.sum()+P.Tir.sum()
-print(f"Numerical ring transit depth: {Ter}")
-Arp=Util.calcRingedPlanetArea(P.Rp,P.fi,P.fe,P.io,beta)
-Tcr=Arp*Io
-print(f"Theoretical ring transit depth: {Tcr}")
-#""";
