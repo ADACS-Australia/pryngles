@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_const(self):
+def test_const():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -29,7 +29,7 @@ def test_const(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_init(self):
+def test_init():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -60,7 +60,7 @@ def test_init(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_reset(self):
+def test_reset():
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -70,7 +70,7 @@ def test_reset(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_scale(self):
+def test_scale():
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -82,7 +82,7 @@ def test_scale(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_pop(self):
+def test_pop():
     Verbose.VERBOSITY=VERB_ALL
 
     #No preset
@@ -116,7 +116,7 @@ def test_pop(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_plot3d(self):
+def test_plot3d():
     global sg
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -160,7 +160,7 @@ def test_plot3d(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_setint(self):
+def test_setint():
     global sg
 
     Verbose.VERBOSITY=VERB_SIMPLE
@@ -188,7 +188,7 @@ def test_setint(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_setobsluz(self):
+def test_setobsluz():
     global sg
 
     Verbose.VERBOSITY=VERB_SIMPLE
@@ -219,7 +219,7 @@ def test_setobsluz(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_simplevis(self):
+def test_simplevis():
     global sg
 
     Verbose.VERBOSITY=VERB_SIMPLE
@@ -278,7 +278,7 @@ def test_simplevis(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_plot2d(self):
+def test_plot2d():
 
     global sg
 
@@ -307,7 +307,7 @@ def test_plot2d(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_join(self):
+def test_join():
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -327,7 +327,7 @@ def test_join(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_upint(self):
+def test_upint():
     plt.close("all")
     global sg
 
@@ -371,7 +371,7 @@ def test_upint(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_muluz(self):
+def test_muluz():
 
     Verbose.VERBOSITY=VERB_NONE
 

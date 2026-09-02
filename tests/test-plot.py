@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_fun(self):
+def test_fun():
     fig=plt.figure()
     ax=fig.add_subplot(111,projection='3d')
     ax.plot([0],[0],[0],'ko',markersize=5)
@@ -39,7 +39,7 @@ def test_fun(self):
 
     plt.show()
 
-def test_flyby(self):
+def test_flyby():
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -60,7 +60,7 @@ def test_flyby(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_animrb(self):
+def test_animrb():
 
     Verbose.VERBOSITY=VERB_NONE
 

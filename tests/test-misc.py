@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_misc(self):
+def test_misc():
 
     #Get path
     filepath=Misc.get_data("diffuse_reflection_function.data")

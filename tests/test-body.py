@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_fun(self):
+def test_fun():
 
     global B,C
     Verbose.VERBOSITY=VERB_ALL
@@ -42,7 +42,7 @@ def test_fun(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_spangle(self):
+def test_spangle():
 
     global B
 
@@ -55,7 +55,7 @@ def test_spangle(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_star(self):
+def test_star():
 
     global S
     Verbose.VERBOSITY=VERB_ALL
@@ -86,7 +86,7 @@ def test_star(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_planet(self):
+def test_planet():
 
     global P
 
@@ -121,7 +121,7 @@ def test_planet(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_ring(self):
+def test_ring():
 
     Verbose.VERBOSITY=VERB_ALL
 

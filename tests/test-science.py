@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_coords(self):
+def test_coords():
 
     #Test axis
     axis=[
@@ -65,7 +65,7 @@ def test_coords(self):
     nvec=Science.direction(120,45)
     print(nvec,Science.direction(*nvec))
 
-def test_rot(self):
+def test_rot():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -79,7 +79,7 @@ def test_rot(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_limb(self):
+def test_limb():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -103,7 +103,7 @@ def test_limb(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_hull(self):
+def test_hull():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -128,7 +128,7 @@ def test_hull(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_plane(self):
+def test_plane():
 
     Verbose.VERBOSITY=VERB_SIMPLE
 

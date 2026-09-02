@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_readf(self):
+def test_readf():
     Verbose.VERBOSITY=VERB_SIMPLE
 
     filename=Misc.get_data("fou_gasplanet.dat")
@@ -23,7 +23,7 @@ def test_readf(self):
     Verbose.VERBOSITY=VERB_NONE
     pass
 
-def test_fun(self):
+def test_fun():
     global cpixx_ext
 
     Verbose.VERBOSITY=VERB_SIMPLE
@@ -46,7 +46,7 @@ def test_fun(self):
     Verbose.VERBOSITY=VERB_NONE
     pass
 
-def test_stokes(self):
+def test_stokes():
     global S,phi,beta,theta0,theta,apix
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -110,7 +110,7 @@ def test_stokes(self):
     Verbose.VERBOSITY=VERB_NONE
     pass
 
-def test_stokes_mass(self):
+def test_stokes_mass():
     from time import time
     global S,phi,beta,theta0,theta,apix
     Verbose.VERBOSITY=VERB_SIMPLE

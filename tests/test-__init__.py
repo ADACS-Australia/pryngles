@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_common(self):
+def test_common():
     import numpy as np
     import pandas as pd
     import os

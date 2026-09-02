@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_system_init(self):
+def test_system_init():
 
     global sys
 
@@ -41,7 +41,7 @@ def test_system_init(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_system_add(self):
+def test_system_add():
 
     global sys
 
@@ -83,7 +83,7 @@ def test_system_add(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_sim(self):
+def test_sim():
 
     global sys
     plt.close("all")
@@ -114,7 +114,7 @@ def test_sim(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_system_remove(self):
+def test_system_remove():
 
     global sys
 
@@ -136,7 +136,7 @@ def test_system_remove(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_spangleobs(self):
+def test_spangleobs():
 
     global sys
     plt.close("all")
@@ -189,7 +189,7 @@ def test_spangleobs(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_setluz(self):
+def test_setluz():
 
     global sys
     plt.close("all")
@@ -215,7 +215,7 @@ def test_setluz(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_setmultiple(self):
+def test_setmultiple():
 
     global sys
     plt.close("all")
@@ -249,7 +249,7 @@ def test_setmultiple(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_update(self):
+def test_update():
 
     Verbose.VERBOSITY=VERB_NONE
 
@@ -270,7 +270,7 @@ def test_update(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_reset(self):
+def test_reset():
 
     global sys
 
@@ -297,7 +297,7 @@ def test_reset(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_int(self):
+def test_int():
 
     global sys
     plt.close("all")
@@ -324,7 +324,7 @@ def test_int(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_legacy(self):
+def test_legacy():
 
     global sys,RP
 

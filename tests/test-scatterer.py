@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_interface(self):
+def test_interface():
 
     global MySurface
     Verbose.VERBOSITY=VERB_ALL
@@ -48,7 +48,7 @@ def test_interface(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_scatters(self):
+def test_scatters():
 
     global LA
 
@@ -59,7 +59,7 @@ def test_scatters(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_lambsurface(self):
+def test_lambsurface():
 
     global LA
 
@@ -78,7 +78,7 @@ def test_lambsurface(self):
     fig.tight_layout()
     Verbose.VERBOSITY=VERB_NONE
 
-def test_lambatmos(self):
+def test_lambatmos():
 
     global LA
 
@@ -97,7 +97,7 @@ def test_lambatmos(self):
     fig.tight_layout()
     Verbose.VERBOSITY=VERB_NONE
 
-def test_catalogue(self):
+def test_catalogue():
 
     global LA
 
@@ -108,7 +108,7 @@ def test_catalogue(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_upscat(self):
+def test_upscat():
 
     global sys
 

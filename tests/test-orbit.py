@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_orbody(self):
+def test_orbody():
 
     S=Orbody(m=1)
     P=Orbody(parent=S,m=0.1,a=1,e=0.5)
@@ -25,7 +25,7 @@ def test_orbody(self):
 
     S.show_tree()
 
-def test_Orbit(self):
+def test_Orbit():
 
     global S4
 
@@ -57,7 +57,7 @@ def test_Orbit(self):
     #Use this code to animate:
     #Plot.animate_rebound(S4.sim)
 
-def test_build(self):
+def test_build():
 
     global orbit
 

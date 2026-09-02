@@ -15,7 +15,7 @@
 
 from pryngles import *
 
-def test_circle(self):
+def test_circle():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -29,7 +29,7 @@ def test_circle(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_cut(self):
+def test_cut():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -44,7 +44,7 @@ def test_cut(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_ring(self):
+def test_ring():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -66,7 +66,7 @@ def test_ring(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_sphere(self):
+def test_sphere():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -80,7 +80,7 @@ def test_sphere(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_purge(self):
+def test_purge():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -94,7 +94,7 @@ def test_purge(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_update(self):
+def test_update():
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -117,7 +117,7 @@ def test_update(self):
 
     Verbose.VERBOSITY=VERB_NONE
 
-def test_pre(self):
+def test_pre():
 
     Verbose.VERBOSITY=VERB_ALL
 

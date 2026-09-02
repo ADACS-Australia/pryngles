@@ -39,7 +39,7 @@ Pl=RingedPlanet(Nr=1000,Np=1000,Nb=100)
 #Light curve planet
 PL=RingedPlanet(Nr=1000,Np=1000,Nb=0)
 
-def test_system_ensamble(self):
+def test_system_ensamble():
 
     sys=System()
     S=sys.add("Star",name="Star",radius=Const.Rsun/Const.au)
@@ -174,7 +174,7 @@ def test_system_ensamble(self):
 #===========================================
 # TEST INITIALIZATION
 #===========================================
-def test_init_basic(self):
+def test_init_basic():
     #Stellar properties
     self.assertEqual(np.isclose([self.P.Mstar,self.P.mu,self.P.Rs],
                                 [self.Ms,self.Ms,1.0],
@@ -222,7 +222,7 @@ def test_init_basic(self):
                                 rtol=1e-5).tolist(),
                         [True]*9)
 
-def test_init_sampling(self):
+def test_init_sampling():
 
     #Check number of particles in rings
     self.assertEqual(self.P.Nr,8,True)
@@ -272,7 +272,7 @@ def test_init_sampling(self):
                                 rtol=1e-5).tolist(),
                         [True]*3)
 
-def test_init_observer(self):
+def test_init_observer():
 
     #Observer
     self.assertEqual(np.isclose([self.P.io],
@@ -316,7 +316,7 @@ def test_init_observer(self):
                                 rtol=1e-5).tolist(),
                         [True]*1)
 
-def test_init_stellar_pos(self):
+def test_init_stellar_pos():
 
     #Update stellar position
     self.assertEqual(np.isclose([self.P.rstar],
@@ -361,7 +361,7 @@ def test_init_stellar_pos(self):
                                 rtol=1e-5).tolist(),
                         [True]*3)
 
-def test_init_physics(self):
+def test_init_physics():
     #Physical properties
     self.assertEqual(np.isclose([self.P.gamma0,self.P.gammap0],
                                 [0.910080416049327,0.07957747154594767],
@@ -372,7 +372,7 @@ def test_init_physics(self):
                                 rtol=1e-5).tolist(),
                         [True]*1)
 
-def test_init_optical(self):
+def test_init_optical():
     #Optical factors
     self.assertEqual(np.isclose([np.std(self.P.etaps),np.mean(self.P.etars),
                                     np.std(self.P.zetaps),np.mean(self.P.zetars)],
@@ -394,7 +394,7 @@ def test_init_optical(self):
 #===========================================
 # TEST SINGLE ROUTINES
 #===========================================
-def test_incoming_stellar_flux(self):
+def test_incoming_stellar_flux():
     self.Pl.changeObserver([+0.0*DEG,90.0*DEG])
     self.Pl.changeStellarPosition(+30.0*DEG)
     self.Pl.updateOpticalFactors()
@@ -407,7 +407,7 @@ def test_incoming_stellar_flux(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_facet_areas(self):
+def test_facet_areas():
     self.Pl.changeObserver([+60.0*DEG,0.0*DEG])
     self.Pl.changeStellarPosition(+0.0*DEG)
     self.Pl.updateOpticalFactors()
@@ -420,7 +420,7 @@ def test_facet_areas(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_update_geometrical_factors(self):
+def test_update_geometrical_factors():
     self.Pl.changeObserver([+30.0*DEG,0.0*DEG])
     self.Pl.changeStellarPosition(+30.0*DEG)
     self.Pl.updateOpticalFactors()
@@ -444,7 +444,7 @@ def test_update_geometrical_factors(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_accelerate_lambertian_albedo_ring(self):
+def test_accelerate_lambertian_albedo_ring():
     self.assertEqual(np.isclose([self.P.getLambertianAlbedoRing(0.0)],
                                 [self.P._calcLambertianAlbedoRing(0.0,gammap0=self.P.gammap0,reflection_law=self.P.reflection_rings_law)],
                                 rtol=1e-2).tolist(),
@@ -458,7 +458,7 @@ def test_accelerate_lambertian_albedo_ring(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_lambertian_albedos(self):
+def test_lambertian_albedos():
     self.Pl.changeObserver([+0.0*DEG,90.0*DEG])
     self.Pl.changeStellarPosition(+30.0*DEG)
     self.Pl.updateOpticalFactors()
@@ -482,7 +482,7 @@ def test_lambertian_albedos(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_find_gamma(self):
+def test_find_gamma():
     self.P.AS=0.0
     self.assertEqual(np.isclose([self.P._findGamma()],
                                 [0.0],
@@ -499,7 +499,7 @@ def test_find_gamma(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_find_gammap(self):
+def test_find_gammap():
     self.P.AL=0.0
     self.assertEqual(np.isclose([self.P._findGammap()],
                                 [0.0],
@@ -516,7 +516,7 @@ def test_find_gammap(self):
                                 rtol=1e-3).tolist(),
                         [True]*1)
 
-def test_accelerate_lambertian_albedo_planet(self):
+def test_accelerate_lambertian_albedo_planet():
     self.assertEqual(np.isclose([self.P.getLambertianAlbedoPlanet(0.0)],
                                 [self.P._calcLambertianAlbedoPlanet(0.0)],
                                 rtol=1e-2).tolist(),
@@ -530,7 +530,7 @@ def test_accelerate_lambertian_albedo_planet(self):
                                 rtol=1e-2).tolist(),
                         [True]*1)
 
-def test_lambertian_albedo_planet(self):
+def test_lambertian_albedo_planet():
     self.P.updatePhysicalProperties(dict(AS=0.3))
     self.assertEqual(np.isclose([self.P._calcLambertianAlbedoPlanet(0.0),
                                     self.P._calcLambertianAlbedoPlanet(0.3),
@@ -541,7 +541,7 @@ def test_lambertian_albedo_planet(self):
                                 rtol=1e-3).tolist(),
                         [True]*4)
 
-def test_spherical_albedo(self):
+def test_spherical_albedo():
     self.assertEqual(np.isclose([self.P._calcSphericalAlbedo(0.0),
                                     self.P._calcSphericalAlbedo(0.5),
                                     self.P._calcSphericalAlbedo(1.0)
@@ -550,20 +550,20 @@ def test_spherical_albedo(self):
                                 rtol=1e-3).tolist(),
                         [True]*3)
 
-def test_reflection_coefficient(self):
+def test_reflection_coefficient():
     self.assertEqual(np.isclose([self.P._calcReflectionCoefficient(0.1,0.1,gamma0=1),
                                     self.P._calcReflectionCoefficient(0.8,1.0,gamma0=1)],
                                 [1.9437612500000003, 1.0311283333333332],
                                 rtol=1e-5).tolist(),
                         [True]*2)
 
-def test_diffuse_reflection_function(self):
+def test_diffuse_reflection_function():
     self.assertEqual(np.isclose(self.P.fint(0.7,[0.1,0.5,0.7]).flatten().tolist(),
                                 [1.113, 1.318, 1.378],
                                 rtol=1e-5).tolist(),
                         [True]*3)
 
-def test_activity(self):
+def test_activity():
     self.Pl.changeObserver([+30.0*DEG,0.0*DEG])
     #Normal up
     self.Pl.changeStellarPosition(60.0*DEG)
@@ -582,7 +582,7 @@ def test_activity(self):
     self.Pl.changeStellarPosition(lamb+1*self.Pl.thetas)
     self.assertEqual([self.Pl.ap.sum(),self.Pl.ar.sum()],[230,384],[True]*2)
 
-def test_transitability(self):
+def test_transitability():
     self.Pl.changeObserver([+30.0*DEG,0.0*DEG])
     #Transit
     lamb=+210.0*DEG
@@ -595,14 +595,14 @@ def test_transitability(self):
     self.Pl.changeStellarPosition(lamb+1*self.Pl.thetas)
     self.assertEqual([self.Pl.cp.sum(),self.Pl.cr.sum()],[216,405],[True]*2)
 
-def test_visibility(self):
+def test_visibility():
     self.Pl.changeStellarPosition(45.0*DEG)
     self.Pl.changeObserver([30.0*DEG,0.0*DEG])
     self.Pl._updateVisibility()
     self.assertEqual([self.Pl.vp.sum(),self.Pl.vr.sum()],[434,723],[True]*2)
     self.assertEqual([self.Pl.vpo.sum(),self.Pl.vro.sum()],[503,852],[True]*2)
 
-def test_shadow(self):
+def test_shadow():
     self.Pl.changeStellarPosition(45.0*DEG)
     self.Pl._resetIllumination()
     self.Pl._updatePlanetShadow(epos=self.Pl.estar_equ,mask=self.Pl.sp)
@@ -610,7 +610,7 @@ def test_shadow(self):
     self.assertEqual(self.Pl.sp.sum(),122,True)
     self.assertEqual(self.Pl.sr.sum(),103,True)
 
-def test_update_illumination(self):
+def test_update_illumination():
     self.Pl.changeObserver([+0.0*DEG,+90.0*DEG])
     self.Pl.changeStellarPosition(45.0*DEG)
     self.assertEqual([self.Pl.ip.sum(),self.Pl.np.sum()],[400,416],[True]*2)
@@ -619,7 +619,7 @@ def test_update_illumination(self):
     self.assertEqual([self.Pl.ip.sum(),self.Pl.np.sum()],[407,83],[True]*2)
     self.assertEqual([self.Pl.ir.sum(),self.Pl.nr.sum()],[0,0],[True]*2)
 
-def test_update_sampling_observer(self):
+def test_update_sampling_observer():
     self.P._updateObserver([40.0*DEG,50.0*DEG])
     self.Pl.changeStellarPosition(0.0*DEG)
     self.P._updateSamplingObserver()
@@ -646,7 +646,7 @@ def test_update_sampling_observer(self):
                                 rtol=1e-5).tolist(),
                         [True]*2)
 
-def test_update_observer(self):
+def test_update_observer():
     self.P._updateObserver([40.0*DEG,50.0*DEG])
     #Normal to observer
     self.assertEqual(np.isclose(self.P.nobs_ecl.tolist(),
@@ -669,7 +669,7 @@ def test_update_observer(self):
                                 rtol=1e-5).tolist(),
                         [True]*3)
 
-def test_update_stellar_position(self):
+def test_update_stellar_position():
     #Update by lambda
     self.P.changeObserver([0.0*DEG,90.0*DEG])
     self.P._updateStellarPosition(30.0*DEG)
@@ -734,7 +734,7 @@ def test_update_stellar_position(self):
 #===========================================
 # TEST LIGHT CURVE
 #===========================================
-def test_facets_onsky_ring(self):
+def test_facets_onsky_ring():
     self.PL.changeObserver([+30.0*DEG,0.0*DEG])
     self.PL.changeStellarPosition(+60.0*DEG)
 
@@ -744,7 +744,7 @@ def test_facets_onsky_ring(self):
     msp,rijs,etaijs,zetaijs=self.PL._getFacetsOnSky(rr,observing_body="ring")
     self.assertEqual(msp.sum(),87014,True)
 
-def test_facets_onsky_planet(self):
+def test_facets_onsky_planet():
     self.PL.changeObserver([+30.0*DEG,0.0*DEG])
     self.PL.changeStellarPosition(+60.0*DEG)
 
@@ -754,7 +754,7 @@ def test_facets_onsky_planet(self):
     msp,rijs,etaijs,zetaijs=self.PL._getFacetsOnSky(rp,observing_body="planet")
     self.assertEqual(msp.sum(),75071,True)
 
-def test_reflected_light(self):
+def test_reflected_light():
     self.PL.changeObserver([+30.0*DEG,0.0*DEG])
     self.PL.changeStellarPosition(+60.0*DEG)
     self.PL.updateOpticalFactors()
@@ -766,7 +766,7 @@ def test_reflected_light(self):
                                 rtol=1e-5).tolist(),
                         [True]*2)
 
-def test_transit(self):
+def test_transit():
     self.PL.changeObserver([+30.0*DEG,0.0*DEG])
     lamb=+210.0*DEG
     self.PL._updateStellarPosition(lamb)
@@ -778,7 +778,7 @@ def test_transit(self):
                                 rtol=1e-3).tolist(),
                         [True]*2)
 
-def test_shining_light(self):
+def test_shining_light():
     self.PL.changeObserver([+30.0*DEG,0.0*DEG])
     self.PL.changeStellarPosition(+60.0*DEG)
     self.PL.updateOpticalFactors()
