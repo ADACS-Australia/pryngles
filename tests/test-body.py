@@ -12,7 +12,7 @@
 ##################################################################
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
-
+import pytest
 from pryngles import *
 
 def test_fun():
@@ -64,16 +64,15 @@ def test_star():
     print(S)
 
     #Check derived properties
-    self.assertEqual(np.isclose([S.wrot],
+    np.testing.assert_allclose(np.isclose([S.wrot],
                                 [2*np.pi/BODY_DEFAULTS["prot"]],
-                                rtol=1e-7),
-                        [True]*1)
+                                rtol=1e-7))
 
     S.update_star(m=2,limb_coeffs=[1,1])
     print(S)
 
     #Check exception: parent could not be different from None or Body
-    self.assertRaises(AssertionError,lambda:Star(parent="Nada"))
+    with pytest.raises(ValueError): Star(parent="Nada")
 
     S=Star(nspangles=270,i=45*Consts.deg)
     S.spangle_body()
@@ -95,23 +94,22 @@ def test_planet():
     S=Star()
 
     #Check exception: parent is mandatory for planets
-    self.assertRaises(ValueError,lambda:Planet())
+    with pytest.raises(ValueError): Planet()
 
     P=Planet(parent=S)
     print(P.name)
 
     #Check derived properties
-    self.assertEqual(np.isclose([P.wrot],
+    np.testing.assert_allclose(np.isclose([P.wrot],
                                 [2*np.pi/BODY_DEFAULTS["prot"]],
-                                rtol=1e-7),
-                        [True]*1)
+                                rtol=1e-7))
 
     #Check a non-existing property
     P.update_planet(vz=0.2)
     print(P)
 
     #Check exception: parent could not be different from None or Body
-    self.assertRaises(AssertionError,lambda:Planet(parent="Nada"))
+    with pytest.raises(AssertionError): Planet(parent="Nada")
 
     P.update_body(nspangles=250)
     P.spangle_body()
@@ -129,7 +127,7 @@ def test_ring():
     S=Star()
     P=Planet(parent=S)
 
-    self.assertRaises(ValueError,lambda:Ring())
+    with pytest.raises(ValueError): Ring()
     R=Ring(parent=P)
 
     R.update_ring(fe=3)

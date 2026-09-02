@@ -17,6 +17,6 @@ from pryngles import *
 
 def test_fun():
     p=Consts.ppm
-    self.assertEqual([p],[1e6],[True]*1)
+    assert p == 1e6
     print(Consts.get_all())
     print(Consts.get_physical())

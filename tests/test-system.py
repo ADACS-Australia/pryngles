@@ -12,7 +12,7 @@
 ##################################################################
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
-
+import pytest
 from pryngles import *
 
 def test_system_init():
@@ -64,9 +64,9 @@ def test_system_add():
 
     #Error
     O=Star()
-    self.assertRaises(ValueError,lambda:sys.add("Planet",name="Error1",parent=S,radius=2,a=10,source=1))
-    self.assertRaises(ValueError,lambda:sys.add("Planet",name="Error2",parent=P,radius=2,a=1,source=P))
-    self.assertRaises(ValueError,lambda:sys.add("Planet",name="Error3",parent=P,radius=2,a=1,source=O))
+    with pytest.raises(ValueError): sys.add("Planet",name="Error1",parent=S,radius=2,a=10,source=1)
+    with pytest.raises(ValueError): sys.add("Planet",name="Error2",parent=P,radius=2,a=1,source=P)
+    with pytest.raises(ValueError): sys.add("Planet",name="Error3",parent=P,radius=2,a=1,source=O)
 
     #Several sources in a system
     sys=System()
@@ -153,7 +153,7 @@ def test_spangleobs():
     P=sys.add("Planet",parent=S,nspangles=nspangles,m=1,radius=0.2,a=5)
 
     #Test setting observer without spangling
-    self.assertRaises(AssertionError,lambda:sys._set_observer(nvec=[1,0,0]))
+    with pytest.raises(AssertionError): sys._set_observer(nvec=[1,0,0])
 
     #Spangle system
     sys.initialize_simulation()
@@ -266,7 +266,7 @@ def test_update():
     print(R.radius)
     sys.initialize_simulation()
     sys.spangle_system()
-    self.assertRaises(AssertionError,lambda:sys.update_body("Ring",fe=3.0))
+    with pytest.raises(AssertionError): sys.update_body("Ring",fe=3.0)
 
     Verbose.VERBOSITY=VERB_NONE
 
