@@ -17,7 +17,6 @@ from pryngles import *
 
 def test_fun():
 
-    global B,C
     Verbose.VERBOSITY=VERB_ALL
 
     B=Body("Body",BODY_DEFAULTS,None,m=2,x=2,a=1,name_by_kind=True)
@@ -44,8 +43,6 @@ def test_fun():
 
 def test_spangle():
 
-    global B
-
     Verbose.VERBOSITY=VERB_ALL
 
     #Create body
@@ -57,7 +54,6 @@ def test_spangle():
 
 def test_star():
 
-    global S
     Verbose.VERBOSITY=VERB_ALL
 
     S=Star()
@@ -86,8 +82,6 @@ def test_star():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_planet():
-
-    global P
 
     Verbose.VERBOSITY=VERB_ALL
 

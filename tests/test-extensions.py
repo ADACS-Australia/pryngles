@@ -24,7 +24,6 @@ def test_readf():
     pass
 
 def test_fun():
-    global cpixx_ext
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -47,7 +46,6 @@ def test_fun():
     pass
 
 def test_stokes():
-    global S,phi,beta,theta0,theta,apix
     Verbose.VERBOSITY=VERB_SIMPLE
 
     #Test values
@@ -112,7 +110,6 @@ def test_stokes():
 
 def test_stokes_mass():
     from time import time
-    global S,phi,beta,theta0,theta,apix
     Verbose.VERBOSITY=VERB_SIMPLE
 
     #Interpolation file

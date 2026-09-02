@@ -17,7 +17,6 @@ from pryngles import *
 
 def test_interface():
 
-    global MySurface
     Verbose.VERBOSITY=VERB_ALL
 
     class MySurface(Scatterer):
@@ -50,8 +49,6 @@ def test_interface():
 
 def test_scatters():
 
-    global LA
-
     Verbose.VERBOSITY=VERB_ALL
 
     print(NeutralSurface().get_albedo(0,0,0,0))
@@ -60,8 +57,6 @@ def test_scatters():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_lambsurface():
-
-    global LA
 
     Verbose.VERBOSITY=VERB_ALL
 
@@ -80,8 +75,6 @@ def test_lambsurface():
 
 def test_lambatmos():
 
-    global LA
-
     Verbose.VERBOSITY=VERB_ALL
 
     LA=LambertianGrayAtmosphere(AS=0.5)
@@ -99,8 +92,6 @@ def test_lambatmos():
 
 def test_catalogue():
 
-    global LA
-
     Verbose.VERBOSITY=VERB_NONE
 
     for key,item in SCATTERERS_CATALOGUE.items():
@@ -109,8 +100,6 @@ def test_catalogue():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_upscat():
-
-    global sys
 
     Verbose.VERBOSITY=VERB_NONE
 

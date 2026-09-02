@@ -117,7 +117,6 @@ def test_pop():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_plot3d():
-    global sg
     Verbose.VERBOSITY=VERB_SIMPLE
 
     #Sphere
@@ -161,7 +160,6 @@ def test_plot3d():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_setint():
-    global sg
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -189,7 +187,6 @@ def test_setint():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_setobsluz():
-    global sg
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -220,7 +217,6 @@ def test_setobsluz():
     Verbose.VERBOSITY=VERB_NONE
 
 def test_simplevis():
-    global sg
 
     Verbose.VERBOSITY=VERB_SIMPLE
 
@@ -280,8 +276,6 @@ def test_simplevis():
 
 def test_plot2d():
 
-    global sg
-
     Verbose.VERBOSITY=VERB_SIMPLE
 
     plt.close("all")
@@ -329,7 +323,6 @@ def test_join():
 
 def test_upint():
     plt.close("all")
-    global sg
 
     Verbose.VERBOSITY=VERB_NONE
 

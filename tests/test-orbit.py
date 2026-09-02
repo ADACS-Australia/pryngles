@@ -27,8 +27,6 @@ def test_orbody():
 
 def test_Orbit():
 
-    global S4
-
     #Quintuple system
     S1=Orbit(m1=1,m2=1,a=1,e=0.7,M=0)
     S2=Orbit(m1=1,m2=1,a=1,e=0,M=0)
@@ -58,8 +56,6 @@ def test_Orbit():
     #Plot.animate_rebound(S4.sim)
 
 def test_build():
-
-    global orbit
 
     units=['au','msun','yr']
     S1=Orbody(name="Star1",m=1)
