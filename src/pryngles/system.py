@@ -1347,7 +1347,7 @@ class System(PrynglesCommon):
                 # Ring object (Childs could be also Moons)
                 ring_names = [
                     child_name
-                    for child_name in list(body.childs.keys())
+                    for child_name in body.childs
                     if self.bodies[child_name].kind == "Ring"
                 ]
                 if not ring_names:
