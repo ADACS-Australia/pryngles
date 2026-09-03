@@ -116,7 +116,7 @@ def test_upscat():
     #Prepare system
     sys.initialize_simulation()
     sys.spangle_system()
-    sys.update_scatterers()
+    sys._update_scatterers()
 
     #Show scatterers
     for key,item in SCATTERERS_CATALOGUE.items():
