@@ -60,15 +60,15 @@ def test_star():
     print(S)
 
     #Check derived properties
-    np.testing.assert_allclose(np.isclose([S.wrot],
-                                [2*np.pi/BODY_DEFAULTS["prot"]],
-                                rtol=1e-7))
+    np.testing.assert_allclose(S.wrot,
+                                2*np.pi/BODY_DEFAULTS["prot"],
+                                rtol=1e-7)
 
     S.update_star(m=2,limb_coeffs=[1,1])
     print(S)
 
     #Check exception: parent could not be different from None or Body
-    with pytest.raises(ValueError): Star(parent="Nada")
+    with pytest.raises(AssertionError): Star(parent="Nada")
 
     S=Star(nspangles=270,i=45*Consts.deg)
     S.spangle_body()
@@ -94,9 +94,9 @@ def test_planet():
     print(P.name)
 
     #Check derived properties
-    np.testing.assert_allclose(np.isclose([P.wrot],
-                                [2*np.pi/BODY_DEFAULTS["prot"]],
-                                rtol=1e-7))
+    np.testing.assert_allclose(P.wrot,
+                                2*np.pi/BODY_DEFAULTS["prot"],
+                                rtol=1e-7)
 
     #Check a non-existing property
     P.update_planet(vz=0.2)
