@@ -791,7 +791,7 @@ class Spangler(PrynglesCommon):
     
         #Zoom around center
         cond=(self.data.name==center_at)
-        cond=cond if sum(cond)>0 else [True]*self.nspangles
+        cond=cond if sum(cond)>0 else np.array([True]*self.nspangles)
     
         #Not 
         cond=cond&(~self.data.name.isin(not_plot))
@@ -1518,7 +1518,7 @@ class Spangler(PrynglesCommon):
         
         #Calculate range of plot
         cond_maxval=(~data.hidden)&(~data.name.isin(exclude))
-        cond_maxval=cond_maxval if sum(cond_maxval)>0 else [True]*num_included        
+        cond_maxval=cond_maxval if sum(cond_maxval)>0 else np.array([True]*num_included)        
         if not maxval:
             maxval=1.2*np.abs(np.array(data[cond_maxval][[f"x_{coords}",f"y_{coords}"]])-np.array([x_cen,y_cen])).max()
 
