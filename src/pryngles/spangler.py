@@ -215,7 +215,7 @@ class Spangler(PrynglesCommon):
                 self.data=pd.DataFrame([list(self._defaults.values())]*self.nspangles,
                                        columns=self._defaults.keys())
 
-                self.M_equ2ecl[name], _ = Science.rotation_matrix(n_equ,alpha_equ)
+                self.M_equ2ecl[self.name], _ = Science.rotation_matrix(n_equ,alpha_equ)
         
             else:        
                 verbose(VERB_SIMPLE,f"Creating a blank Spangler")
