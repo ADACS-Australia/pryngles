@@ -281,7 +281,7 @@ class System(PrynglesCommon):
 
             #Save rebound state
             verbose(VERB_SIMPLE,"Saving rebound simulation")
-            self.sim.save(rb_filename)
+            self.sim.save_to_file(rb_filename)
 
             #Since rebound have ctypes it cannot be pickled
             del self.sim
