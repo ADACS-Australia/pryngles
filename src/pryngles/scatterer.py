@@ -22,7 +22,7 @@ from pryngles import *
 from abc import ABC, abstractmethod
 from scipy.optimize import bisect
 from scipy.integrate import quad,dblquad
-from scipy.interpolate import interp1d,interp2d
+from scipy.interpolate import interp1d, RectBivariateSpline
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -393,7 +393,22 @@ class LambertianGrayAtmosphere(Scatterer):
         eta=data_ss[1:,0]
         gamma=data_ss[0,1:]
         f=data_ss[1:,1:]
-        self.fint=interp2d(gamma,eta,f)  
+        # SciPy >= 1.14 removed interp2d. Use a regular-grid spline instead
+        # (mirrors the fix already applied in legacy.py).
+        spline = RectBivariateSpline(eta, gamma, f, kx=1, ky=1)
+
+        def fint(g, e):
+            gg = np.atleast_1d(g).astype(float)
+            ee = np.atleast_1d(e).astype(float)
+            if gg.size == 1 and ee.size == 1:
+                return np.array([float(spline(ee[0], gg[0])[0, 0])])
+            if gg.size == 1 and ee.size > 1:
+                return spline(ee, gg).reshape(-1)
+            if gg.size > 1 and ee.size == 1:
+                return spline(ee, gg).reshape(-1)
+            return spline(ee, gg)
+
+        self.fint = fint
 
     def _calc_reflection_coefficient(self,eta,zeta,gamma0=1):
         """Reflection coefficient of a semi-infinite (tau = infinity) atmosphere with (gray) 
