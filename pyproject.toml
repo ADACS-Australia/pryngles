@@ -1,24 +1,79 @@
-##################################################################
-#                                                                #
-#.#####...#####...##..##..##..##...####...##......######...####..#
-#.##..##..##..##...####...###.##..##......##......##......##.....#
-#.#####...#####.....##....##.###..##.###..##......####.....####..#
-#.##......##..##....##....##..##..##..##..##......##..........##.#
-#.##......##..##....##....##..##...####...######..######...####..#
-#................................................................#
-#                                                                #
-# PlanetaRY spanGLES                                             #
-#                                                                #
-##################################################################
-# License http://github.com/seap-udea/pryngles-public            #
-##################################################################
 [build-system]
-requires = ['setuptools','rebound>=4,<5','scipy','ipython',
-	    'matplotlib','tqdm','dill','astropy',
-	    'spiceypy','cmasher','pandas','celluloid',
-	    'sigfig','anytree','ipywidgets','gdown'
-	    ]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pryngles"
+version = "1.0.2"
+description = "PlanetaRY spanGLES: general photometry of planets, rings and shadows"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Jorge I. Zuluaga", email = "jorge.zuluaga@udea.edu.co" },
+    { name = "Sebastian Numpaque" },
+    { name = "Allard Veenstra" },
+    { name = "Jaime A. Alvarado-Montes" },
+    { name = "Mario Sucerquia" },
+]
+keywords = ["astronomy", "exoplanets", "planetary-rings"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "rebound==4.6.0",
+    "scipy",
+    "ipython",
+    "matplotlib",
+    "tqdm",
+    "dill",
+    "astropy",
+    "spiceypy",
+    "cmasher",
+    "pandas",
+    "celluloid",
+    "sigfig",
+    "anytree",
+    "ipywidgets",
+    "gdown",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.5",
+]
+docs = [
+    "sphinx",
+    "sphinx-mdinclude",
+    "pydata-sphinx-theme",
+]
+
+[project.urls]
+Homepage = "https://pypi.org/project/pryngles"
+
+[project.scripts]
+install = "pryngles.install:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+ext-modules = [
+    {name = "pryngles.cpixx", sources = ["src/pryngles/cpixx/cpixx.c"] }
+]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pryngles = ["data/*.*", "data/sampler_presets/*.*", "tests/*.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
