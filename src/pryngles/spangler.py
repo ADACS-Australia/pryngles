@@ -1028,13 +1028,16 @@ class Spangler(PrynglesCommon):
         
 
         #Cosine of the direction of the intersection vector and the normal to the spangle
+        # Store cosines as float: pandas >=2 raises LossySetitemError when assigning
+        # floats into an int-typed column, so coerce cos_int to float first.
+        if "cos_int" not in self.data.columns:
+            self.data["cos_int"] = np.nan
+        if not pd.api.types.is_float_dtype(self.data["cos_int"].dtype):
+            self.data["cos_int"] = self.data["cos_int"].astype(float)
+
         if self.infinite:
             #In this case n_int is a global variable
             cos_int = np.sum(ns_ecl * n_int, axis=1)
-            if "cos_int" not in self.data.columns:
-                self.data["cos_int"] = np.nan
-            if not pd.api.types.is_float_dtype(self.data["cos_int"].dtype):
-                self.data["cos_int"] = self.data["cos_int"].astype(float)
             self.data.loc[cond, "cos_int"] = cos_int
         else:
             #In this case n_int is a per-spangle variable
