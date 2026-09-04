@@ -13,6 +13,7 @@ build/
 *.pyf
 *.so
 contrib/*
+.python-version
 
 # Docs build artifacts
 docs/_build/
