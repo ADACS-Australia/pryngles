@@ -215,7 +215,7 @@ class Spangler(PrynglesCommon):
                 self.data=pd.DataFrame([list(self._defaults.values())]*self.nspangles,
                                        columns=self._defaults.keys())
 
-                self.M_equ2ecl[name], _ = Science.rotation_matrix(n_equ,alpha_equ)
+                self.M_equ2ecl[self.name], _ = Science.rotation_matrix(n_equ,alpha_equ)
         
             else:        
                 verbose(VERB_SIMPLE,f"Creating a blank Spangler")
@@ -791,9 +791,9 @@ class Spangler(PrynglesCommon):
     
         #Zoom around center
         cond=(self.data.name==center_at)
-        cond=cond if sum(cond)>0 else [True]*self.nspangles
-    
-        #Not 
+        cond=cond if sum(cond)>0 else np.full(self.nspangles, True)
+
+        #Not
         cond=cond&(~self.data.name.isin(not_plot))
         
         #Range
@@ -1028,13 +1028,16 @@ class Spangler(PrynglesCommon):
         
 
         #Cosine of the direction of the intersection vector and the normal to the spangle
+        # Store cosines as float: pandas >=2 raises LossySetitemError when assigning
+        # floats into an int-typed column, so coerce cos_int to float first.
+        if "cos_int" not in self.data.columns:
+            self.data["cos_int"] = np.nan
+        if not pd.api.types.is_float_dtype(self.data["cos_int"].dtype):
+            self.data["cos_int"] = self.data["cos_int"].astype(float)
+
         if self.infinite:
             #In this case n_int is a global variable
             cos_int = np.sum(ns_ecl * n_int, axis=1)
-            if "cos_int" not in self.data.columns:
-                self.data["cos_int"] = np.nan
-            if not pd.api.types.is_float_dtype(self.data["cos_int"].dtype):
-                self.data["cos_int"] = self.data["cos_int"].astype(float)
             self.data.loc[cond, "cos_int"] = cos_int
         else:
             #In this case n_int is a per-spangle variable
@@ -1518,7 +1521,7 @@ class Spangler(PrynglesCommon):
         
         #Calculate range of plot
         cond_maxval=(~data.hidden)&(~data.name.isin(exclude))
-        cond_maxval=cond_maxval if sum(cond_maxval)>0 else [True]*num_included        
+        cond_maxval=cond_maxval if sum(cond_maxval)>0 else np.full(num_included, True)
         if not maxval:
             maxval=1.2*np.abs(np.array(data[cond_maxval][[f"x_{coords}",f"y_{coords}"]])-np.array([x_cen,y_cen])).max()
 

@@ -665,7 +665,11 @@ class Plane(PrynglesCommon):
     def get_z(self,x,y):
         """Get z value of a plane corresponding to given x, y coordinates.
         """
-        z = (-self.a*x-self.b*y-self.d)/self.c if not mh.isclose(self.c,0) else np.nan
+        if mh.isclose(self.c, 0):
+            # Vertical plane: return a nan array matching x's shape (plot_surface
+            # requires Z to be a 2D array, not a scalar).
+            return np.full_like(x, np.nan)
+        z = (-self.a*x-self.b*y-self.d)/self.c
         return z
     
     def is_above(self,p,vdir):

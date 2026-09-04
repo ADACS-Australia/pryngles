@@ -151,7 +151,7 @@ class Misc(object):
             list(Misc.flatten([[1,"perro"],object,float]))
         """
         for i in collection:
-            if isinstance(i, Iterable) and not isinstance(i, basestring):
+            if isinstance(i, Iterable) and not isinstance(i, (str, bytes)):
                 for subc in Misc.flatten(i):
                     yield subc
             else:

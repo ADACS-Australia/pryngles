@@ -281,7 +281,7 @@ class System(PrynglesCommon):
 
             #Save rebound state
             verbose(VERB_SIMPLE,"Saving rebound simulation")
-            self.sim.save(rb_filename)
+            self.sim.save_to_file(rb_filename)
 
             #Since rebound have ctypes it cannot be pickled
             del self.sim
@@ -324,8 +324,8 @@ class System(PrynglesCommon):
         if self.extension not in ['pixx','cpixx']:
             raise ValueError(f"The extension '{self.extension}' is not recognized (available 'pixx', 'cpixx')")
 
-        fname_planet = Misc.get_data("fou_gasplanet_optical_50.dat"),
-        fname_ring = Misc.get_data("fou_ring_0_4_0_8.dat"),
+        fname_planet = Misc.get_data("fou_gasplanet_optical_50.dat")
+        fname_ring = Misc.get_data("fou_ring_0_4_0_8.dat")
 
         self.SCp = StokesScatterer(fname_planet)
         self.nmatp = self.SCp.nmat
@@ -1343,11 +1343,21 @@ class System(PrynglesCommon):
 
                 # Radius for Normalization
                 R_planet = body.radius
-                
+
                 # Ring object (Childs could be also Moons)
-                ring_name = [child_name for child_name in list(body.childs.keys()) if self.bodies[child_name].kind == 'Ring'][0]
+
+                # Construct list of ring names for the current planet
+                ring_names = [child_name for child_name in body.childs if self.bodies[child_name].kind == 'Ring']
+
+                # Ensure ring names is not empty, before trying to index
+                if not ring_names:
+                    raise ValueError(
+                        f"Polarization for Planet '{body.name}' requires a Ring child; none found."
+                    )
+
+                ring_name = ring_names[0]
                 ring_body = self.bodies[ring_name]
-                
+
                 # Optical Depth of Ring and Attenuation factors
                 tau_r = self.bodies[ring_name].taur
                 cos_obs_ring = ring_body.sg.data.cos_obs.mean()
@@ -1632,5 +1642,3 @@ class System(PrynglesCommon):
                                     "signal_error": signal_error}
 
         return lightcurve
-
-

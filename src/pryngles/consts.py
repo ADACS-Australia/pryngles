@@ -437,6 +437,8 @@ SPANGLER_KEY_ORDERING=[
     #Physical bulk properties
     'albedo_gray_normal', 'albedo_gray_spherical', 'tau_gray_optical', 
     'F','Q','U','V','P',
+    'stellar_flux', 'reflected_flux', 'transit_flux', 'thermal_flux',
+    'stokes_F','stokes_Q','stokes_U','stokes_V','stokes_P',
     'Teq', 'Tem', 'emmisivity', 
     #State
     'visible', 'shadow', 'indirect', 'emit', 

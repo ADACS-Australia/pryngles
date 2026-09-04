@@ -13,9 +13,15 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 [build-system]
-requires = ['setuptools','rebound','scipy','ipython',
+requires = ['setuptools','rebound>=4,<5','scipy','ipython',
 	    'matplotlib','tqdm','dill','astropy',
 	    'spiceypy','cmasher','pandas','celluloid',
 	    'sigfig','anytree','ipywidgets','gdown'
 	    ]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = ["slow: marks tests that take longer to run"]
