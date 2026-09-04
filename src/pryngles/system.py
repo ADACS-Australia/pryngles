@@ -590,7 +590,7 @@ class System(PrynglesCommon):
                 x=p.x,y=p.y,z=p.z,
                 vx=p.vx,vy=p.vy,vz=p.vz
             )
-        self.orbit=orbit
+        self.sim.orbit=orbit
         self._simulated=True
         self._update_system()
         
