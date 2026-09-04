@@ -393,25 +393,40 @@ class LambertianGrayAtmosphere(Scatterer):
         eta=data_ss[1:,0]
         gamma=data_ss[0,1:]
         f=data_ss[1:,1:]
-        # SciPy >= 1.14 removed interp2d. Use a regular-grid spline instead
+        # SciPy >= 1.14 removed interp2d. We use a regular-grid spline instead.
+        # interp2d(x=gamma, y=eta, z=f) expects z.shape == (len(eta), len(gamma))
+        # and is called as fint(gamma0, eta0) -> array([[value]]).
         # (mirrors the fix already applied in legacy.py).
         spline = RectBivariateSpline(eta, gamma, f, kx=1, ky=1)
 
         def fint(g, e):
+            """
+            Backward-compatible replacement for interp2d(gamma, eta, f).
+
+            interp2d(x, y, z) returns:
+              - (x scalar, y scalar) -> array([z])
+              - (x scalar, y vector) -> array([z(y_i)])
+              - (x vector, y scalar) -> array([z(x_i)])
+              - (x vector, y vector) -> 2D array with shape (len(y), len(x))
+            """
             gg = np.atleast_1d(g).astype(float)
             ee = np.atleast_1d(e).astype(float)
+
             if gg.size == 1 and ee.size == 1:
                 return np.array([float(spline(ee[0], gg[0])[0, 0])])
+
             if gg.size == 1 and ee.size > 1:
                 return spline(ee, gg).reshape(-1)
+
             if gg.size > 1 and ee.size == 1:
                 return spline(ee, gg).reshape(-1)
+
             return spline(ee, gg)
 
         self.fint = fint
 
     def _calc_reflection_coefficient(self,eta,zeta,gamma0=1):
-        """Reflection coefficient of a semi-infinite (tau = infinity) atmosphere with (gray) 
+        """Reflection coefficient of a semi-infinite (tau = infinity) atmosphere with (gray)
         single scattering albedo gamma0
 
         Requires:
@@ -471,4 +486,3 @@ class LambertianGrayAtmosphere(Scatterer):
         etas=np.linspace(0,1,20)
         ALs=np.array([self._calc_lambertian_albedo(eta) for eta in etas])
         self._get_albedo=interp1d(etas,ALs)
-
