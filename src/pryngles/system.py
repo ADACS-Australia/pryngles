@@ -1343,21 +1343,21 @@ class System(PrynglesCommon):
 
                 # Radius for Normalization
                 R_planet = body.radius
-                
+
                 # Ring object (Childs could be also Moons)
-                ring_names = [
-                    child_name
-                    for child_name in body.childs
-                    if self.bodies[child_name].kind == "Ring"
-                ]
+
+                # Construct list of ring names for the current planet
+                ring_names = [child_name for child_name in body.childs if self.bodies[child_name].kind == 'Ring']
+
+                # Ensure ring names is not empty, before trying to index
                 if not ring_names:
                     raise ValueError(
-                        f"Polarization for Planet '{body.name}' requires a Ring "
-                        "child; none found."
+                        f"Polarization for Planet '{body.name}' requires a Ring child; none found."
                     )
+
                 ring_name = ring_names[0]
                 ring_body = self.bodies[ring_name]
-                
+
                 # Optical Depth of Ring and Attenuation factors
                 tau_r = self.bodies[ring_name].taur
                 cos_obs_ring = ring_body.sg.data.cos_obs.mean()
@@ -1642,5 +1642,3 @@ class System(PrynglesCommon):
                                     "signal_error": signal_error}
 
         return lightcurve
-
-
