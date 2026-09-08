@@ -1125,7 +1125,7 @@ requires-dist = [
     { name = "ipywidgets" },
     { name = "matplotlib" },
     { name = "pandas" },
-    { name = "rebound", specifier = "==4.6.0" },
+    { name = "rebound", specifier = ">=4,<5" },
     { name = "scipy" },
     { name = "sigfig" },
     { name = "spiceypy" },

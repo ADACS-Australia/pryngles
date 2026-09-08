@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "rebound==4.6.0",
+    "rebound>=4,<5",
     "scipy",
     "ipython",
     "matplotlib",
