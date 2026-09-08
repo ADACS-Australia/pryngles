@@ -48,6 +48,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-regressions>=2.5.0",
     "ruff>=0.16.5",
 ]
 docs = [
@@ -79,7 +80,10 @@ pryngles = ["data/*.*", "data/sampler_presets/*.*", "tests/*.*"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
-markers = ["slow: marks tests that take longer to run"]
+markers = [
+    "slow: marks tests that take longer to run",
+    "regression: marks regression tests (skipped by default)"
+]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
