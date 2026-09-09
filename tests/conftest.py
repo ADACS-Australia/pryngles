@@ -19,19 +19,13 @@ with contextlib.redirect_stdout(io.StringIO()):
     import pryngles  # noqa: F401
 
 
-def pytest_collection_modifyitems(config, items):
-    # Run regression tests only if the ``--regression`` flag is set, else don't find them.
-    # Can override this by supplying a file or directory to run, in which case the flag is ignored.
-    if config.getoption("file_or_dir"):
-        return
-
+# Ignore regression tests unless the ``--regression`` flag is passed.
+# Ignore regular tests if the ``--regression`` flag is passed.
+def pytest_ignore_collect(collection_path, config):
+    in_regression = "regression" in collection_path.parts
     run_regression = config.getoption("--regression")
 
-    items[:] = [
-        item
-        for item in items
-        if (item.get_closest_marker("regression") is not None) == run_regression
-    ]
+    return in_regression != run_regression
 
 
 def pytest_addoption(parser):

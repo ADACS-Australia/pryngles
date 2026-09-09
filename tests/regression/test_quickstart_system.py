@@ -31,6 +31,8 @@ from tests.regression.utils import (
 # Numerical values are compared with a tight relative tolerance.
 _TOLERANCE = dict(rtol=1e-12, atol=1e-12)
 
+_N_TIMES = 11
+
 
 @pytest.fixture(scope="module")
 def system():
@@ -71,7 +73,7 @@ def system():
     system.spangle_system()
 
     period_days = 365.25 * (planet.a ** 1.5)
-    times_days = np.linspace(0.0, period_days, 21)
+    times_days = np.linspace(0.0, period_days, _N_TIMES)
     times_system = times_days * pr.Consts.day / system.ut
 
     system.compute_lightcurve(
@@ -97,14 +99,14 @@ def test_spangler_metadata(system, data_regression):
 
 def test_lightcurve_data(system, num_regression):
     """Regression test for the numerical lightcurve output."""
-    captured = capture_lightcurve(system)
+    captured = capture_lightcurve(system.lightcurve)
     numerical, _ = _split_capture(captured)
     num_regression.check(numerical, default_tolerance=_TOLERANCE, basename="lightcurve_data")
 
 
 def test_lightcurve_metadata(system, data_regression):
     """Regression test for the non-numerical lightcurve output."""
-    _, metadata = _split_capture(capture_lightcurve(system))
+    _, metadata = _split_capture(capture_lightcurve(system.lightcurve))
     data_regression.check(metadata, basename="lightcurve_metadata")
 
 

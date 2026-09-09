@@ -185,8 +185,8 @@ def capture_spangler_state(sg):
     return _capture_dataframe(sg.data, SPANGLER_SCHEMA)
 
 
-def capture_lightcurve(system):
-    """Capture the lightcurve output, treating its DataFrames uniformly.
+def capture_lightcurve(lightcurve):
+    """Capture a lightcurve dict, treating its DataFrames uniformly.
 
     The lightcurve dict contains per-effect DataFrames keyed by effect
     name (e.g. ``polarization``) plus a ``scattering`` DataFrame that is
@@ -194,8 +194,13 @@ def capture_lightcurve(system):
     only lists the *requested* effects, so we capture every DataFrame
     value in the dict (which includes ``scattering``) rather than only
     the requested ones, ensuring no effect output is missed.
+
+    If a detector signal was simulated (``lightcurve['signal']``), it is
+    captured too. The signal is a dict of arrays (``times``,
+    ``signal_flux``, ``signal_error``) and is stochastic, so the caller
+    must seed the RNG before computing the lightcurve for a reproducible
+    golden file.
     """
-    lightcurve = system.lightcurve
     result = {
         'times': _to_plain(lightcurve['times']),
         'total_flux': _to_plain(lightcurve['total_flux']),
@@ -214,7 +219,38 @@ def capture_lightcurve(system):
         for key, value in lightcurve.items()
         if isinstance(value, pd.DataFrame)
     })
+    # Capture the detector signal (a dict of arrays) if present.
+    if 'signal' in lightcurve:
+        result['signal'] = {
+            key: _to_plain(value)
+            for key, value in lightcurve['signal'].items()
+        }
     return result
+
+
+def capture_detector_signal(system):
+    """Capture the detector's configuration, deterministic properties and signal.
+
+    The detector's configuration (wavelength range, aperture, quantum
+    efficiency, cadence, distance) and its ``normal_flux`` (computed from
+    the source star and detector geometry) are deterministic. The signal
+    arrays (``times``, ``signal_flux``, ``signal_error``) are stochastic,
+    so the caller must seed the RNG before generating them for a
+    reproducible golden file.
+    """
+    detector = system.detector
+    return {
+        'wavelength_min': _to_plain(detector.wavelength_min),
+        'wavelength_max': _to_plain(detector.wavelength_max),
+        'apperture': _to_plain(detector.apperture),
+        'quantum_eff': _to_plain(detector.quantum_eff),
+        't_cadence': _to_plain(detector.t_cadence),
+        'distance': _to_plain(detector.distance),
+        'normal_flux': _to_plain(detector.normal_flux),
+        'times': _to_plain(detector.times),
+        'signal_flux': _to_plain(detector.signal_flux),
+        'signal_error': _to_plain(detector.signal_error),
+    }
 
 
 def capture_system_metadata(system):
@@ -224,6 +260,14 @@ def capture_system_metadata(system):
         'ul': _to_plain(system.ul),
         'um': _to_plain(system.um),
         'ut': _to_plain(system.ut),
+        'observer': {
+            'd_obs': _to_plain(getattr(system, 'd_obs', None)),
+            'd_luz': _to_plain(getattr(system, 'd_luz', None)),
+            'rqf_obs': _to_plain(getattr(system, 'rqf_obs', None)),
+            'rqf_luz': _to_plain(getattr(system, 'rqf_luz', None)),
+            'alpha_obs': _to_plain(getattr(system, 'alpha_obs', None)),
+            'center_obs': _to_plain(getattr(system, 'center_obs', None)),
+        },
         'bodies': {
             name: {
                 'kind': body.kind,
