@@ -15,7 +15,6 @@ On first run the golden files are generated next to this test (in the
 """
 import numpy as np
 import pytest
-pytestmark = pytest.mark.regression
 
 import spiceypy as spy
 

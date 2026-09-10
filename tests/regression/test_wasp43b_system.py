@@ -21,7 +21,6 @@ On first run the golden files are generated next to this test (in the
 """
 import numpy as np
 import pytest
-pytestmark = pytest.mark.regression
 
 import spiceypy as spy
 
@@ -57,13 +56,11 @@ _R_IN = 1.5                   # Inner ring radius [R_planet]
 _R_OUT = 2.5                  # Outer ring radius [R_planet]
 _RING_INC = 60                # Ring inclination w.r.t. orbital plane [deg]
 _RING_TAU = 0.4               # Ring optical depth
-_LAMBDA_MIN = 1.1e-6          # Minimum wavelength [m]
-_LAMBDA_MAX = 1.7e-6          # Maximum wavelength [m]
 
 # Detector properties (passed to compute_lightcurve as the signal dict).
 _DETECTOR_PROPERTIES = {
-    'wavelength_min': _LAMBDA_MIN,
-    'wavelength_max': _LAMBDA_MAX,
+    'wavelength_min': 1.1e-6,
+    'wavelength_max': 1.7e-6,
     'apperture': 0.5,
     'quantum_eff': 0.9,
     't_cadence': 15 * 60,
@@ -153,7 +150,7 @@ def system():
     # Emission.
     system.compute_lightcurve(
         times=times_system,
-        bandwidth=(_LAMBDA_MIN, _LAMBDA_MAX),
+        bandwidth=(_DETECTOR_PROPERTIES['wavelength_min'], _DETECTOR_PROPERTIES['wavelength_max']),
         effects=['emission'],
     )
     lightcurve_emission = system.lightcurve
