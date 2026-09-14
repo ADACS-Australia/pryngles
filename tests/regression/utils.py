@@ -98,9 +98,14 @@ class SystemChecks:
 
     def test_lightcurve_effects(self, system, dataframe_regression):
         for effect in system.lightcurve['effects']:
-            dataframe_regression.check(system.lightcurve[effect], default_tolerance=self.TOL, basename=f"lightcurve_{effect}_df")
+            # Note: we need to flatten MultiIndex columns
+            df = system.lightcurve[effect]
+            flat = df.set_axis(['_'.join(c) for c in df.columns], axis=1)
+            dataframe_regression.check(flat, default_tolerance=self.TOL, basename=f"lightcurve_{effect}_df")
             if effect == 'polarization':
-                dataframe_regression.check(system.lightcurve['polarization'], default_tolerance=self.TOL, basename="lightcurve_polarization_df")
+                df = system.lightcurve['polarization']
+                flat = df.set_axis(['_'.join(c) for c in df.columns], axis=1)
+                dataframe_regression.check(flat, default_tolerance=self.TOL, basename="lightcurve_polarization_df")
 
     def test_lightcurve_signal(self,system, ndarrays_regression):
         # Note: system.lightcurve['signal'] is a dict of ndarrays
