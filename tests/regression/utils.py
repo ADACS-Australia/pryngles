@@ -98,16 +98,16 @@ class SystemChecks:
 
     def test_lightcurve_effects(self, system, dataframe_regression):
         for effect in system.lightcurve['effects']:
-            # Note: we need to flatten MultiIndex columns
-            df = system.lightcurve[effect]
-            flat = df.set_axis(['_'.join(c) for c in df.columns], axis=1)
-            dataframe_regression.check(flat, default_tolerance=self.TOL, basename=f"lightcurve_{effect}_df")
+            self.check_multi_index_df(system.lightcurve[effect], dataframe_regression, basename=f"lightcurve_{effect}_df")
             if effect == 'polarization':
-                df = system.lightcurve['polarization']
-                flat = df.set_axis(['_'.join(c) for c in df.columns], axis=1)
-                dataframe_regression.check(flat, default_tolerance=self.TOL, basename="lightcurve_polarization_df")
+                self.check_multi_index_df(system.lightcurve['polarization'], dataframe_regression, basename="lightcurve_polarization_df")
 
     def test_lightcurve_signal(self,system, ndarrays_regression):
         # Note: system.lightcurve['signal'] is a dict of ndarrays
         if 'signal' in system.lightcurve:
             ndarrays_regression.check(system.lightcurve['signal'], default_tolerance=self.TOL, basename="lightcurve_signal")
+
+    # MultiIndex need to be flattened, otherwise they're read back in as object/str
+    def check_multi_index_df(self, multi_index_df, dataframe_regression, basename):
+        df = multi_index_df.set_axis(['_'.join(c) for c in multi_index_df.columns], axis=1)
+        dataframe_regression.check(df, default_tolerance=self.TOL, basename=basename)

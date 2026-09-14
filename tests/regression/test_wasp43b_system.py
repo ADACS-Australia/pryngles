@@ -159,7 +159,7 @@ class TestWasp43bSystem(SystemChecks):
         return system
 
     def test_lightcurve_transit(self, system, dataframe_regression):
-        dataframe_regression.check(system.lightcurve_transit['transit'], default_tolerance=self.TOL, basename="lightcurve_transit_df")
+        self.check_multi_index_df(system.lightcurve_transit['transit'], dataframe_regression, basename="lightcurve_transit_df")
 
     def test_lightcurve_emission(self, system, dataframe_regression):
-        dataframe_regression.check(system.lightcurve_emission['emission'], default_tolerance=self.TOL, basename="lightcurve_emission_df")
+        self.check_multi_index_df(system.lightcurve_emission['emission'], dataframe_regression, basename="lightcurve_emission_df")
