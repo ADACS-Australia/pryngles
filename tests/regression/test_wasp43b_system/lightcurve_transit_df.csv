@@ -1,6 +1,4 @@
-body,Planet,Ring
-effect,transit,transit
-time,,
+time,Planet_transit,Ring_transit
 -0.0069967604823307963,-0,-0
 -0.005597408385864637,-0,-0
 -0.0041980562893984778,-0,-0
