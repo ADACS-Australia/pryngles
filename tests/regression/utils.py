@@ -57,8 +57,10 @@ class SystemChecks:
         # Numeric types (3-vectors)
         num_regression.check({k: getattr(system.sg, k) for k in ["n_obs", "n_luz"]}, default_tolerance=self.TOL, basename="spangler_metadata_numeric")
 
-        # Note: M_equ2ecl is a dict of ndarrays (matrices)
-        ndarrays_regression.check(system.sg.M_equ2ecl, default_tolerance=self.TOL, basename="spangler_M_equ2ecl")
+        # Note: M_equ2ecl is a dict of ndarrays (matrices).
+        # Could use ndarrays_regression, but that saves files as binary npz; not so good for git.
+        # Prefere human-readable csv, so flatten each matrix and use num_regression.
+        num_regression.check({key: val.flatten() for key, val in system.sg.M_equ2ecl.items()}, default_tolerance=self.TOL, basename="spangler_M_equ2ecl")
 
         # TODO: qhulls will need special handling; it's a dict of different types, including a qhull object.
 
