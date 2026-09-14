@@ -31,8 +31,8 @@ class TestQuickstartSystem(SystemChecks):
     def system(self):
         """Build the star/planet/ring system and compute its lightcurve.
 
-        Module-scoped so the lightcurve is computed once and shared by all
-        tests in this file.
+        Class-scoped so the lightcurve is computed once and shared by all
+        tests in this class.
         """
         system = pr.System()
 

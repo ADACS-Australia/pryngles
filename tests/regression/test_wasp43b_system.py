@@ -67,8 +67,8 @@ class TestWasp43bSystem(SystemChecks):
     def system(self):
         """Build the WASP-43b system and compute its three lightcurves.
 
-        Module-scoped so the expensive lightcurve computations are shared by
-        all tests in this file. The RNG is seeded before the detector
+        Class-scoped so the expensive lightcurve computations are shared by
+        all tests in this class. The RNG is seeded before the detector
         signal is generated so the stochastic signal is reproducible.
         """
         R_star_AU = _A_ABS / _A
