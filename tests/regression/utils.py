@@ -10,14 +10,17 @@ class SystemChecks:
 
     # Check the attributes that are declared in the System docstring
     def test_system_metadata(self, system, num_regression):
-        data = {k: getattr(system, k) for k in ["ul", "um", "ut", "G", "nbodies", "nparticles"]}
-
-        # Unpack the n_obs vector into separate x, y, z components
-        n_obs = getattr(system, "n_obs")
-        data["n_obs_x"] = n_obs[0]
-        data["n_obs_y"] = n_obs[1]
-        data["n_obs_z"] = n_obs[2]
-
+        data = {
+            "ul" : system.ul,
+            "um" : system.um,
+            "ut" : system.ut,
+            "G" : system.G,
+            "nbodies" : system.nbodies,
+            "nparticles" : system.nparticles,
+            "n_obs_x" : system.n_obs[0],
+            "n_obs_y" : system.n_obs[1],
+            "n_obs_z" : system.n_obs[2],
+        }
         num_regression.check(data, default_tolerance=self.TOL, basename="system_metadata_numeric")
 
     def test_spangler_data(self, system, data_regression, dataframe_regression):
@@ -52,10 +55,19 @@ class SystemChecks:
     # Check the attributes that are declared in the Spangler docstring
     def test_spangler_metadata(self, system, data_regression, num_regression):
         # Plain types
-        data_regression.check({k: getattr(system.sg, k) for k in ["nspangles", "name", "shape"]}, basename="spangler_metadata")
+        data = {
+            "nspangles": system.sg.nspangles,
+            "name": system.sg.name,
+            "shape": system.sg.shape,
+        }
+        data_regression.check(data, basename="spangler_metadata")
 
         # Numeric types (3-vectors)
-        num_regression.check({k: getattr(system.sg, k) for k in ["n_obs", "n_luz"]}, default_tolerance=self.TOL, basename="spangler_metadata_numeric")
+        data = {
+            "n_obs": system.sg.n_obs,
+            "n_luz": system.sg.n_luz,
+        }
+        num_regression.check(data, default_tolerance=self.TOL, basename="spangler_metadata_numeric")
 
         # Note: M_equ2ecl is a dict of ndarrays (matrices).
         # Could use ndarrays_regression, but that saves files as binary npz; not so good for git.
@@ -65,21 +77,24 @@ class SystemChecks:
         # TODO: qhulls will need special handling; it's a dict of different types, including a qhull object.
 
     def test_lightcurve_arrays(self, system, num_regression):
+        data = {
+            # 1D arrays
+            "times": system.lightcurve["times"],
+            "total_flux": system.lightcurve["total_flux"],
+            "bandwidth": system.lightcurve["bandwidth"],
 
-        # 1d arrays
-        numeric = {k: system.lightcurve[k] for k in ['times', 'total_flux', 'bandwidth']}
-
-        # Unpack dict of 3-vectors
-        numeric.update(
-            observer_n_obs=system.lightcurve['observer']['n_obs'],
-            observer_direction=system.lightcurve['observer']['direction'],
-        )
-
-        num_regression.check(numeric, default_tolerance=self.TOL, basename="lightcurve_arrays")
+            # Unpack dict of 3-vectors
+            "observer_n_obs": system.lightcurve['observer']['n_obs'],
+            "observer_direction": system.lightcurve['observer']['direction'],
+        }
+        num_regression.check(data, default_tolerance=self.TOL, basename="lightcurve_arrays")
 
     def test_lightcurve_metadata(self, system, data_regression):
-        dicts = {k: system.lightcurve[k] for k in ['effects', 'bodies']}
-        data_regression.check(dicts, basename="lightcurve_metadata")
+        data = {
+            "effects": system.lightcurve["effects"],
+            "bodies": system.lightcurve["bodies"],
+        }
+        data_regression.check(data, basename="lightcurve_metadata")
 
     def test_lightcurve_effects(self, system, dataframe_regression):
         for effect in system.lightcurve['effects']:
