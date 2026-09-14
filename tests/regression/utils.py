@@ -50,7 +50,7 @@ class SystemChecks:
         # TODO: 'scatterer' column will need special handling.
 
     # Check the attributes that are declared in the Spangler docstring
-    def test_spangler_metadata(self, system, data_regression, num_regression, ndarrays_regression):
+    def test_spangler_metadata(self, system, data_regression, num_regression):
         # Plain types
         data_regression.check({k: getattr(system.sg, k) for k in ["nspangles", "name", "shape"]}, basename="spangler_metadata")
 
