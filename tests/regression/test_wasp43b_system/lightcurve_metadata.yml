@@ -1,0 +1,7 @@
+bodies:
+- Planet
+- Ring
+effects:
+- transit
+- emission
+- polarization

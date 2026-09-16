@@ -16,3 +16,20 @@ if _SRC not in sys.path:
 # Capture it once so pytest output stays clean.
 with contextlib.redirect_stdout(io.StringIO()):
     import pryngles  # noqa: F401
+
+
+# Ignore regression tests unless the ``--regression`` flag is passed.
+# Ignore regular tests if the ``--regression`` flag is passed.
+def pytest_ignore_collect(collection_path, config):
+    in_regression = "regression" in collection_path.parts
+    run_regression = config.getoption("--regression")
+
+    return in_regression != run_regression
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--regression",
+        action="store_true",
+        help="run regression tests",
+    )
