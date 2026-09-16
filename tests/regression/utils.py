@@ -23,7 +23,7 @@ class SystemChecks:
         }
         num_regression.check(data, default_tolerance=self.TOL, basename="system_metadata_numeric")
 
-    def test_spangler_data(self, system, data_regression, dataframe_regression):
+    def test_spangler_data(self, system, dataframe_regression):
         # Note: spangler data is a dataframe of mixed types.
 
         # Special handling of 'beta_loc', which is a numpy array of floats,
