@@ -14,12 +14,14 @@ build/
 *.so
 contrib/*
 .python-version
+.coverage
 
 # Docs build artifacts
 docs/_build/
 
 # OS / editor
 .DS_Store
+.vscode
 
 # Jupyter temporary exports
 *_files/
@@ -29,3 +31,4 @@ tmp/
 tests/sampler_presets/
 doc/papers/full-scattering/tmp/
 doc/deprecated/src/.build/
+
