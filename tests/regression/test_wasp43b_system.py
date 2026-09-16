@@ -135,31 +135,9 @@ class TestWasp43bSystem(SystemChecks):
         np.random.seed(42)
         system.compute_lightcurve(
             times=times_system,
-            effects=['transit'],
+            effects=['transit', 'emission', 'polarization'],
             signal=_DETECTOR_PROPERTIES,
-        )
-        # Save lightcurve for testing
-        system.lightcurve_transit = system.lightcurve
-
-        # Emission.
-        system.compute_lightcurve(
-            times=times_system,
             bandwidth=(_DETECTOR_PROPERTIES['wavelength_min'], _DETECTOR_PROPERTIES['wavelength_max']),
-            effects=['emission'],
-        )
-        # Save lightcurve for testing
-        system.lightcurve_emission = system.lightcurve
-
-        # Polarization.
-        system.compute_lightcurve(
-            times=times_system,
-            effects=['polarization'],
         )
 
         return system
-
-    def test_lightcurve_transit(self, system, dataframe_regression):
-        self.check_multi_index_df(system.lightcurve_transit['transit'], dataframe_regression, basename="lightcurve_transit_df")
-
-    def test_lightcurve_emission(self, system, dataframe_regression):
-        self.check_multi_index_df(system.lightcurve_emission['emission'], dataframe_regression, basename="lightcurve_emission_df")
