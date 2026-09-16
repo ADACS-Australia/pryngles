@@ -82,6 +82,8 @@ python_files = ["test_*.py"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::RuntimeWarning",
+    "ignore:Animation was deleted without rendering anything:UserWarning",
+    "ignore:.*significant figures requested from number with only:UserWarning",
 ]
 markers = [
     "slow: marks tests that take longer to run",
