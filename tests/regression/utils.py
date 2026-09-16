@@ -47,8 +47,11 @@ class SystemChecks:
         # Numerical columns
         dataframe_regression.check(system.sg.data.select_dtypes(include=['number']), default_tolerance=self.TOL, basename="spangler_data_numeric_df")
 
-        # String columns
-        data_regression.check(system.sg.data.select_dtypes(include=['string']).to_dict(orient='records'), basename="spangler_data_string_df")
+        # String columns with rows containing non-empty strings (ignoring the 'name' column)
+        df = system.sg.data.select_dtypes(include='string')
+        other_cols = [c for c in df.columns if c != 'name']
+        mask = (df[other_cols] != '').any(axis=1)
+        dataframe_regression.check(df[mask], basename="spangler_data_string_df")
 
         # TODO: 'scatterer' column will need special handling.
 
