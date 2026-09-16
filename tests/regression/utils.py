@@ -23,7 +23,7 @@ class SystemChecks:
         }
         num_regression.check(data, default_tolerance=self.TOL, basename="system_metadata_numeric")
 
-    def test_spangler_data(self, system, dataframe_regression):
+    def test_spangler_data(self, system, dataframe_regression, file_regression):
         # Note: spangler data is a dataframe of mixed types.
 
         # Special handling of 'beta_loc', which is a numpy array of floats,
@@ -51,7 +51,7 @@ class SystemChecks:
         df = system.sg.data.select_dtypes(include='string')
         other_cols = [c for c in df.columns if c != 'name']
         mask = (df[other_cols] != '').any(axis=1)
-        dataframe_regression.check(df[mask], basename="spangler_data_string_df")
+        file_regression.check(df[mask].to_csv(), extension=".csv", basename="spangler_data_string_df")
 
         # TODO: 'scatterer' column will need special handling.
 
