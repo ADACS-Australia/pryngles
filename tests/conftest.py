@@ -4,7 +4,6 @@ import contextlib
 import io
 import os
 import sys
-import pytest
 
 # The package uses a ``src`` layout. Make ``src`` importable so the test
 # suite can run even without an explicit ``pip install`` (the editable
@@ -17,6 +16,15 @@ if _SRC not in sys.path:
 # Capture it once so pytest output stays clean.
 with contextlib.redirect_stdout(io.StringIO()):
     import pryngles  # noqa: F401
+
+
+# pytest-regressions reference:
+# https://pytest-regressions.readthedocs.io/en/latest/api.html
+#
+#     data_regression      --> use for checking simple dict
+#     dataframe_regression --> use for checking dataframes (numeric only)
+#     num_regression       --> use for checking dict containing 1d numpy arrays only
+#     ndarrays_regression  --> use for checking dict containing nd numpy arrays only
 
 
 # Ignore regression tests unless the ``--regression`` flag is passed.

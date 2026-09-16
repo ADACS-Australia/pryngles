@@ -20,95 +20,58 @@ import spiceypy as spy
 
 import pryngles as pr
 
-from tests.regression.utils import (
-    _split_capture,
-    capture_lightcurve,
-    capture_spangler_state,
-    capture_system_metadata,
-)
-
-# Numerical values are compared with a tight relative tolerance.
-_TOLERANCE = dict(rtol=1e-12, atol=1e-12)
+from tests.regression.utils import SystemChecks
 
 _N_TIMES = 11
 
 
-@pytest.fixture(scope="module")
-def system():
-    """Build the star/planet/ring system and compute its lightcurve.
+class TestQuickstartSystem(SystemChecks):
 
-    Module-scoped so the lightcurve is computed once and shared by all
-    tests in this file.
-    """
-    system = pr.System()
+    @pytest.fixture(scope="class")
+    def system(self):
+        """Build the star/planet/ring system and compute its lightcurve.
 
-    star = system.add(
-        kind='Star',
-        radius=pr.Consts.rsun / system.ul,
-        limb_coeffs=[0.65],
-    )
+        Class-scoped so the lightcurve is computed once and shared by all
+        tests in this class.
+        """
+        system = pr.System()
 
-    planet = system.add(
-        kind='Planet',
-        parent=star,
-        a=0.2,
-        e=0.0,
-        radius=pr.Consts.rsaturn / system.ul,
-    )
+        star = system.add(
+            kind='Star',
+            radius=pr.Consts.rsun / system.ul,
+            limb_coeffs=[0.65],
+        )
 
-    ring = system.add(
-        kind='Ring',
-        parent=planet,
-        fi=1.5,
-        fe=2.5,
-        i=30 * pr.Consts.deg,
-    )
+        planet = system.add(
+            kind='Planet',
+            parent=star,
+            a=0.2,
+            e=0.0,
+            radius=pr.Consts.rsaturn / system.ul,
+        )
 
-    inc = 90.0
-    omega = 0.0
-    system.n_obs = spy.eul2m(np.deg2rad(omega), np.deg2rad(inc), 0, 3, 1, 3)[0]
+        ring = system.add(
+            kind='Ring',
+            parent=planet,
+            fi=1.5,
+            fe=2.5,
+            i=30 * pr.Consts.deg,
+        )
 
-    system.initialize_simulation()
-    system.spangle_system()
+        inc = 90.0
+        omega = 0.0
+        system.n_obs = spy.eul2m(np.deg2rad(omega), np.deg2rad(inc), 0, 3, 1, 3)[0]
 
-    period_days = 365.25 * (planet.a ** 1.5)
-    times_days = np.linspace(0.0, period_days, _N_TIMES)
-    times_system = times_days * pr.Consts.day / system.ut
+        system.initialize_simulation()
+        system.spangle_system()
 
-    system.compute_lightcurve(
-        times=times_system,
-        effects=['polarization'],
-    )
+        period_days = 365.25 * (planet.a ** 1.5)
+        times_days = np.linspace(0.0, period_days, _N_TIMES)
+        times_system = times_days * pr.Consts.day / system.ut
 
-    return system
+        system.compute_lightcurve(
+            times=times_system,
+            effects=['polarization'],
+        )
 
-
-def test_spangler_data(system, num_regression):
-    """Regression test for the numerical columns of the Spangler data."""
-    captured = capture_spangler_state(system.sg)
-    numerical, _ = _split_capture(captured)
-    num_regression.check(numerical, default_tolerance=_TOLERANCE, basename="spangler_data")
-
-
-def test_spangler_metadata(system, data_regression):
-    """Regression test for the non-numerical columns of the Spangler data."""
-    _, metadata = _split_capture(capture_spangler_state(system.sg))
-    data_regression.check(metadata, basename="spangler_metadata")
-
-
-def test_lightcurve_data(system, num_regression):
-    """Regression test for the numerical lightcurve output."""
-    captured = capture_lightcurve(system.lightcurve)
-    numerical, _ = _split_capture(captured)
-    num_regression.check(numerical, default_tolerance=_TOLERANCE, basename="lightcurve_data")
-
-
-def test_lightcurve_metadata(system, data_regression):
-    """Regression test for the non-numerical lightcurve output."""
-    _, metadata = _split_capture(capture_lightcurve(system.lightcurve))
-    data_regression.check(metadata, basename="lightcurve_metadata")
-
-
-def test_system_metadata(system, data_regression):
-    """Regression test for the system-level metadata."""
-    data_regression.check(capture_system_metadata(system), basename="system_metadata")
+        return system
