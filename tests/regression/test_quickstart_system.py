@@ -2,8 +2,8 @@
 
 Each test captures one part of the deterministic output (spangler state,
 lightcurve, system metadata) and compares it against a stored golden
-reference using pytest-regressions. The system is built once per module by
-the module-scoped ``system`` fixture below, so the expensive lightcurve
+reference using pytest-regressions. The system is built once per class by
+the class-scoped ``system`` fixture below, so the expensive lightcurve
 computation is shared by all tests in this file.
 
 Run with:

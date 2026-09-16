@@ -8,7 +8,7 @@ seeded before generating it to keep the golden file reproducible.
 
 Each test captures one part of the deterministic output and compares it
 against a stored golden reference using pytest-regressions. The system is
-built once per module by the module-scoped ``system`` fixture below, so
+built once per class by the class-scoped ``system`` fixture below, so
 the expensive lightcurve computations are shared by all tests in this
 file.
 
