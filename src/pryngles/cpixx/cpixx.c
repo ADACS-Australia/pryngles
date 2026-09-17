@@ -403,7 +403,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
 
   double ***rf,***rfsec;
   double **RM,**rfmu0;
-  double *rftemp,*slice,*slicep,*rfsecmu0;
+  double *slice,*slicep,*rfsecmu0;
   double *SvR,*rf3save;
   double Bplus[4];
   
@@ -415,7 +415,6 @@ int reflection(struct FourierCoefficients F,int qreflection,
   rfmu0=zeros_matrix(nmat,nmugs);
   RM=zeros_matrix(npix,nmat);
   //Vectos nmugs
-  rftemp=zeros_vector(nmugs);
   rfsecmu0=zeros_vector(nmugs);
   slice=zeros_vector(nmugs);
   slicep=zeros_vector(nmugs);
@@ -438,15 +437,10 @@ int reflection(struct FourierCoefficients F,int qreflection,
 	for(n=0;n<nmugs;n++){
 	  rf[k][j][n]=qreflection?F.rfou[ki][n][m]:F.rtra[ki][n][m];
 	}
-	
-	//Slice rf(k,j,:)
-	for(n=0;n<nmugs;n++)
-	  slice[n]=rf[k][j][n];
-	spline(F.xmu,slice,nmugs,rftemp);
 
-	for(n=0;n<nmugs;n++)
-	  rfsec[k][j][n]=rftemp[n];
-	
+	//Use slice rf(k,j,:), write directly into corresponding rfsec row
+	spline(F.xmu,rf[k][j],nmugs,rfsec[k][j]);
+
       }//End k
 
     }//End j
@@ -552,7 +546,6 @@ int reflection(struct FourierCoefficients F,int qreflection,
   free(rfmu0);
   free(RM);
   //Vectos nmugs
-  free(rftemp);
   free(rfsecmu0);
   free(slice);
   free(slicep);
