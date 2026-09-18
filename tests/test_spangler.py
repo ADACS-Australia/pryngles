@@ -197,6 +197,7 @@ def test_set_luz_name_filter():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="Not yet implemented")
 def test_update_visibility_state():
     """update_visibility_state applies occlusion to the visible state."""
     # TODO: build a multi-body system (e.g. star + planet), set the observer,
@@ -205,6 +206,7 @@ def test_update_visibility_state():
     pass
 
 
+@pytest.mark.skip(reason="Not yet implemented")
 def test_update_illumination_state():
     """update_illumination_state applies shadowing to the illuminated state."""
     # TODO: build a multi-body system, set observer and light source, call
@@ -213,6 +215,7 @@ def test_update_illumination_state():
     pass
 
 
+@pytest.mark.skip(reason="Not yet implemented")
 def test_update_intersection_state():
     """update_intersection_state computes occlusion via convex hulls."""
     # TODO: verify that update_intersection_state raises AssertionError when no
