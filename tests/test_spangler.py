@@ -1,34 +1,34 @@
 import numpy as np
 import pytest
 
-from pryngles import *
+import pryngles as pr
 
 
 def test_const():
     """SPANGLER_KEY_ORDERING and SPANGLER_COLUMNS must contain the same keys."""
-    for key in SPANGLER_KEY_ORDERING:
-        assert key in SPANGLER_COLUMNS, f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS"
-    for key in SPANGLER_COLUMNS:
-        assert key in SPANGLER_KEY_ORDERING, f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
+    for key in pr.SPANGLER_KEY_ORDERING:
+        assert key in pr.SPANGLER_COLUMNS, f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS"
+    for key in pr.SPANGLER_COLUMNS:
+        assert key in pr.SPANGLER_KEY_ORDERING, f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
 
 
 def test_init_basic():
     """A basic Spangler has the expected number of rows and default state."""
-    sg = Spangler(nspangles=3, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
+    sg = pr.Spangler(nspangles=3, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
     assert sg.nspangles == 3
     assert len(sg.data) == 3
     assert sg.shape == "vanilla"
     # Default state: unset True, visibility/source states False
     assert (sg.data.unset == True).all()
-    for col in list(SPANGLER_VISIBILITY_STATES) + list(SPANGLER_SOURCE_STATES):
+    for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
         assert (sg.data[col] == False).all()
 
 
 def test_init_join():
     """Joining spanglers combines data and sets shape to 'Join'."""
-    sg1 = Spangler(name="Body 1", nspangles=3, w=40 * Consts.deg, n_equ=[1, 1, 0])
-    sg2 = Spangler(name="Body 2", nspangles=3, w=30 * Consts.deg, n_equ=[1, 0, 1])
-    sg = Spangler(spanglers=[sg1, sg2])
+    sg1 = pr.Spangler(name="Body 1", nspangles=3, w=40 * pr.Consts.deg, n_equ=[1, 1, 0])
+    sg2 = pr.Spangler(name="Body 2", nspangles=3, w=30 * pr.Consts.deg, n_equ=[1, 0, 1])
+    sg = pr.Spangler(spanglers=[sg1, sg2])
     assert sg.shape == "Join"
     assert sg.nspangles == 6
     assert sg.name == ["Body 1", "Body 2"]
@@ -37,11 +37,11 @@ def test_init_join():
 
 def test_join():
     """Joining spanglers combines data and sets shape to 'Join'."""
-    sg1 = Spangler(name="A", nspangles=10)
+    sg1 = pr.Spangler(name="A", nspangles=10)
     sg1.populate_spangler(shape="sphere", scale=1, seed=1)
-    sg2 = Spangler(name="B", nspangles=20)
+    sg2 = pr.Spangler(name="B", nspangles=20)
     sg2.populate_spangler(shape="sphere", scale=1, seed=1)
-    sgj = Spangler(spanglers=[sg1, sg2])
+    sgj = pr.Spangler(spanglers=[sg1, sg2])
     assert sgj.shape == "Join"
     assert sgj.nspangles == 30
     assert sgj.name == ["A", "B"]
@@ -51,7 +51,7 @@ def test_join():
 
 def test_reset_state():
     """reset_state clears all visibility/source states and sets unset."""
-    sg = Spangler(nspangles=100)
+    sg = pr.Spangler(nspangles=100)
     sg.populate_spangler(shape="sphere", scale=1, seed=1)
     sg.set_positions()
     sg.set_observer(nvec=[0, 0, 1])
@@ -62,7 +62,7 @@ def test_reset_state():
 
     sg.reset_state()
     assert (sg.data.unset == True).all()
-    for col in list(SPANGLER_VISIBILITY_STATES) + list(SPANGLER_SOURCE_STATES):
+    for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
         assert (sg.data[col] == False).all()
     for coords in "int", "obs", "luz":
         assert (sg.data["hidden_by_" + coords] == "").all()
@@ -71,7 +71,7 @@ def test_reset_state():
 
 def test_set_scale():
     """set_scale scales lengths by scale, areas by scale**2, vectors by scale."""
-    sg = Spangler(nspangles=10, center_equ=[1, 2, 3])
+    sg = pr.Spangler(nspangles=10, center_equ=[1, 2, 3])
     sg.populate_spangler(shape="circle", scale=1, seed=1)
     sg.set_positions()
 
@@ -91,7 +91,7 @@ def test_set_scale():
 def test_populate_spangler_sphere():
     """Sphere spangles lie on a sphere of radius scale with unit normals."""
     scale = 2
-    sg = Spangler(nspangles=100)
+    sg = pr.Spangler(nspangles=100)
     sg.populate_spangler(shape="sphere", scale=scale, seed=1)
     sg.set_positions()
     r = np.linalg.norm(sg.data[["x_equ", "y_equ", "z_equ"]].values, axis=1)
@@ -102,7 +102,7 @@ def test_populate_spangler_sphere():
 
 def test_populate_spangler_circle():
     """Circle spangles lie in the equatorial plane."""
-    sg = Spangler(nspangles=50)
+    sg = pr.Spangler(nspangles=50)
     sg.populate_spangler(shape="circle", scale=1, seed=1)
     np.testing.assert_allclose(sg.data.z_equ, 0, atol=1e-12)
     r = np.linalg.norm(sg.data[["x_equ", "y_equ", "z_equ"]].values, axis=1)
@@ -111,7 +111,7 @@ def test_populate_spangler_circle():
 
 def test_set_intersect_infinite():
     """set_intersect with center=None returns unit n_int and infinite d_int."""
-    sg = Spangler(nspangles=50)
+    sg = pr.Spangler(nspangles=50)
     sg.populate_spangler(shape="sphere", scale=1, seed=1)
     sg.set_positions()
     cond, n_int, d_int = sg.set_intersect(nvec=[1, 0, 1], center=None)
@@ -123,7 +123,7 @@ def test_set_intersect_infinite():
 
 def test_set_intersect_finite():
     """set_intersect with a finite center returns finite d_int."""
-    sg = Spangler(nspangles=50)
+    sg = pr.Spangler(nspangles=50)
     sg.populate_spangler(shape="sphere", scale=1, seed=1)
     sg.set_positions()
     cond, n_int, d_int = sg.set_intersect(nvec=[0, 0, 1], center=[0, 0, 5])
@@ -134,12 +134,12 @@ def test_set_intersect_finite():
 
 def test_set_observer():
     """set_observer sets n_obs and marks visible spangles towards the observer."""
-    sg = Spangler(nspangles=200)
+    sg = pr.Spangler(nspangles=200)
     sg.populate_spangler(shape="sphere", scale=1, seed=1)
     sg.set_positions()
     sg.set_observer(nvec=[0, 0, 1])
     np.testing.assert_allclose(sg.n_obs, [0, 0, 1])
-    np.testing.assert_allclose(sg.rqf_obs, Science.spherical([0, 0, 1]))
+    np.testing.assert_allclose(sg.rqf_obs, pr.Science.spherical([0, 0, 1]))
     # For a sphere with no hidden spangles, visible == cos_obs > 0
     assert (sg.data.visible == (sg.data.cos_obs > 0)).all()
     assert sg.data.visible.any()
@@ -153,13 +153,13 @@ def test_set_observer():
 
 def test_set_luz():
     """set_luz sets n_luz and marks illuminated spangles towards the light source."""
-    sg = Spangler(nspangles=200)
+    sg = pr.Spangler(nspangles=200)
     sg.populate_spangler(shape="sphere", scale=1, seed=1)
     sg.set_positions()
     sg.set_observer(nvec=[0, 0, 1])
     sg.set_luz(nvec=[1, 0, 0])
     np.testing.assert_allclose(sg.n_luz, [1, 0, 0])
-    np.testing.assert_allclose(sg.rqf_luz, Science.spherical([1, 0, 0]))
+    np.testing.assert_allclose(sg.rqf_luz, pr.Science.spherical([1, 0, 0]))
     # For a sphere with no hidden spangles, illuminated == cos_luz > 0
     assert (sg.data.illuminated == (sg.data.cos_luz > 0)).all()
     assert sg.data.illuminated.any()
@@ -167,20 +167,20 @@ def test_set_luz():
 
 def test_set_positions_rotation():
     """set_positions(t) advances the rotation longitude by q0 + w*t."""
-    sg = Spangler(nspangles=50, w=30 * Consts.deg, q0=40 * Consts.deg, n_equ=[0, 1, 1])
+    sg = pr.Spangler(nspangles=50, w=30 * pr.Consts.deg, q0=40 * pr.Consts.deg, n_equ=[0, 1, 1])
     sg.populate_spangler(shape="circle", scale=1, seed=1)
     q_before = sg.data.q_equ.iloc[0]
     sg.set_positions(t=1)
-    np.testing.assert_allclose(sg.data.q_equ.iloc[0], q_before + 30 * Consts.deg + 40 * Consts.deg)
+    np.testing.assert_allclose(sg.data.q_equ.iloc[0], q_before + 30 * pr.Consts.deg + 40 * pr.Consts.deg)
 
 
 def test_set_luz_name_filter():
     """set_luz with a name only illuminates the named body."""
-    sg1 = Spangler(name="A", nspangles=50)
+    sg1 = pr.Spangler(name="A", nspangles=50)
     sg1.populate_spangler(shape="sphere", scale=1, seed=1)
-    sg2 = Spangler(name="B", nspangles=50)
+    sg2 = pr.Spangler(name="B", nspangles=50)
     sg2.populate_spangler(shape="sphere", scale=1, seed=1)
-    sgj = Spangler(spanglers=[sg1, sg2])
+    sgj = pr.Spangler(spanglers=[sg1, sg2])
     sgj.set_positions()
     sgj.set_observer(nvec=[0, 0, 1])
     sgj.set_luz(nvec=[1, 0, 0], name="A")
