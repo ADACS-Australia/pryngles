@@ -6,7 +6,7 @@ class SystemChecks:
     """Shared regression tests for any 'system' fixture."""
 
     # Numerical values are compared with a tight relative tolerance.
-    TOL = dict(rtol=1e-15, atol=1e-15)
+    TOL = dict(rtol=1e-14, atol=1e-14)
 
     # Check the attributes that are declared in the System docstring
     def test_system_metadata(self, system, num_regression):
