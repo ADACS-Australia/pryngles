@@ -1,54 +1,7 @@
 """Tests for the functions in the ``extensions`` module."""
 
-import ctypes
-
 import numpy as np
-import pytest
-
 import pryngles as pr
-
-
-def test_ptr2mat_roundtrip():
-    """``mat2ptr``/``ptr2mat`` round-trip a 2D array."""
-    arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    ptr = pr.ExtensionUtil.mat2ptr(arr)
-
-    # ``ptr`` is a ctypes array of row pointers; each row is a ctypes
-    # pointer to double. Verify the types and values are stored correctly
-    # before converting back.
-    assert isinstance(ptr, ctypes.Array)
-    assert len(ptr) == arr.shape[0]
-    for i in range(arr.shape[0]):
-        row = ptr[i]
-        assert isinstance(row, pr.PDOUBLE)
-        for j in range(arr.shape[1]):
-            assert row[j] == arr[i, j]
-
-    out = pr.ExtensionUtil.ptr2mat(ptr, *arr.shape)
-    np.testing.assert_allclose(out, arr)
-
-
-def test_ptr2cub_roundtrip():
-    """``cub2ptr``/``ptr2cub`` round-trip a 3D array."""
-    arr = np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
-    ptr = pr.ExtensionUtil.cub2ptr(arr)
-
-    # ``ptr`` is a ctypes array of 2D pointers; each element is a ctypes
-    # pointer to a row of doubles. Verify the types and values are stored
-    # correctly before converting back.
-    assert isinstance(ptr, ctypes.Array)
-    assert len(ptr) == arr.shape[0]
-    for i in range(arr.shape[0]):
-        mat = ptr[i]
-        assert isinstance(mat, pr.PPDOUBLE)
-        for j in range(arr.shape[1]):
-            row = mat[j]
-            assert isinstance(row, pr.PDOUBLE)
-            for k in range(arr.shape[2]):
-                assert row[k] == arr[i, j, k]
-
-    out = pr.ExtensionUtil.ptr2cub(ptr, *arr.shape)
-    np.testing.assert_allclose(out, arr)
 
 
 def test_stokes_planet():

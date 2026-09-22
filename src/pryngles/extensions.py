@@ -13,174 +13,12 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# External required packages
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+import numpy as np
+from numba import njit, int64, float64, types
+from pryngles import verbose, VERB_SIMPLE
 
-from pryngles import *
-
-import ctypes
-import glob
-
-#Load library
-libfile = glob.glob(Misc.get_data('../cpixx*.so'))[0]
-cpixx_ext=ctypes.CDLL(libfile)
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Stand alone code of the module
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#Calculate reflection
-cpixx_ext.reflection.restype = ctypes.c_int
-cpixx_ext.reflection.argtypes = [
-    ctypes.Structure,
-    ctypes.c_int,
-    ctypes.c_int,
-    PDOUBLE,PDOUBLE,PDOUBLE,PDOUBLE,PDOUBLE,
-    PPDOUBLE
-]
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Class ExtensionUtil
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class ExtensionUtil(object):
-    """Util routines for extensions.
-    """
-    def vec2ptr(arr):
-        """Converts a 1D numpy to ctypes 1D array. 
-
-        Parameters:
-            arr: [ndarray] 1D numpy float64 array
-
-        Return:
-            arr_ptr: [ctypes double pointer]
-        """
-        arr_ptr = arr.ctypes.data_as(PDOUBLE)
-        return arr_ptr
-
-    def mat2ptr(arr):
-        """ Converts a 2D numpy to ctypes 2D array. 
-
-        Arguments:
-            arr: [ndarray] 2D numpy float64 array
-
-        Return:
-            arr_ptr: [ctypes double pointer]
-
-        """
-
-        ARR_DIMX = DOUBLE*arr.shape[1]
-        ARR_DIMY = PDOUBLE*arr.shape[0]
-
-        arr_ptr = ARR_DIMY()
-
-        # Fill the 2D ctypes array with values
-        for i, row in enumerate(arr):
-            arr_ptr[i] = ARR_DIMX()
-
-            for j, val in enumerate(row):
-                arr_ptr[i][j] = val
-
-        return arr_ptr
-
-    def ptr2mat(ptr, n, m):
-        """ Converts ctypes 2D array into a 2D numpy array. 
-
-        Arguments:
-            arr_ptr: [ctypes double pointer]
-
-        Return:
-            arr: [ndarray] 2D numpy float64 array
-
-        """
-
-        arr = np.zeros(shape=(n, m))
-
-        for i in range(n):
-            for j in range(m):
-                arr[i,j] = ptr[i][j]
-
-        return arr
-
-    def cub2ptr(arr):
-        """ Converts a 3D numpy to ctypes 3D array. 
-
-        Arguments:
-            arr: [ndarray] 3D numpy float64 array
-
-        Return:
-            arr_ptr: [ctypes double pointer]
-
-        """
-
-        ARR_DIMX = DOUBLE*arr.shape[2]
-        ARR_DIMY = PDOUBLE*arr.shape[1]
-        ARR_DIMZ = PPDOUBLE*arr.shape[0]
-
-        arr_ptr = ARR_DIMZ()
-
-        # Fill the 2D ctypes array with values
-        for i, row in enumerate(arr):
-            arr_ptr[i] = ARR_DIMY()
-
-            for j, col in enumerate(row):
-                arr_ptr[i][j] = ARR_DIMX()
-
-                for k, val in enumerate(col):
-                    arr_ptr[i][j][k] = val
-
-        return arr_ptr
-
-    def ptr2cub(ptr, n, m, o):
-        """ Converts ctypes 3D array into a 3D numpy array. 
-
-        Arguments:
-            arr_ptr: [ctypes double pointer]
-
-        Return:
-            arr: [ndarray] 3D numpy float64 array
-
-        """
-
-        arr = np.zeros(shape=(n, m, o))
-
-        for i in range(n):
-            for j in range(m):
-                for k in range(o):
-                    arr[i,j,k] = ptr[i][j][k]
-
-        return arr
-
-
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Class FourierCoefficients
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class FourierCoefficients(ctypes.Structure):
-    """Fourier coefficients ctypes structure
-    """
-    _fields_=[
-        ("nmat",ctypes.c_int),
-        ("nmugs",ctypes.c_int),
-        ("nfou",ctypes.c_int),
-        ("xmu",PDOUBLE),
-        ("rfou",PPPDOUBLE),
-        ("rtra",PPPDOUBLE),
-    ]
-    def __init__(self,nmat,nmugs,nfou,xmu,rfou,rtra):
-        self.nmat=nmat
-        self.nmugs=nmugs
-        self.nfou=nfou
-        self.xmu=ExtensionUtil.vec2ptr(xmu)
-        self.rfou=ExtensionUtil.cub2ptr(rfou)
-        self.rtra=ExtensionUtil.cub2ptr(rtra)
-
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Class StokesScatterer
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 class StokesScatterer(object):
-    """Stokes scatterer
-    """
+    """Stokes scatterer"""
     
     def __init__(self,filename):
         self.filename=filename
@@ -253,45 +91,30 @@ class StokesScatterer(object):
         
         self.nmat,self.nmugs,self.nfou=nmat,nmugs,nfou
         self.xmu,self.rfou,self.rtra=xmu,rfou,rtra
-        self.F=FourierCoefficients(nmat,nmugs,nfou,xmu,rfou,rtra)
-
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    # Tested methods from module file extensions
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def calculate_stokes(self,phi,beta,theta0,theta,apix,qreflection=1):
-        """
-        """
         npix=len(phi)
-        Sarr=np.zeros((npix,self.F.nmat+1))
-
-        use_python = True
-
-        if not use_python:
-            Sarr_ptr=ExtensionUtil.mat2ptr(Sarr)
-            cpixx_ext.reflection(self.F,qreflection,npix,
-                                ExtensionUtil.vec2ptr(phi),
-                                ExtensionUtil.vec2ptr(beta),
-                                ExtensionUtil.vec2ptr(theta0),
-                                ExtensionUtil.vec2ptr(theta),
-                                ExtensionUtil.vec2ptr(apix),
-                                Sarr_ptr)
-            stokes=ExtensionUtil.ptr2mat(Sarr_ptr,*Sarr.shape)
-        else:
-            stokes = reflection(self.nmat, self.nmugs, self.nfou, # integers
-                                self.rfou, self.rtra,             # 3D arrays
-                                self.xmu,                         # 1D array
-                                qreflection, npix,                # integers
-                                phi, beta, theta0, theta, apix    # 1D arrays
-                                )
+        stokes = reflection(self.nmat, self.nmugs, self.nfou, # integers
+                            self.rfou, self.rtra,             # 3D arrays
+                            self.xmu,                         # 1D array
+                            qreflection, npix,                # integers
+                            phi, beta, theta0, theta, apix    # 1D arrays
+                            )
         return stokes
+    
 
-import sys
-import numpy as np
-from numba import njit, int64, float64, types
+"""
+The following routines implement the spline interpolation routine from Press et al. (1986, p.88).
+"""
 
 @njit(float64[:](float64[:], float64[:], int64))
 def spline(x, y, n):
+    """
+    Given arrays x and y of length n containing a tabulated function,
+    i.e. y(i)=f(x(i)), with x(1)<x(2)<...<x(n), this routine returns
+    an array y2 of length n which contains the second derivatives of
+    the interpola-ting function at the tabulated points x(i).
+    """
     u = np.zeros(n)
     y2 = np.zeros(n)
 
