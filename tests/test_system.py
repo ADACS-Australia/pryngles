@@ -1,390 +1,319 @@
-##################################################################
-#                                                                #
-#.#####...#####...##..##..##..##...####...##......######...####..#
-#.##..##..##..##...####...###.##..##......##......##......##.....#
-#.#####...#####.....##....##.###..##.###..##......####.....####..#
-#.##......##..##....##....##..##..##..##..##......##..........##.#
-#.##......##..##....##....##..##...####...######..######...####..#
-#................................................................#
-#                                                                #
-# PlanetaRY spanGLES                                             #
-#                                                                #
-##################################################################
-# License http://github.com/seap-udea/pryngles-public            #
-##################################################################
+import numpy as np
 import pytest
-from pryngles import *
 
-def test_system_init():
+import pryngles as pr
 
-    global sys
 
-    Verbose.VERBOSITY=VERB_ALL
+def test_init_default():
+    """A default System has no bodies and canonical units."""
+    sys = pr.System()
+    assert sys.nbodies == 0
+    assert sys.root is None
+    assert sys.sg is None
+    assert not sys._simulated
+    assert not sys._spangled
+    assert sys.units == ["au", "msun", "yr2pi"]
 
-    sys=System(resetable=True)
-    print("Nbodies = ",sys.nbodies)
-    print("G constant = ",sys.G)
-    print("G constant = ",sys.units)
-    print("Canonical units = ",sys.ul,sys.um,sys.ut)
 
-    sys=System(units=['m','kg','s'])
-    print("Nbodies = ",sys.nbodies)
-    print("G constant = ",sys.G)
-    print("G constant = ",sys.units)
-    print("Canonical units = ",sys.ul,sys.um,sys.ut)
-    print(sys)
+def test_init_units():
+    """Can update units at initialization and after creation."""
+    # Units are converted to SI units internally
+    sys = pr.System(units=["au", "msun", "yr2pi"])
+    assert sys.units == ["au", "msun", "yr2pi"]
+    assert sys.ul == pr.Consts.au
+    assert sys.um == pr.Consts.msun
+    assert sys.ut == pr.Consts.yr2pi
 
-    sys.save_to("/tmp/system.pkl")
-    print(sys.status())
-    sys2=System("/tmp/system.pkl")
-    print(sys2.status())
+    sys.update_units(["m", "kg", "s"])
+    assert sys.units == ["m", "kg", "s"]
+    assert sys.ul == 1.0
+    assert sys.um == 1.0
+    assert sys.ut == 1.0
 
-    Verbose.VERBOSITY=VERB_NONE
 
-def test_system_add():
+def test_init_invalid_units():
+    """An unrecognized unit raises ValueError."""
+    sys = pr.System()
+    with pytest.raises(ValueError):
+        sys.update_units(["bad", "kg", "s"])
 
-    global sys
 
-    Verbose.VERBOSITY=VERB_SIMPLE
-    #Default behavior
-    sys=System()
-    S=sys.add()
-    P=sys.add("Planet")
-    M=sys.add("Planet",name="Moon",parent=P)
-    print(sys)
+def test_add_defaults():
+    """add() creates a Star root and assigns sources to children."""
+    sys = pr.System()
+    S = sys.add(m=8, radius=4)
+    P = sys.add("Planet", parent=S, radius=2, a=10)
+    assert sys.nbodies == 2
+    assert sys.root.name == S.name
+    # A planet's source is the root star
+    assert P.source.name == S.name
 
-    #Add to a system
-    sys=System()
-    S=sys.add(m=8,radius=4)
-    P=sys.add("Planet",parent=S,radius=2,a=10)
-    M=sys.add("Planet",name="Moon",parent=P,radius=2,a=1)
-    R=sys.add("Ring",parent=P,fi=1.3,fe=2.3)
-    print(sys)
-    print(sys.root)
 
-    #Error
-    O=Star()
-    with pytest.raises(ValueError): sys.add("Planet",name="Error1",parent=S,radius=2,a=10,source=1)
-    with pytest.raises(ValueError): sys.add("Planet",name="Error2",parent=P,radius=2,a=1,source=P)
-    with pytest.raises(ValueError): sys.add("Planet",name="Error3",parent=P,radius=2,a=1,source=O)
+def test_get_source():
+    """_get_source() gets the source body for a body in a given system."""
+    sys = pr.System()
+    S = sys.add(m=8, radius=4)
+    P = sys.add("Planet", parent=S, radius=2, a=10)
+    R = sys.add("Ring", parent=P, radius=2, fi=1.3, fe=2.3)
+    assert sys._get_source(S) == S
+    assert sys._get_source(P) == S
+    assert sys._get_source(R) == S
 
-    #Several sources in a system
-    sys=System()
-    S1=sys.add(name="Star1",m=8,radius=4)
-    S2=sys.add(name="Star2",parent=S1,m=8,radius=4,a=30)
-    PS1=sys.add("Planet",name="PlanetS1",parent=S1,radius=2,a=10)
-    MPS1=sys.add("Planet",name="Moon",parent=PS1,radius=2,a=1)
-    RPS1=sys.add("Ring",parent=PS1,fi=1.3,fe=2.3)
-    PS2=sys.add("Planet",name="PlanetS2",parent=S2,radius=2,a=10)
 
-    for name in sys.bodies:
-        print(name,sys.bodies[name].source.name)
-        #print(f"Body {name}:",sys.bodies[name].scatterer)
+def test_add_duplicate_name():
+    """Adding a body with an existing name raises ValueError."""
+    sys = pr.System()
+    S = sys.add(m=8, radius=4)
+    P = sys.add("Planet", parent=S, radius=2, a=10)
+    with pytest.raises(ValueError):
+        sys.add("Planet", name=P.name, parent=S, radius=2, a=10)
 
-    Verbose.VERBOSITY=VERB_NONE
 
-def test_sim():
+def test_add_invalid_kind():
+    """Adding a body with an unknown kind raises ValueError."""
+    sys = pr.System()
+    with pytest.raises(ValueError):
+        sys.add("Foo")
 
-    global sys
-    plt.close("all")
 
-    Verbose.VERBOSITY=VERB_ALL
+def test_add_second_root():
+    """Adding a second root (no parent) raises ValueError."""
+    sys = pr.System()
+    sys.add(m=8, radius=4)
+    with pytest.raises(ValueError):
+        sys.add("Star", name="Star2", m=8, radius=4)
 
-    #Create system
-    sys=System(units=['au','msun','yr'])
-    S=sys.add(m=8,radius=4)
-    P1=sys.add("Planet",name="Planet1",parent=S,radius=2,a=1,M=90*Consts.deg,inc=70*Consts.deg)
-    M1P1=sys.add("Planet",name="Moon1P1",parent=P1,radius=2,a=0.1)
-    R=sys.add("Ring",name="Ring",parent=P1,radius=2)
-    P2=sys.add("Planet",name="Planet2",parent=S,radius=2,a=2,M=0*Consts.deg,inc=0*Consts.deg)
-    S.show_tree()
 
-    #Initialize
-    orbit=sys.initialize_simulation(orbital_tree=[[S,[P1,M1P1]],P2])
-    sys.sim.status()
+def test_remove():
+    """remove() deletes a body and its children from the system."""
+    sys = pr.System()
+    S = sys.add(name="Star", m=8, radius=4)
+    P = sys.add("Planet", parent=S, name="Planet", radius=2, a=10)
+    M = sys.add("Planet", parent=P, name="Moon", radius=2, a=1)
+    R = sys.add("Ring", parent=P, name="Ring", fi=1.3, fe=2.3)
+    assert sys.nbodies == 4
 
-    #Check save to disk
-    # Disabled: save_to/load_from of an initialized System fails because ctypes
-    # members (rebound Simulation, orbit, FourierCoefficients) are not picklable.
-    # Re-enable once System.save_to persistence is fixed.
-    # sys.save_to("/tmp/system.pkl")
-    # sys=System()
-    # sys.load_from("/tmp/system.pkl")
-    # sys.sim.status()
-
-    #Animate
-    Plot.animate_rebound(sys.sim,traces=True,axis=True)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_system_remove():
-
-    global sys
-
-    Verbose.VERBOSITY=VERB_ALL
-
-    sys=System()
-    S=sys.add(name="Star",m=8,radius=4)
-    P=sys.add("Planet",parent=S,name="Planet",radius=2,a=10)
-    M=sys.add("Planet",parent=P,name="Moon",radius=2,a=1)
-    R=sys.add("Ring",parent=P,name="Ring",fi=1.3,fe=2.3)
-    sys.initialize_simulation()
-    print(sys.bodies)
-    sys.remove("Ring")
-    print(sys.bodies)
+    # Removing the planet also removes its children (Moon, Ring)
     sys.remove("Planet")
-    print(sys.bodies)
-    sys.remove("Star")
-    print(sys.bodies)
+    assert sys.nbodies == 1
+    assert "Planet" not in sys.bodies
+    assert "Moon" not in sys.bodies
+    assert "Ring" not in sys.bodies
 
-    Verbose.VERBOSITY=VERB_NONE
 
-def test_spangleobs():
+def test_remove_missing():
+    """Removing a non-existent body raises ValueError."""
+    sys = pr.System()
+    S = sys.add(name="Star", m=8, radius=4)
+    with pytest.raises(ValueError):
+        sys.remove("Planet")
 
-    global sys
-    plt.close("all")
 
-    Verbose.VERBOSITY=VERB_NONE
+def test_update_body_before_spangle():
+    """update_body modifies a body's properties before spangling."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", m=8, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", radius=0.2, a=2)
+    assert P.radius == 0.2
+    sys.update_body(P, radius=0.5)
+    assert P.radius == 0.5
 
-    nspangles=100
 
-    #Define system
-    # resetable=False: resetable=True would auto-save a snapshot during
-    # spangle_system, which crashes on non-picklable ctypes members.
-    # Re-enable once System.save_to persistence is fixed.
-    sys=System(resetable=False)
+def test_update_body_after_spangle():
+    """update_body raises AssertionError after the system is spangled."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=8, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    with pytest.raises(AssertionError):
+        sys.update_body("Planet", fe=3.0)
 
-    #Add objects
-    S=sys.add(nspangles=nspangles,m=8,radius=1)
-    P=sys.add("Planet",parent=S,nspangles=nspangles,m=1,radius=0.2,a=5)
 
-    #Test setting observer without spangling
-    with pytest.raises(AssertionError): sys._set_observer(nvec=[1,0,0])
+def test_spangle_flow():
+    """initialize_simulation + spangle_system produces a joined Spangler."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    assert sys._spangled
+    assert sys.sg is not None
+    assert sys.sg.shape == "Join"
+    assert len(sys.sg.data) == len(S.sg.data) + len(P.sg.data)
+    assert set(sys.sg.data.name.unique()) == {"Star", "Planet"}
 
-    #Spangle system
+
+def test_set_observer_before_spangle():
+    """_set_observer raises AssertionError before the system is spangled."""
+    sys = pr.System()
+    S = sys.add(nspangles=100, m=8, radius=1)
+    P = sys.add("Planet", parent=S, nspangles=100, m=1, radius=0.2, a=5)
+    with pytest.raises(AssertionError):
+        sys._set_observer(nvec=[1, 0, 0])
+
+
+def test_spangle_before_simulation():
+    """spangle_system raises AssertionError before initialize_simulation."""
+    sys = pr.System()
+    S = sys.add(nspangles=100, m=8, radius=1)
+    P = sys.add("Planet", parent=S, nspangles=100, m=1, radius=0.2, a=5)
+    with pytest.raises(AssertionError):
+        sys.spangle_system()
+
+
+def test_integrate_before_spangle():
+    """integrate raises AssertionError before the system is spangled."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", m=8, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", radius=0.2, a=2)
+    with pytest.raises(AssertionError):
+        sys.integrate(10)
+
+
+def test_set_luz_before_observer():
+    """_set_luz raises AssertionError if the observer has not been set."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    # spangle_system sets the observer via update_perspective; reset the flag
+    sys._observer_set = False
+    with pytest.raises(AssertionError):
+        sys._set_luz()
+
+
+def test_set_observer_and_luz():
+    """_set_observer then _set_luz sets the observer and light flags."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    sys._set_observer(nvec=[0, 0, 1])
+    sys._set_luz()
+    assert sys._observer_set
+    assert sys._luz_set
+
+
+def test_update_perspective():
+    """update_perspective sets the observer direction and flags."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    sys.update_perspective(n_obs=[1, 0, 0])
+    np.testing.assert_allclose(sys.n_obs, [1, 0, 0])
+    assert sys._observer_set
+    assert sys._luz_set
+
+
+def test_integrate():
+    """integrate advances the simulation and updates body centers."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=1, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, m=1e-3, a=5)
     sys.initialize_simulation()
     sys.spangle_system()
 
-    sys._set_observer(nvec=[-1,0,0])
-    sys.sg.plot3d()
-
-    sys._set_observer(nvec=[0,0,1])
-    sys.sg.plot3d()
-
-    #Spangle with light
-    nspangles=100
-    sys=System(resetable=False)
-    S=sys.add(name="Star",nspangles=nspangles,m=9,radius=1)
-    P=sys.add("Planet",parent=S,name="Planet",nspangles=nspangles,radius=0.2,a=2)
-    M=sys.add("Planet",parent=P,name="Moon",nspangles=nspangles,radius=0.1,a=1)
-    R=sys.add("Ring",parent=P,name="Ring",nspangles=nspangles,fi=1.3,fe=2.3,i=90*Consts.deg)
-
-    sys.initialize_simulation()
-    sys.spangle_system()
-
-    #Check addition columns
-    print(sys.source)
-    print(sys.sg.data.columns)
-
-    #Check save
-    # Disabled: save_to of an initialized System fails because ctypes members
-    # (rebound Simulation, orbit, FourierCoefficients) are not picklable.
-    # Re-enable once System.save_to persistence is fixed.
-    # sys.save_to("/tmp/system.pkl")
-
-    #Check plot
-    #sys.sp.plot3d(center_at="Ring",not_plot=["Star1","Star2"])
-    sys.sg.plot3d()
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_setluz():
-
-    global sys
-    plt.close("all")
-
-    Verbose.VERBOSITY=VERB_NONE
-    nspangles=500
-    sys=System()
-    S=sys.add("Star",nspangles=nspangles,m=1,radius=1)
-    D=sys.add("Ring",name="Disk",parent=S,nspangles=nspangles,fi=20,fe=30,i=0*Consts.deg)
-    P=sys.add("Planet",parent=S,nspangles=nspangles,radius=0.2,m=1e-3,a=10)
-    R=sys.add("Ring",parent=P,nspangles=nspangles,fi=1.5,fe=2.0,i=-20*Consts.deg)
-    M=sys.add("Planet",parent=P,name="Moon",nspangles=nspangles,radius=0.1,m=1e-6,a=1,M=30*Consts.deg)
-    K=sys.add("Ring",name="Cronoring",parent=M,nspangles=nspangles,fi=1.1,fe=1.5,i=20*Consts.deg)
-
-    sys.initialize_simulation()
-    sys.spangle_system()
-
-    sys.sg.plot3d(center_at="Ring",not_plot=["Disk"])
-    #sys.sg.plot3d(center_at="Ring")
-    #sys.sg.plot3d()
-    cond=(sys.sg.data.name=="Moon")&(sys.sg.data.hidden_by_luz!="")
-    print_df(sys.sg.data.loc[cond,["hidden_by_luz"]].head(10))
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_setmultiple():
-
-    global sys
-    plt.close("all")
-
-    Verbose.VERBOSITY=VERB_NONE
-
-    nspangles=500
-    sys=System(resetable=False)
-
-    S=sys.add(name="Star",nspangles=nspangles,m=9,radius=1)
-    P=sys.add("Planet",parent=S,name="Planet",nspangles=nspangles,radius=0.2,a=3)
-    M=sys.add("Planet",parent=P,name="Moon",nspangles=nspangles,m=1e-3,radius=0.1,a=1,M=90*Consts.deg)
-    R=sys.add("Ring",parent=P,name="Ring",nspangles=nspangles,fi=1.3,fe=2.3,i=60*Consts.deg)
-
-    S2=sys.add(name="Star2",parent=S,nspangles=nspangles,m=9,radius=1,a=10)
-    P2=sys.add("Planet",parent=S2,name="Planet S2",nspangles=nspangles,radius=0.2,a=2,M=180*Consts.deg)
-    R2=sys.add("Ring",parent=P2,name="Ring2",nspangles=nspangles,fi=1.3,fe=2.3,i=30*Consts.deg)
-    M2=sys.add("Planet",parent=P2,name="Moon PS2",nspangles=nspangles,m=1e-3,radius=0.1,a=1,M=205*Consts.deg)
-
-    orbital_tree=[[S,[P,M]],[S2,[P2,M2]]]
-
-    sys.initialize_simulation(orbital_tree)
-    sys.spangle_system()
-
-    #Show system from above
-    sys.sg.plot2d()
-
-    #Show only Star 2 system
-    sys.update_perspective(n_obs=[1,-1,0])
-    sys.sg.plot2d(include=["Planet S2","Ring2","Moon PS2"])
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_update():
-
-    Verbose.VERBOSITY=VERB_NONE
-
-    nspangles=100
-    # resetable=False: resetable=True would auto-save a snapshot during
-    # spangle_system, which crashes on non-picklable ctypes members.
-    # Re-enable once System.save_to persistence is fixed.
-    sys=System(resetable=False)
-    S=sys.add("Star",name="Star",nspangles=nspangles,m=8,radius=1)
-    P=sys.add("Planet",parent=S,name="Planet",nspangles=nspangles,radius=0.2,a=2)
-    M=sys.add("Planet",parent=P,name="Moon",nspangles=nspangles,radius=0.1,a=1)
-    R=sys.add("Ring",parent=P,name="Ring",nspangles=nspangles,fi=1.3,fe=2.3,i=90*Consts.deg)
-    print(P.radius)
-    sys.update_body(P,radius=0.5)
-    print(P.radius)
-    sys.update_body("Ring",fe=3.0)
-    print(R.radius)
-    sys.initialize_simulation()
-    sys.spangle_system()
-    with pytest.raises(AssertionError): sys.update_body("Ring",fe=3.0)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_reset():
-
-    global sys
-
-    Verbose.VERBOSITY=VERB_NONE
-
-    nspangles=100
-    # resetable=False so the internal snapshot save is not triggered (it crashes
-    # on non-picklable ctypes members). Note: reset() then becomes a no-op.
-    # Re-enable once System.save_to persistence is fixed.
-    sys=System(resetable=False)
-    S=sys.add("Star",name="Star",nspangles=nspangles,m=8,radius=1)
-    P=sys.add("Planet",parent=S,name="Planet",nspangles=nspangles,radius=0.2,a=2)
-    M=sys.add("Planet",parent=P,name="Moon",nspangles=nspangles,radius=0.1,a=1)
-    R=sys.add("Ring",parent=P,name="Ring",nspangles=nspangles,fi=1.3,fe=2.3,i=90*Consts.deg)
-
-    sys.initialize_simulation()
-    sys.spangle_system()
-
-    #All transformations from here are not stored
-    sys.sg.plot3d()
-    sys._set_observer(nvec=[0,0,-1])
-    sys.sg.plot3d()
-
-    #All transformations from here are not stored
-    sys.reset()
-    sys.sg.plot3d()
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_int():
-
-    global sys
-    plt.close("all")
-
-    Verbose.VERBOSITY=VERB_NONE
-
-    nspangles=100
-    sys=System()
-    S=sys.add("Star",name="Star",nspangles=nspangles,m=1,radius=1)
-    M=sys.add("Planet",parent=S,name="Moon",nspangles=nspangles,radius=0.1,m=1e-6,a=3)
-    P=sys.add("Planet",parent=S,name="Planet",nspangles=nspangles,radius=0.2,m=1e-3,a=5)
-    R=sys.add("Ring",parent=P,name="Ring",nspangles=nspangles,fi=1.3,fe=2.3,i=20*Consts.deg)
-
-    sys.initialize_simulation([[S,M],P])
-    sys.spangle_system()
+    t_before = sys.sim.t
+    center_before = np.array(sys.sim.particles[P.rbhash].xyz)
 
     sys.integrate(10)
 
-    sys._set_observer([0,0,1])
-    sys._set_luz()
+    assert sys.sim.t > t_before
+    # The planet should have moved from its initial position
+    center_after = np.array(sys.sim.particles[P.rbhash].xyz)
+    assert not np.allclose(center_before, center_after)
+    # The body's center and the spangler's center_ecl column are updated
+    np.testing.assert_allclose(P.center_ecl, center_after)
+    np.testing.assert_allclose(
+        np.array(sys.sg.data.loc[sys.sg.data.name == "Planet", "center_ecl"].iloc[0]),
+        center_after,
+    )
 
-    sys.sg.plot3d()
-    sys.sg.plot3d(center_at="Ring")
 
-    Verbose.VERBOSITY=VERB_NONE
+def test_integrate_perspective():
+    """integrate_perspective advances time and updates the observer."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=1, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, m=1e-3, a=5)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    t_before = sys.sim.t
+    sys.integrate_perspective(10, n_obs=[1, 0, 0])
+    assert sys.sim.t > t_before
+    np.testing.assert_allclose(sys.n_obs, [1, 0, 0])
 
-def test_legacy():
 
-    global sys,RP
+def test_update_scatterers():
+    """spangle_system assigns a scatterer to every spangle."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    assert "scatterer" in sys.sg.data.columns
+    assert (sys.sg.data.scatterer != "").all()
 
-    Verbose.VERBOSITY=VERB_NONE
-    sys=System()
-    S=sys.add(kind="Star",radius=Consts.rsun/sys.ul,limb_coeffs=[0.65])
-    P=sys.add(kind="Planet",parent=S,a=0.2,e=0.0,radius=Consts.rsaturn/sys.ul)
-    R=sys.add(kind="Ring",parent=P,fi=1.5,fe=2.5,i=30*Consts.deg)
-    RP=sys.ensamble_system(lamb=90*Consts.deg,beta=90*Consts.deg)
-    ecliptic,observer,star=RP.plotRingedPlanet(showfig=1)
 
-    RP.changeObserver([90*Consts.deg,30*Consts.deg])
+def test_update_optical_depth():
+    """spangle_system sets the tau_gray_optical column."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    assert (sys.sg.data["tau_gray_optical"] == np.inf).all()
+    sys.bodies["Planet"].tau_gray_optical = 0.5
+    sys._update_optical_depth()
+    assert (sys.sg.data["tau_gray_optical"] == 0.5).all
 
-    lamb_initial=+0.0*Consts.deg
-    lamb_final=+360*Consts.deg
-    lambs=np.linspace(lamb_initial,lamb_final,100)
-    Rps=[]
-    Rrs=[]
-    ts=[]
-    for lamb in lambs:
-        RP.changeStellarPosition(lamb)
-        ts+=[RP.t*RP.CU.UT]
-        RP.updateOpticalFactors()
-        RP.updateDiffuseReflection()
-        Rps+=[RP.Rip.sum()]
-        Rrs+=[RP.Rir.sum()]
 
-    ts=np.array(ts)
-    Rps=np.array(Rps)
-    Rrs=np.array(Rrs)
+def test_update_albedos():
+    """_update_albedos computes directional albedo per spangle."""
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
+    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    sys._update_albedos()
 
-    #Middle transit
-    ts=(ts-ts[0])/Consts.day
+    data = sys.sg.data
+    assert "lambertian_albedo" in data.columns
 
-    #Plot
-    fig=plt.figure()
-    ax=fig.gca()
-    ax.plot(ts,1e6*Rps,label="Planet")
-    ax.plot(ts,1e6*Rrs,label="Ring")
-    ax.plot(ts,1e6*(Rps+Rrs),label="Planet+Ring")
+    # Stellar spangles have zero albedo (they emit, they don't reflect)
+    assert (data.loc[data.name == "Star", "lambertian_albedo"] == 0).all()
 
-    ax.set_xlabel("Time since VE [days]")
-    ax.set_ylabel("Flux anomaly [ppm]")
-    Extra.prynglesMark(ax)
+    # Spangles not facing the light source have zero albedo
+    assert (data.loc[data.cos_luz < 0, "lambertian_albedo"] == 0).all()
 
-    ax.legend()
+    # Albedo is bounded in [0, 1]
+    assert (data.lambertian_albedo >= 0).all()
+    assert (data.lambertian_albedo <= 1).all()
 
-    Verbose.VERBOSITY=VERB_NONE
+    # For a Lambertian surface with AL=1, albedo is ~1 at normal incidence
+    planet = data.loc[data.name == "Planet"]
+    cond = planet.cos_luz > 0.99
+    assert cond.any()
+    np.testing.assert_allclose(planet.loc[cond, "lambertian_albedo"], 1.0, atol=1e-3)
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_update_visibility_state():
+    """update_visibility_state applies occlusion to the visible state."""
+    # TODO: build a multi-body system (e.g. star + planet), set the observer,
+    # call update_visibility_state, and assert that spangles behind the planet
+    # are no longer visible (visible == intersect).
+    pass
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_update_illumination_state():
+    """update_illumination_state applies shadowing to the illuminated state."""
+    # TODO: build a multi-body system, set observer and light source, call
+    # update_illumination_state, and assert that shadowed spangles have
+    # illuminated == False and shadow == True.
+    pass

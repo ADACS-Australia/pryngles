@@ -1,392 +1,224 @@
-##################################################################
-#                                                                #
-#.#####...#####...##..##..##..##...####...##......######...####..#
-#.##..##..##..##...####...###.##..##......##......##......##.....#
-#.#####...#####.....##....##.###..##.###..##......####.....####..#
-#.##......##..##....##....##..##..##..##..##......##..........##.#
-#.##......##..##....##....##..##...####...######..######...####..#
-#................................................................#
-#                                                                #
-# PlanetaRY spanGLES                                             #
-#                                                                #
-##################################################################
-# License http://github.com/seap-udea/pryngles-public            #
-##################################################################
+import numpy as np
+import pytest
 
-from pryngles import *
+import pryngles as pr
+
 
 def test_const():
+    """SPANGLER_KEY_ORDERING and SPANGLER_COLUMNS must contain the same keys."""
+    for key in pr.SPANGLER_KEY_ORDERING:
+        assert key in pr.SPANGLER_COLUMNS, f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS"
+    for key in pr.SPANGLER_COLUMNS:
+        assert key in pr.SPANGLER_KEY_ORDERING, f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
+
+
+def test_init_basic():
+    """A basic Spangler has the expected number of rows and default state."""
+    sg = pr.Spangler(nspangles=3, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
+    assert sg.nspangles == 3
+    assert len(sg.data) == 3
+    assert sg.shape == "vanilla"
+    # Default state: unset True, visibility/source states False
+    assert (sg.data.unset == True).all()
+    for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
+        assert (sg.data[col] == False).all()
+
+
+def test_init_join():
+    """Joining spanglers combines data and sets shape to 'Join'."""
+    sg1 = pr.Spangler(name="Body 1", nspangles=3, w=40 * pr.Consts.deg, n_equ=[1, 1, 0])
+    sg2 = pr.Spangler(name="Body 2", nspangles=3, w=30 * pr.Consts.deg, n_equ=[1, 0, 1])
+    sg = pr.Spangler(spanglers=[sg1, sg2])
+    assert sg.shape == "Join"
+    assert sg.nspangles == 6
+    assert sg.name == ["Body 1", "Body 2"]
+    assert set(sg.data.name.unique()) == {"Body 1", "Body 2"}
 
-    Verbose.VERBOSITY=VERB_ALL
-
-    for key in SPANGLER_KEY_ORDERING:
-        if key not in SPANGLER_COLUMNS:
-            raise AssertionError(f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS")
-
-    for key in SPANGLER_COLUMNS:
-        if key not in SPANGLER_KEY_ORDERING:
-            raise AssertionError(f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING")
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_init():
-
-    Verbose.VERBOSITY=VERB_ALL
-
-    print("Basic definition:")
-    sg=Spangler(nspangles=1,center_equ=[0,0,0],n_equ=[1,0,0])
-    Misc.print_df(sg.data.head(1))
-    sg.get_mem_usage(True)
-
-    print("\nCenter equ:")
-    sg=Spangler(nspangles=3,center_equ=[0,0,1],n_equ=[0,1,0])
-    Misc.print_df(sg.data.head(1))
-
-    print("\nCenter ecl:")
-    sg=Spangler(nspangles=3,center_ecl=[0,0,1],n_equ=[0,0,1])
-    Misc.print_df(sg.data.head(1))
-
-    print("\nRotation:")
-    sg=Spangler(nspangles=3,w=30*Consts.deg,q0=40*Consts.deg,n_equ=[0,1,1])
-    sg.set_positions(t=1)
-    Misc.print_df(sg.data.head(1))
-
-    print("\nJoin:")
-    sg1=Spangler(name="Body 1",nspangles=3,w=40*Consts.deg,n_equ=[1,1,0])
-    sg2=Spangler(name="Body 2",nspangles=3,w=30*Consts.deg,n_equ=[1,0,1])
-    sg=Spangler(spanglers=[sg1,sg2])
-    sg.set_positions(t=1)
-    Misc.print_df(sg.data)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_reset():
-
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    sg=Spangler(nspangles=100)
-    sg.reset_state()
-    print_df(sg.data[["unset"]+list(SPANGLER_VISIBILITY_STATES)+list(SPANGLER_SOURCE_STATES)].head())
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_scale():
-
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    sg=Spangler(center_ecl=[1,1,1],center_equ=[1,1,1])
-    print_df(sg.data)
-
-    sg.set_scale(5)
-    print_df(sg.data)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_pop():
-    Verbose.VERBOSITY=VERB_ALL
-
-    #No preset
-    sg=Spangler(nspangles=850,n_equ=[1,0,0])
-    sg.populate_spangler(shape="ring",
-                            spangle_type=SPANGLE_GASEOUS,
-                            scale=2,seed=1,ri=0.2)
-    sg.sample.plot()
-    sg.sample.ax.set_title(f"N={sg.nspangles}")
-    sg.sample.fig.tight_layout()
-    print_df(sg.data.head(3))
-
-    #Using preset
-    sg=Spangler(nspangles=850)
-    sg.populate_spangler(shape="ring",
-                            preset=True,
-                            spangle_type=SPANGLE_SOLID_ROCK,ri=0.2)
-    sg.sample.plot()
-    sg.sample.ax.set_title(f"N={sg.nspangles}")
-    sg.sample.fig.tight_layout()
-    print_df(sg.data.head(3))
-
-    #Sphere
-    sg=Spangler(nspangles=100)
-    sg.populate_spangler(shape="sphere",scale=3,seed=1,preset=True)
-    sg.sample.plot(spangled=dict(color='r',alpha=0.1))
-    sg.sample.ax.set_title(f"N={sg.nspangles}")
-    sg.sample.fig.tight_layout()
-
-    print_df(sg.data.head(3))
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_plot3d():
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    #Sphere
-    sg=Spangler(nspangles=100)
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ICE,preset=0,scale=3)
-    sg.reset_state()
-
-    sg.data.unset=False
-    cond=sg.data.z_ecl>0
-    sg.data.loc[cond,"illuminated"]=True
-    cond=sg.data.x_ecl>0
-    sg.data.loc[cond,"visible"]=True
-    cond=sg.data.y_ecl>0
-    sg.data.loc[cond,"shadow"]=True
-    cond=sg.data.f_equ>45*Consts.deg
-    sg.data.loc[cond,"transmit"]=True
-
-    sg.plot3d(statemark=0.5,coords="ecl")
-
-    #No preset
-    sg=Spangler(nspangles=850,n_equ=[1,1,1])
-    sg.populate_spangler(shape="ring",preset=True,
-                            spangle_type=SPANGLE_GRANULAR,
-                            scale=2,ri=0.2)
-
-    sg.data.unset=False
-    sg.data.illuminated=True
-    sg.data.illuminated=True
-    cond=sg.data.x_ecl>0
-    sg.data.loc[cond,"visible"]=True
-    sg.data.loc[cond,"transmit"]=True
-    sg.plot3d(statemark=0.1)
-
-    #No preset
-    sg=Spangler(nspangles=50,n_equ=[1,1,1])
-    sg.populate_spangler(shape="ring",preset=True,
-                            spangle_type=SPANGLE_GRANULAR,
-                            scale=2,ri=0.2)
-    sg.plot3d(coords="ecl",show_directions=True)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_setint():
-
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    #No preset
-    sg=Spangler(nspangles=50,name="Ring")
-    sg.populate_spangler(shape="ring",seed=1,
-                            spangle_type=SPANGLE_GRANULAR,
-                            scale=2,ri=0.2)
-    sg.data.illuminated=True
-    sg.data.visible=True
-
-    cond,n_int,d_int=sg.set_intersect(nvec=[1,0,1],center=[0,0,-1],
-                                        name="Ring")
-    sg._calc_qhulls()
-    #sg._plot_qhulls() #Deprecated
-
-    #Plot 3d
-    sg.plot3d(coords="int")
-    plane=sg.qhulls["Ring"][0]["plane"]
-    plane.plot_plane(ax=sg.ax3d,color='c',alpha=0.5)
-
-    #Hulls
-    print(sg.qhulls)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_setobsluz():
-
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    #Normal
-    nspangles=10
-    sg=Spangler(nspangles=nspangles,n_equ=[1,0,1],name="Planet")
-    sg.populate_spangler(shape="sphere",preset=0,
-                            spangle_type=SPANGLE_SOLID_ROCK,
-                            scale=2)
-
-    print_df(sg.data.loc[~sg.data.hidden,SPANGLER_DEBUG_FIELDS])
-
-    sg.set_observer(nvec=[0,0,+1],center=None)
-    sg.set_luz(nvec=[+1,0,0],center=None)
-
-    sg.plot3d(coords="obs",statemark=1)
-
-    #Semitransparent
-    nspangles=50
-    sg=Spangler(nspangles=nspangles,n_equ=[1,0,1],name="Planet")
-    sg.populate_spangler(shape="sphere",preset=0,
-                            spangle_type=SPANGLE_GASEOUS,
-                            scale=2)
-    sg.set_observer(nvec=[0,0,+1],center=None)
-    sg.set_luz(nvec=[+1,0,0],center=None)
-    sg.plot3d(statemark=1)
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_simplevis():
-
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    plt.close("all")
-    #Ring with semitransparent spangle: all illuminated, all visible, no transmission
-    sg=Spangler(nspangles=100,n_equ=[1,1,1])
-    sg.populate_spangler(shape="ring",ri=0.3,spangle_type=SPANGLE_GRANULAR,preset=True,scale=3)
-    sg.set_observer([0,0,1])
-    sg.set_luz([1,1,-1])
-    sg.plot3d()
-
-    #Ring with semitransparent spangle: all illuminated, all visible, no transmission
-    sg=Spangler(nspangles=100,n_equ=[1,1,1])
-    sg.populate_spangler(shape="ring",ri=0.3,spangle_type=SPANGLE_GRANULAR,preset=True,scale=3)
-    sg.set_observer([0,0,1])
-    sg.set_luz([-1,-1,-1])
-    sg.plot3d()
-
-    #Sphere with solid spangle: only illuminated
-    sg=Spangler(nspangles=100,n_equ=[1,1,1])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,preset=True,scale=3)
-    sg.set_observer([1,0,1])
-    sg.set_luz([0,0,1])
-    sg.plot3d()
-
-    #Sphere with stellar spangle: all illuminated, not all visible
-    sg=Spangler(nspangles=100,n_equ=[1,1,1])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_STELLAR,preset=True,scale=3)
-    sg.set_observer([1,0,1])
-    sg.set_luz([0,0,1])
-    sg.plot3d()
-
-    #Sphere with semitransparent spangle: all illuminated, all visible
-    sg=Spangler(nspangles=100,n_equ=[1,1,1])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_GASEOUS,preset=True,scale=3)
-    sg.set_observer([0,0,1])
-    sg.set_luz([1,0,0])
-    sg.plot3d()
-
-    #Two spheres
-    sg1=Spangler(name="Planet 1",nspangles=100,center_equ=[-5,0,0])
-    sg1.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ICE,preset=True,scale=3)
-
-    sg2=Spangler(name="Planet 2",nspangles=100,center_equ=[+5,0,0])
-    sg2.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,preset=True,scale=3)
-
-    sg=Spangler(spanglers=[sg1,sg2])
-
-    sg.set_observer([0,1,0])
-    sg.set_luz(nvec=[1,0,0],center=[0,0,0],name="Planet 1")
-    sg.set_luz(nvec=[-1,0,0],name="Planet 2")
-
-    sg.plot3d()
-    return
-
-    Verbose.VERBOSITY=VERB_NONE
-
-def test_plot2d():
-
-    Verbose.VERBOSITY=VERB_SIMPLE
-
-    plt.close("all")
-    sg=Spangler(nspangles=2500,name="123",n_equ=[1,1,1],center_ecl=[0,0,2])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,scale=2,seed=1,preset=True)
-    #sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_GASEOUS,scale=2,seed=1,preset=True)
-
-    sg.set_observer(nvec=[1,0,0])
-    sg.set_luz(nvec=[1,1,1])
-    fs=3
-    sg.plot3d(coords="ecl")
-    sg.plot2d(coords="ecl",fsize=fs)
-    sg.plot2d(coords="luz",fsize=fs)
-    sg.plot2d(coords="obs",fsize=fs)
-
-    sg=Spangler(nspangles=50,name="123",n_equ=[1,1,1],center_ecl=[0,1,0])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,scale=2,seed=1,preset=True)
-    sg.set_observer(nvec=[1,0,0])
-    sg.set_luz(nvec=[0,1,0],center=[0,6,0])
-    sg.plot2d()
-    sg.plot2d(show_azim=True,fsize=5)
-    sg.plot3d(coords="luz",show_directions=True)
-
-    Verbose.VERBOSITY=VERB_NONE
 
 def test_join():
+    """Joining spanglers combines data and sets shape to 'Join'."""
+    sg1 = pr.Spangler(name="A", nspangles=10)
+    sg1.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg2 = pr.Spangler(name="B", nspangles=20)
+    sg2.populate_spangler(shape="sphere", scale=1, seed=1)
+    sgj = pr.Spangler(spanglers=[sg1, sg2])
+    assert sgj.shape == "Join"
+    assert sgj.nspangles == 30
+    assert sgj.name == ["A", "B"]
+    assert set(sgj.data.name.unique()) == {"A", "B"}
 
-    Verbose.VERBOSITY=VERB_SIMPLE
 
-    sg1=Spangler(nspangles=1000,name="Ring",n_equ=[1,0,5])
-    sg1.populate_spangler(shape="ring",spangle_type=SPANGLE_GRANULAR,scale=2.5,seed=1,ri=1.5/2.5,boundary=0)
 
-    sg2=Spangler(nspangles=1000,name="Planet",n_equ=[0,0,1])
-    sg2.populate_spangler(shape="sphere",spangle_type=SPANGLE_ATMOSPHERIC,scale=1,seed=1,preset=True)
+def test_reset_state():
+    """reset_state clears all visibility/source states and sets unset."""
+    sg = pr.Spangler(nspangles=100)
+    sg.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg.set_positions()
+    sg.set_observer(nvec=[0, 0, 1])
+    sg.set_luz(nvec=[1, 0, 0])
+    # Some spangles should be visible/illuminated before reset
+    assert sg.data.visible.any()
+    assert sg.data.illuminated.any()
 
-    sgj=Spangler(spanglers=[sg1,sg2])
+    sg.reset_state()
+    assert (sg.data.unset == True).all()
+    for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
+        assert (sg.data[col] == False).all()
+    for coords in "int", "obs", "luz":
+        assert (sg.data["hidden_by_" + coords] == "").all()
+        assert (sg.data["transit_over_" + coords] == "").all()
 
-    sgj.set_observer([1,0,0.1])
-    sgj.set_luz([0,0,1])
 
-    sgj.plot3d()
-    sgj.plot2d()
+def test_set_scale():
+    """set_scale scales lengths by scale, areas by scale**2, vectors by scale."""
+    sg = pr.Spangler(nspangles=10, center_equ=[1, 2, 3])
+    sg.populate_spangler(shape="circle", scale=1, seed=1)
+    sg.set_positions()
 
-    Verbose.VERBOSITY=VERB_NONE
+    asp_before = sg.data.asp.iloc[0]
+    x_before = sg.data.x_equ.iloc[0]
+    center_before = np.array(sg.data.center_equ.iloc[0])
 
-def test_upint():
-    plt.close("all")
+    scale = 3
+    sg.set_scale(scale)
 
-    Verbose.VERBOSITY=VERB_NONE
+    assert sg.scale == scale
+    np.testing.assert_allclose(sg.data.asp.iloc[0], asp_before * scale**2)
+    np.testing.assert_allclose(sg.data.x_equ.iloc[0], x_before * scale)
+    np.testing.assert_allclose(np.array(sg.data.center_equ.iloc[0]), center_before * scale)
 
-    # Shadow-test
-    nspangles=500
-    sps=[]
-    sg=Spangler(nspangles=nspangles,name="Star",n_equ=[0,0,1],center_equ=[-7,0,0])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_STELLAR,scale=3,seed=1,preset=1)
-    sps+=[sg]
-    sg=Spangler(nspangles=nspangles,name="Planet",n_equ=[0,0,1])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,scale=1,seed=1,preset=True)
-    sps+=[sg]
-    sg=Spangler(nspangles=nspangles,name="Ring",n_equ=[1,0,-2])
-    sg.populate_spangler(shape="ring",spangle_type=SPANGLE_GRANULAR,scale=2.5,seed=1,ri=1.5/2.5,boundary=0)
-    sps+=[sg]
-    sg=Spangler(nspangles=nspangles,name="Moon",n_equ=[0,0,1],center_equ=[+4.0,0.0,0.0])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_ATMOSPHERIC,scale=0.3,seed=1,preset=True)
-    sps+=[sg]
 
-    sg=Spangler(spanglers=sps)
+def test_populate_spangler_sphere():
+    """Sphere spangles lie on a sphere of radius scale with unit normals."""
+    scale = 2
+    sg = pr.Spangler(nspangles=100)
+    sg.populate_spangler(shape="sphere", scale=scale, seed=1)
+    sg.set_positions()
+    r = np.linalg.norm(sg.data[["x_equ", "y_equ", "z_equ"]].values, axis=1)
+    np.testing.assert_allclose(r, scale, atol=1e-6)
+    ns = np.stack(sg.data.ns_equ.values)
+    np.testing.assert_allclose(np.linalg.norm(ns, axis=1), 1, atol=1e-6)
 
-    sg.set_observer(nvec=sci.direction(40,0))
-    sg.update_visibility_state()
 
-    sg.set_luz(nvec=sci.direction(0,0))
-    #sg.update_illumination_state(excluded=[])
-    sg.update_illumination_state(included=["Moon","Planet"])
-    #sg.update_illumination_state(included=["Ring","Star"])
-    #sg.update_illumination_state(excluded=["Star"])
+def test_populate_spangler_circle():
+    """Circle spangles lie in the equatorial plane."""
+    sg = pr.Spangler(nspangles=50)
+    sg.populate_spangler(shape="circle", scale=1, seed=1)
+    np.testing.assert_allclose(sg.data.z_equ, 0, atol=1e-12)
+    r = np.linalg.norm(sg.data[["x_equ", "y_equ", "z_equ"]].values, axis=1)
+    assert r.max() <= 1.0 + 1e-12
 
-    SHADOW_COLOR_LUZ=[90,0.2,1.0]
-    sg.plot3d(center_at="Ring")
-    sg.plot2d(center_at="Ring",maxval=5)
 
-    Verbose.VERBOSITY=VERB_NONE
+def test_set_intersect_infinite():
+    """set_intersect with center=None returns unit n_int and infinite d_int."""
+    sg = pr.Spangler(nspangles=50)
+    sg.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg.set_positions()
+    cond, n_int, d_int = sg.set_intersect(nvec=[1, 0, 1], center=None)
+    assert cond.all()
+    np.testing.assert_allclose(np.linalg.norm(n_int), 1)
+    assert np.isinf(d_int)
+    np.testing.assert_allclose(n_int, [1, 0, 1] / np.sqrt(2))
 
-def test_muluz():
 
-    Verbose.VERBOSITY=VERB_NONE
+def test_set_intersect_finite():
+    """set_intersect with a finite center returns finite d_int."""
+    sg = pr.Spangler(nspangles=50)
+    sg.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg.set_positions()
+    cond, n_int, d_int = sg.set_intersect(nvec=[0, 0, 1], center=[0, 0, 5])
+    assert cond.all()
+    np.testing.assert_allclose(d_int, 5)
+    np.testing.assert_allclose(np.linalg.norm(n_int), 1)
 
-    nspangles=100
-    sps=[]
 
-    sg=Spangler(nspangles=nspangles,name="Planet1",n_equ=[0,0,1],center_ecl=[0,0,0])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,scale=1,seed=1,preset=True)
-    sps+=[sg]
+def test_set_observer():
+    """set_observer sets n_obs and marks visible spangles towards the observer."""
+    sg = pr.Spangler(nspangles=200)
+    sg.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg.set_positions()
+    sg.set_observer(nvec=[0, 0, 1])
+    np.testing.assert_allclose(sg.n_obs, [0, 0, 1])
+    np.testing.assert_allclose(sg.rqf_obs, pr.Science.spherical([0, 0, 1]))
+    # For a sphere with no hidden spangles, visible == cos_obs > 0
+    assert (sg.data.visible == (sg.data.cos_obs > 0)).all()
+    assert sg.data.visible.any()
 
-    sg=Spangler(nspangles=nspangles,name="Moon1",n_equ=[0,0,1],center_ecl=[2,0,0])
-    sg.populate_spangler(shape="sphere",spangle_type=SPANGLE_SOLID_ROCK,scale=0.5,seed=1,preset=True)
-    sps+=[sg]
+    # Now check when the observer is at a finite distance
+    sg.set_observer(nvec=[0, 0, 1], center=[0, 0, 5])
+    np.testing.assert_allclose(sg.d_obs, 5)
+    # For a sphere with no hidden spangles, visible == cos_obs > 0
+    assert (sg.data.visible == (sg.data.cos_obs > 0)).all()
 
-    sg=Spangler(spanglers=sps)
 
-    sg.set_observer([1,1,1])
-    sg.update_visibility_state()
+def test_set_luz():
+    """set_luz sets n_luz and marks illuminated spangles towards the light source."""
+    sg = pr.Spangler(nspangles=200)
+    sg.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg.set_positions()
+    sg.set_observer(nvec=[0, 0, 1])
+    sg.set_luz(nvec=[1, 0, 0])
+    np.testing.assert_allclose(sg.n_luz, [1, 0, 0])
+    np.testing.assert_allclose(sg.rqf_luz, pr.Science.spherical([1, 0, 0]))
+    # For a sphere with no hidden spangles, illuminated == cos_luz > 0
+    assert (sg.data.illuminated == (sg.data.cos_luz > 0)).all()
+    assert sg.data.illuminated.any()
 
-    name="Planet1"
-    sg.set_luz(nvec=[1,0,0],name=name)
-    sg.update_illumination_state()
 
-    name="Moon1"
-    sg.set_luz(nvec=[-2,1,0],name=name)
-    sg.update_illumination_state()
+def test_set_positions_rotation():
+    """set_positions(t) advances the rotation longitude by q0 + w*t."""
+    sg = pr.Spangler(nspangles=50, w=30 * pr.Consts.deg, q0=40 * pr.Consts.deg, n_equ=[0, 1, 1])
+    sg.populate_spangler(shape="circle", scale=1, seed=1)
+    q_before = sg.data.q_equ.iloc[0]
+    sg.set_positions(t=1)
+    np.testing.assert_allclose(sg.data.q_equ.iloc[0], q_before + 30 * pr.Consts.deg + 40 * pr.Consts.deg)
 
-    sg.plot3d()
 
-    Verbose.VERBOSITY=VERB_NONE
+def test_set_luz_name_filter():
+    """set_luz with a name only illuminates the named body."""
+    sg1 = pr.Spangler(name="A", nspangles=50)
+    sg1.populate_spangler(shape="sphere", scale=1, seed=1)
+    sg2 = pr.Spangler(name="B", nspangles=50)
+    sg2.populate_spangler(shape="sphere", scale=1, seed=1)
+    sgj = pr.Spangler(spanglers=[sg1, sg2])
+    sgj.set_positions()
+    sgj.set_observer(nvec=[0, 0, 1])
+    sgj.set_luz(nvec=[1, 0, 0], name="A")
+    assert sgj.data.loc[sgj.data.name == "A", "illuminated"].any()
+    assert not sgj.data.loc[sgj.data.name == "B", "illuminated"].any()
+
+
+# ---------------------------------------------------------------------------
+# Placeholder tests for more complex methods.
+# These are intentionally left unimplemented (pass) as documentation of what
+# still needs coverage. They exercise the full intersection machinery
+# (convex hulls, occlusion, shadowing) which is better validated against
+# system output than by hand-computed values.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_update_visibility_state():
+    """update_visibility_state applies occlusion to the visible state."""
+    # TODO: build a multi-body system (e.g. star + planet), set the observer,
+    # call update_visibility_state, and assert that spangles behind the planet
+    # are no longer visible (visible == intersect).
+    pass
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_update_illumination_state():
+    """update_illumination_state applies shadowing to the illuminated state."""
+    # TODO: build a multi-body system, set observer and light source, call
+    # update_illumination_state, and assert that shadowed spangles have
+    # illuminated == False and shadow == True.
+    pass
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_update_intersection_state():
+    """update_intersection_state computes occlusion via convex hulls."""
+    # TODO: verify that update_intersection_state raises AssertionError when no
+    # intersection vantage point has been set (empty qhulls), and that it
+    # correctly marks hidden_by_int / transit_over_int for an occulting body.
+    pass

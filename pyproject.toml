@@ -47,7 +47,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "coverage>=7.16.1",
     "pytest>=9.1.1",
+    "pytest-cov>=6.2.1",
     "pytest-regressions>=2.5.0",
     "ruff>=0.16.5",
 ]
@@ -82,11 +84,23 @@ python_files = ["test_*.py"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::RuntimeWarning",
+    "ignore:Animation was deleted without rendering anything:UserWarning",
+    "ignore:.*significant figures requested from number with only:UserWarning",
 ]
 markers = [
     "slow: marks tests that take longer to run",
     "regression: marks regression tests (skipped by default)"
 ]
+
+[tool.coverage.run]
+# Only measure coverage of the package source files in src/ by default.
+source = ["src"]
+# Omit the C extension and any generated files from the report.
+omit = ["src/pryngles/cpixx/*", "src/pryngles/pixx/*", "src/pryngles/version.py"]
+
+[tool.coverage.report]
+# Skip files with no executable statements.
+skip_empty = true
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
