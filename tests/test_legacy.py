@@ -14,6 +14,8 @@
 ##################################################################
 import pytest
 from pryngles import *
+import matplotlib
+matplotlib.use('Agg')  # Backend for testing (no display needed)
 
 
 ##############################################################################
