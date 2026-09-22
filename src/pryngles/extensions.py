@@ -137,8 +137,15 @@ def spline(x, y, n):
 
     return y2
 
+
 @njit(int64(float64[:], int64, float64))
 def bisect(xa, n ,x):
+    """
+    Given a tabulated array xa of length n, find the nearest
+    index on the left which is nearest to a target value x.
+
+    Assumes xa is sorted/ordered.
+    """
     klo = 0
     khi = n - 1
 
@@ -151,8 +158,13 @@ def bisect(xa, n ,x):
 
     return klo
 
+
 @njit(types.Tuple((int64, int64, float64, float64, float64))(float64[:], int64, float64))
 def spline_coefficients(xa, n, x):
+    """
+    Compute the coeffecients for cubic-spline interpolation at a given x
+    """
+
     # Find indices to interpolate between
     klo = bisect(xa, n, x)
     khi = klo + 1
@@ -172,8 +184,14 @@ def spline_coefficients(xa, n, x):
 
 @njit(float64( float64[:], float64[:], int64, int64, float64, float64, float64) )
 def splint(ya, y2a, klo, khi, a, b, h):
+    """
+    This routine returns a cubic-spline interpolated value y, given the
+    coefficients computed for a specific value of x, and given the tabulated values of y
+    and its second derivate (y2a).
+    """
     y = a * ya[klo] + b * ya[khi] + ((a * a * a - a) * y2a[klo] + (b * b * b - b) * y2a[khi]) * (h * h) / 6
     return y
+
 
 @njit(float64[:,:](
         int64, int64, int64,
@@ -231,14 +249,12 @@ def reflection(nmat, nmugs, nfou,
                 # Use slice rf(k,j,:), write directly into corresponding rfsec row
                 rfsec[k,j,:] = spline(xmu, rf[k,j,:], nmugs)
 
-        #/*
-        # *----------------------------------------------------------------------------
-        # *     Loop over the pixels:
-        # *       If the input angles are (very) similar to a previously calculated
-        # *       case use those values. To obtain obtain the fourier coefficient at
-        # *       (mu,mu0) spline has to be called a second time.
-        # *----------------------------------------------------------------------------
-        # */
+        #----------------------------------------------------------------------------
+        #     Loop over the pixels:
+        #       If the input angles are (very) similar to a previously calculated
+        #       case use those values. To obtain obtain the fourier coefficient at
+        #       (mu,mu0) spline has to be called a second time.
+        #----------------------------------------------------------------------------
         for i in range(npix):
             mu = theta[i]
             mu0 = theta0[i]
@@ -302,12 +318,10 @@ def reflection(nmat, nmugs, nfou,
         if (np.abs(P) < 1e-6):
             P = 0
 
-        #/*
-        # *----------------------------------------------------------------------------
-        # * Add the Stokes elements of the pixel to an array:
-        # *   Multiply with mu and the actual pixel area to obtain stokes elements
-        # *----------------------------------------------------------------------------
-        # */
+        #----------------------------------------------------------------------------
+        # Add the Stokes elements of the pixel to an array:
+        #   Multiply with mu and the actual pixel area to obtain stokes elements
+        #----------------------------------------------------------------------------
         for k in range(nmat):
             Sarr[i,k] = SvR[k] * mu * apix[i]
 
