@@ -146,16 +146,11 @@ def bisect(xa, n ,x):
 
     Assumes xa is sorted/ordered.
     """
-    klo = 0
-    khi = n - 1
-
-    while ((khi - klo) > 1):
-        k = int((klo + khi) / 2) # Integer division
-        if (xa[k] > x):
-            khi = k
-        else:
-            klo = k
-
+    klo = np.searchsorted(xa, x, side='right') - 1
+    if klo < 0:
+        klo = 0
+    elif klo > n - 2:
+        klo = n - 2
     return klo
 
 
