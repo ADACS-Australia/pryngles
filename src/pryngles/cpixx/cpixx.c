@@ -99,6 +99,8 @@ double spline(double x[],double y[],int n,double y2[])
   }
 
   return 0;
+
+  // Unused code below(?)
   double sum=0.0;
   for(i=0;i<n;i++){
     sum+=y2[i];
@@ -109,6 +111,45 @@ double spline(double x[],double y[],int n,double y2[])
   return sum;
 }
 
+int bisect(double xa[], int n, double x)
+{
+  int k;
+  int klo=0;
+  int khi=n-1;
+  
+  while((khi-klo)>1){
+    k=(klo+khi)/2;    // No need to floor() here, since it's integer division
+    if(xa[k]>x)
+      khi=k;
+    else
+      klo=k;
+  }
+
+  return klo;
+}
+
+void spline_coefficients(double xa[], int n, double x, int* klo_out, int* khi_out, double* a_out, double* b_out, double* h_out)
+{
+  // Find indices to interpolate between
+  int klo = bisect(xa, n, x);
+  int khi = klo + 1;
+
+  double h = xa[khi]-xa[klo];
+
+  if(fabs(h)<1e-10)
+    fprintf(stderr,"Error in spline_coefficients: bad xa input.\n");
+    // Should we exit with error here?
+
+  // Coefficients
+  *a_out = (xa[khi]-x)/h;
+  *b_out = (x-xa[klo])/h;
+  *h_out = h;
+
+  // Indices
+  *klo_out = klo;
+  *khi_out = khi;
+}
+
 /*
 *----------------------------------------------------------------------------
 *     Spline interpolation routine from Press et al. (1986, p.88).   
@@ -117,33 +158,15 @@ double spline(double x[],double y[],int n,double y2[])
 *     (with the xa(i)'s in order), and given the array y2a, which is  
 *     the output from SPLINE above, and given a value of x, this     
 *     routine returns a cubic-spline interpolated value y.       
+*
+*     NOTE: for computational efficiency, we pre-compute lower and upper 
+*     indices as well as the spline coefficients (above), since they don't
+*     change for an individual pixel/spangle.
 *----------------------------------------------------------------------------
 */
-double splint(double xa[],double ya[],double y2a[],int n,double x)
+double splint(double ya[], double y2a[], int klo, int khi, double a, double b, double h)
 {
-  int k;
-  int klo=0;
-  int khi=n-1;
-  double h,a,b,y;
-  
-  while((khi-klo)>1){
-    k=floor((klo+khi)/2);
-    if(xa[k]>x)
-      khi=k;
-    else
-      klo=k;
-  }
-  
-  h=xa[khi]-xa[klo];
-
-  if(fabs(h)<1e-10)
-    fprintf(stderr,"Error in Splint: bad xa input.\n");
-
-  a=(xa[khi]-x)/h;
-  b=(x-xa[klo])/h;
-
-  y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6;
-
+  double y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6;
   return y;
 }
 
@@ -403,7 +426,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
 
   double ***rf,***rfsec;
   double **RM,**rfmu0;
-  double *rftemp,*slice,*slicep,*rfsecmu0;
+  double *rfsecmu0;
   double *SvR,*rf3save;
   double Bplus[4];
   
@@ -415,10 +438,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
   rfmu0=zeros_matrix(nmat,nmugs);
   RM=zeros_matrix(npix,nmat);
   //Vectos nmugs
-  rftemp=zeros_vector(nmugs);
   rfsecmu0=zeros_vector(nmugs);
-  slice=zeros_vector(nmugs);
-  slicep=zeros_vector(nmugs);
   //Vectos nmats
   rf3save=zeros_vector(nmat);
   SvR=zeros_vector(nmat);
@@ -438,15 +458,10 @@ int reflection(struct FourierCoefficients F,int qreflection,
 	for(n=0;n<nmugs;n++){
 	  rf[k][j][n]=qreflection?F.rfou[ki][n][m]:F.rtra[ki][n][m];
 	}
-	
-	//Slice rf(k,j,:)
-	for(n=0;n<nmugs;n++)
-	  slice[n]=rf[k][j][n];
-	spline(F.xmu,slice,nmugs,rftemp);
 
-	for(n=0;n<nmugs;n++)
-	  rfsec[k][j][n]=rftemp[n];
-	
+	//Use slice rf(k,j,:), write directly into corresponding rfsec row
+	spline(F.xmu,rf[k][j],nmugs,rfsec[k][j]);
+
       }//End k
 
     }//End j
@@ -473,34 +488,31 @@ int reflection(struct FourierCoefficients F,int qreflection,
 	for(k=0;k<nmat;k++)
 	  RM[i][k]=RM[i][k]+2*Bplus[k]*fac*rf3save[k];
 
-      }else{
+      } else {
+
+    // Get indices and coefficients to work with (at mu0)
+    int klo, khi;
+    double a, b, h;
+    spline_coefficients(F.xmu, nmugs, mu0, &klo, &khi, &a, &b, &h);
 
 	for(j=0;j<nmugs;j++){
 	  for(k=0;k<nmat;k++){
-	    //Slice rf(k,j,:)
-	    for(n=0;n<nmugs;n++)
-	      slice[n]=rf[k][j][n];
-	    
-	    //Slice rfsec(k,j,:)
-	    for(n=0;n<nmugs;n++)
-	      slicep[n]=rfsec[k][j][n];
-
-	    rf3=splint(F.xmu,slice,slicep,nmugs,mu0);
-	    rfmu0[k][j]=rf3;
+      // Use rf(k,j,:) and rfsec(k,j,:) slices directly, and write straight into rmu0(k,j,:)
+      // Do the spline interpolation between klo and khi, given the coefficients a,b,h
+      rfmu0[k][j] = splint(rf[k][j], rfsec[k][j], klo, khi, a, b, h);
 	  }
 	}
 
-	for(k=0;k<nmat;k++){
-	  //Slice rfmu0(k,:)
-	  for(n=0;n<nmugs;n++)
-	    slice[n]=rfmu0[k][n];
+    // Get indices and coefficients to work with (now at mu)
+    spline_coefficients(F.xmu, nmugs, mu, &klo, &khi, &a, &b, &h);
 
-	  spline(F.xmu,slice,nmugs,rfsecmu0);
-	  rf3=splint(F.xmu,slice,rfsecmu0,nmugs,mu);
-	  rf3save[k] = rf3;
+	for(k=0;k<nmat;k++){
+	  spline(F.xmu,rfmu0[k],nmugs,rfsecmu0);
+    // Do the spline interpolation between klo and khi, given the coefficients a,b,h
+    rf3save[k] = splint(rfmu0[k], rfsecmu0, klo, khi, a, b, h);
 	  muold = mu;
 	  mu0old = mu0;
-	  RM[i][k] = RM[i][k] + 2*Bplus[k]*fac*rf3;
+	  RM[i][k] = RM[i][k] + 2*Bplus[k]*fac*rf3save[k];
 	}
       }//End else
     }//End i (pix)	
@@ -552,10 +564,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
   free(rfmu0);
   free(RM);
   //Vectos nmugs
-  free(rftemp);
   free(rfsecmu0);
-  free(slice);
-  free(slicep);
   //Vectos nmats
   free(rf3save);
   free(SvR);
