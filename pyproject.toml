@@ -48,6 +48,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "coverage>=7.16.1",
+    "py-spy>=0.4.2",
     "pytest>=9.1.1",
     "pytest-cov>=6.2.1",
     "pytest-regressions>=2.5.0",
