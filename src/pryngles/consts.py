@@ -574,10 +574,10 @@ SPANGLER_VEC_GROUPS={
 }
 
 #Custom DataFrame accessor providing ergonomic shorthand for vector groups.
-#Usage:  df.spangler.center_ecl  ->  (N,3) sub-DataFrame
-#        df.spangler.center_ecl.to_numpy()  ->  (N,3) ndarray
-@pd.api.extensions.register_dataframe_accessor("spangler")
-class SpanglerAccessor:
+#Usage:  df.vectors.center_ecl  ->  (N,3) sub-DataFrame
+#        df.vectors.center_ecl.to_numpy()  ->  (N,3) ndarray
+@pd.api.extensions.register_dataframe_accessor("vectors")
+class SpanglerVectorAccessor:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
     def __getattr__(self, name):
