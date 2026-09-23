@@ -1238,18 +1238,25 @@ class Spangler(PrynglesCommon):
         (e.g., rings). Used internally by intersection state updates.
         """
 
+        name_arr = self.data.name.to_numpy()
+        hidden_arr = self.data.hidden.to_numpy()
+        x_int_arr = self.data.x_int.to_numpy()
+        y_int_arr = self.data.y_int.to_numpy()
+        z_int_arr = self.data.z_int.to_numpy()
+        center_int_arr = self.data.vectors.center_int.to_numpy()
+
         # Convex hulls
         for name in misc.flatten([self.name]):
             self.qhulls[name] = []
-            cond_obj = self.data.name == name
+            cond_obj = name_arr == name
             center = list(self.data[cond_obj].vectors.center_int.iloc[0])
             zord = min(self.data[cond_obj].z_int)
 
             if (self.data[cond_obj].hidden).sum() == 0:
                 # Convex hull of whole objects
-                cond_hull = (cond_obj) & (~self.data[cond_obj].hidden)
+                cond_hull = (cond_obj) & (~hidden_arr)
                 verbose(VERB_SIMPLE, "Hull points (whole object):", sum(cond_hull))
-                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(np.column_stack([x_int_arr[cond_obj], y_int_arr[cond_obj]]))
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1267,16 +1274,16 @@ class Spangler(PrynglesCommon):
                 # Convex hull of objects with a hole (eg. rings)
 
                 # Plane of rings
-                cond_hidden = (cond_obj) & (self.data[cond_obj].hidden)
-                hidden = self.data[cond_hidden][["x_int", "y_int", "z_int"]].values
+                cond_hidden = (cond_obj) & (hidden_arr)
+                hidden = np.column_stack([x_int_arr[cond_hidden], y_int_arr[cond_hidden], z_int_arr[cond_hidden]])
                 nhidden = len(hidden)
                 p1, p2, p3 = hidden[0], hidden[int(nhidden / 3)], hidden[2 * int(nhidden / 3)]
                 plane = science.Plane(p1, p2, p3)
 
                 # Convex hull of hidden points (the hole)
-                cond_hull = (cond_obj) & (self.data[cond_obj].hidden)
+                cond_hull = (cond_obj) & (hidden_arr)
                 verbose(VERB_SIMPLE, "Hull points (hidden):", sum(cond_hull))
-                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(np.column_stack([x_int_arr[cond_hull], y_int_arr[cond_hull]]))
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1284,9 +1291,9 @@ class Spangler(PrynglesCommon):
                 ]
 
                 # Convex hull of no hidden points
-                cond_hull = (cond_obj) & (~self.data[cond_obj].hidden)
+                cond_hull = (cond_obj) & (~hidden_arr)
                 verbose(VERB_SIMPLE, "Hull points (visible ring):", sum(cond_hull))
-                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(np.column_stack([x_int_arr[cond_hull], y_int_arr[cond_hull]]))
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
