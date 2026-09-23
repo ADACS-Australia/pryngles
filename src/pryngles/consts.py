@@ -754,36 +754,9 @@ SPANGLER_LENGTHS = [
     "dsp",
 ]
 
-# States corresponging to a given point of view
-SPANGLER_EQUIV_COL = dict(obs="visible", int="intersect", luz="illuminated")
+# Spangler columns which correspond to areas
+SPANGLER_AREAS = ["asp", "asp_int", "asp_obs", "asp_luz"]
 
-# Columns to copy when calculating visibility and illumination
-SPANGLER_COL_COPY = ["center", "x", "y", "z", "ns", "rho", "az", "cosf", "n", "cos", "azim", "d", "z_cen", "asp"]
-SPANGLER_COL_LUZ = [column + "_luz" for column in SPANGLER_COL_COPY]
-SPANGLER_COL_OBS = [column + "_obs" for column in SPANGLER_COL_COPY]
-SPANGLER_COL_INT = [column + "_int" for column in SPANGLER_COL_COPY]
-
-# Spangler columns wich correspond to lengths
-SPANGLER_LENGTHS = [
-    "x_equ",
-    "y_equ",
-    "z_equ",
-    "x_ecl",
-    "y_ecl",
-    "z_ecl",
-    "x_obs",
-    "y_obs",
-    "z_obs",
-    "d_obs",
-    "x_luz",
-    "y_luz",
-    "z_luz",
-    "d_luz",
-    "r_equ",
-    "rho_obs",
-    "rho_luz",
-    "dsp",
-]
 # Spangler columns which correspond to vectores
 SPANGLER_VECTORS = [
     "center_ecl_x",
@@ -834,10 +807,10 @@ SPANGLER_VEC_GROUPS = {
 
 
 # Custom DataFrame accessor providing ergonomic shorthand for vector groups.
-# Usage:  df.spangler.center_ecl  ->  (N,3) sub-DataFrame
-#        df.spangler.center_ecl.to_numpy()  ->  (N,3) ndarray
-@pd.api.extensions.register_dataframe_accessor("spangler")
-class SpanglerAccessor:
+# Usage:  df.vectors.center_ecl  ->  (N,3) sub-DataFrame
+#        df.vectors.center_ecl.to_numpy()  ->  (N,3) ndarray
+@pd.api.extensions.register_dataframe_accessor("vectors")
+class SpanglerVectorAccessor:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
