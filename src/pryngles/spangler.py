@@ -513,7 +513,6 @@ class Spangler(PrynglesCommon):
             cross_ez_ns = np.cross([0, 0, 1], ns_ecl_masked)
             wy = np.divide(cross_ez_ns, np.linalg.norm(cross_ez_ns, axis=1)[:, np.newaxis])
             self.data.loc[index, SPANGLER_VEC_GROUPS["wy_ecl"]] = wy
-
             # wx_ecl: cross([wy, 0, 0], ns)  (vectorized)
             wx = np.cross(wy, ns_ecl_masked)
             self.data.loc[index, SPANGLER_VEC_GROUPS["wx_ecl"]] = wx
