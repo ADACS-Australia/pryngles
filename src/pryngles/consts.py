@@ -19,6 +19,7 @@
 
 from pryngles import *
 import numpy as np
+import pandas as pd
 from rebound import units
 import re
 
@@ -548,6 +549,45 @@ SPANGLER_VECTORS=[
     "n_obs_x","n_obs_y","n_obs_z",
     "n_luz_x","n_luz_y","n_luz_z",
 ]
+
+#Grouped names of the 3-vector columns (base name -> its three float components).
+#Provides a shorthand to refer to a whole vector by a single name, e.g.
+#   df[SPANGLER_VEC_GROUPS["center_ecl"]]  ->  (N,3) sub-DataFrame
+SPANGLER_VEC_GROUPS={
+    "center_equ":["center_equ_x","center_equ_y","center_equ_z"],
+    "center_ecl":["center_ecl_x","center_ecl_y","center_ecl_z"],
+    "ns_equ":["ns_equ_x","ns_equ_y","ns_equ_z"],
+    "ns_ecl":["ns_ecl_x","ns_ecl_y","ns_ecl_z"],
+    "wx_ecl":["wx_ecl_x","wx_ecl_y","wx_ecl_z"],
+    "wy_ecl":["wy_ecl_x","wy_ecl_y","wy_ecl_z"],
+    "center_int":["center_int_x","center_int_y","center_int_z"],
+    "ns_int":["ns_int_x","ns_int_y","ns_int_z"],
+    "n_int":["n_int_x","n_int_y","n_int_z"],
+    "n_int_ecl":["n_int_ecl_x","n_int_ecl_y","n_int_ecl_z"],
+    "center_obs":["center_obs_x","center_obs_y","center_obs_z"],
+    "ns_obs":["ns_obs_x","ns_obs_y","ns_obs_z"],
+    "n_obs":["n_obs_x","n_obs_y","n_obs_z"],
+    "center_luz":["center_luz_x","center_luz_y","center_luz_z"],
+    "ns_luz":["ns_luz_x","ns_luz_y","ns_luz_z"],
+    "n_luz":["n_luz_x","n_luz_y","n_luz_z"],
+    "n_equ":["n_equ_x","n_equ_y","n_equ_z"],
+}
+
+#Custom DataFrame accessor providing ergonomic shorthand for vector groups.
+#Usage:  df.spangler.center_ecl  ->  (N,3) sub-DataFrame
+#        df.spangler.center_ecl.to_numpy()  ->  (N,3) ndarray
+@pd.api.extensions.register_dataframe_accessor("spangler")
+class SpanglerAccessor:
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj
+    def __getattr__(self, name):
+        cols = SPANGLER_VEC_GROUPS.get(name)
+        if cols is None:
+            raise AttributeError(
+                f"'{name}' is not a known spangler vector group. "
+                f"Available groups: {sorted(SPANGLER_VEC_GROUPS)}"
+            )
+        return self._obj[cols]
 
 #Debugging purposes
 SPANGLER_DEBUG_FIELDS=["name","spangle_type","geometry",
