@@ -22,7 +22,7 @@ import pandas as pd
 import spiceypy as spy
 
 # Specialized plotting methods
-from pryngles import science
+from pryngles import misc, science
 from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     SAMPLER_GEOMETRY_CIRCLE,
@@ -47,7 +47,6 @@ from pryngles.consts import (
     SPANGLES_SEMITRANSPARENT,
     Consts,
 )
-from pryngles.misc import flatten
 from pryngles.plot import Plot
 from pryngles.sampler import Sampler
 
@@ -147,7 +146,7 @@ class Spangler(PrynglesCommon):
     """
 
     # --------------------------------------------------
-    # Bassic methods
+    # Basic methods
     # --------------------------------------------------
 
     def __init__(
@@ -158,10 +157,10 @@ class Spangler(PrynglesCommon):
         # Basic
         nspangles=1,
         name=None,
-        n_equ=SPANGLER_COLUMNS["n_equ"],
+        n_equ=None,  # defaults to n_equ_x/y/z
         alpha_equ=SPANGLER_COLUMNS["alpha_equ"],
-        center_equ=SPANGLER_COLUMNS["center_equ"],
-        center_ecl=SPANGLER_COLUMNS["center_ecl"],
+        center_equ=None,
+        center_ecl=None,
         # Optional
         w=SPANGLER_COLUMNS["w"],
         q0=SPANGLER_COLUMNS["q0"],
@@ -220,7 +219,20 @@ class Spangler(PrynglesCommon):
 
             # Update other parameters
             self._defaults.update(
-                dict(w=w, q0=q0, n_equ=n_equ, alpha_equ=alpha_equ, center_equ=center_equ, center_ecl=center_ecl)
+                dict(
+                    w=w,
+                    q0=q0,
+                    n_equ_x=n_equ[0] if n_equ is not None else SPANGLER_COLUMNS["n_equ_x"],
+                    n_equ_y=n_equ[1] if n_equ is not None else SPANGLER_COLUMNS["n_equ_y"],
+                    n_equ_z=n_equ[2] if n_equ is not None else SPANGLER_COLUMNS["n_equ_z"],
+                    alpha_equ=alpha_equ,
+                    center_equ_x=center_equ[0] if center_equ is not None else SPANGLER_COLUMNS["center_equ_x"],
+                    center_equ_y=center_equ[1] if center_equ is not None else SPANGLER_COLUMNS["center_equ_y"],
+                    center_equ_z=center_equ[2] if center_equ is not None else SPANGLER_COLUMNS["center_equ_z"],
+                    center_ecl_x=center_ecl[0] if center_ecl is not None else SPANGLER_COLUMNS["center_ecl_x"],
+                    center_ecl_y=center_ecl[1] if center_ecl is not None else SPANGLER_COLUMNS["center_ecl_y"],
+                    center_ecl_z=center_ecl[2] if center_ecl is not None else SPANGLER_COLUMNS["center_ecl_z"],
+                )
             )
 
             # Create Spangler dataframe
@@ -284,8 +296,7 @@ class Spangler(PrynglesCommon):
         self.scale = scale
         self.data[SPANGLER_LENGTHS] *= self.scale
         self.data[SPANGLER_AREAS] *= self.scale**2
-        for vector in SPANGLER_VECTORS:
-            self.data[vector] = [np.array(v) * scale for v in self.data[vector]]
+        self.data[SPANGLER_VECTORS] *= self.scale
 
     def _join_spanglers(self, spanglers):
         """
@@ -441,8 +452,8 @@ class Spangler(PrynglesCommon):
 
             # If the spangler has been poputaled update normals
             if self.sample:
-                self.data["ns_equ"] = pd.Series(
-                    list(self.sample.update_normals(self.data[["x_equ", "y_equ", "z_equ"]])), dtype=object
+                self.data[["ns_equ_x", "ns_equ_y", "ns_equ_z"]] = self.sample.update_normals(
+                    self.data[["x_equ", "y_equ", "z_equ"]]
                 )
 
         # Convert from equatorial to ecliptic
@@ -454,20 +465,20 @@ class Spangler(PrynglesCommon):
 
             # Transform positions: batch M @ (r + c_equ) + c_ecl
             r_equ = np.array(group[["x_equ", "y_equ", "z_equ"]])  # (G, 3)
-            c_equ = np.stack(group["center_equ"].values)  # (G, 3)
-            c_ecl = np.stack(group["center_ecl"].values)  # (G, 3)
+            c_equ = group[["center_equ_x", "center_equ_y", "center_equ_z"]].to_numpy()  # (G, 3)
+            c_ecl = group[["center_ecl_x", "center_ecl_y", "center_ecl_z"]].to_numpy()  # (G, 3)
             self.data.loc[g_indices, ["x_ecl", "y_ecl", "z_ecl"]] = (M_equ2ecl @ (r_equ + c_equ).T).T + c_ecl
 
             # #Update orientation of the spangle
-            ns_equ = np.stack(group["ns_equ"].values)  # (G, 3)
-            self.data.loc[g_indices, "ns_ecl"] = pd.Series(
-                ((M_equ2ecl @ ns_equ.T).T).tolist(), index=g_indices, dtype=object
-            )
+            ns_equ = group[["ns_equ_x", "ns_equ_y", "ns_equ_z"]].to_numpy()  # (G, 3)
+            self.data.loc[g_indices, ["ns_ecl_x", "ns_ecl_y", "ns_ecl_z"]] = (M_equ2ecl @ ns_equ.T).T
+
+        # Update matrix of the transformation from ecliptic to local (horizontal) reference frame of the spangle
 
         # Update matrix of the transformation from ecliptic to local (horizontal) reference frame of the spangle
 
         # Search all spangles pointing towards ez or -ez
-        ns_ecl = np.stack(self.data.ns_ecl.values)  # Shape: (N, 3)
+        ns_ecl = self.data[["ns_ecl_x", "ns_ecl_y", "ns_ecl_z"]].to_numpy()  # Shape: (N, 3)
         cond = pd.Series(np.abs(np.dot(ns_ecl, [0, 0, 1])) != 1.0, index=self.data.index)
         if cond.any():
             verbose(VERB_VERIFY, f"Setting local vectors based on ns: {sum(cond)}")
@@ -479,11 +490,11 @@ class Spangler(PrynglesCommon):
             # wy_ecl: unorm(cross(ez, ns))[0] (vectorized)
             cross_ez_ns = np.cross([0, 0, 1], ns_ecl_masked)
             wy = np.divide(cross_ez_ns, np.linalg.norm(cross_ez_ns, axis=1)[:, np.newaxis])
-            self.data.loc[index, "wy_ecl"] = pd.Series(wy.tolist(), index=index)
+            self.data.loc[index, ["wy_ecl_x", "wy_ecl_y", "wy_ecl_z"]] = wy
 
             # wx_ecl: cross([wy, 0, 0], ns)  (vectorized)
             wx = np.cross(wy, ns_ecl_masked)
-            self.data.loc[index, "wx_ecl"] = pd.Series(wx.tolist(), index=index, dtype=object)
+            self.data.loc[index, ["wx_ecl_x", "wx_ecl_y", "wx_ecl_z"]] = wx
 
             cond = ~cond
 
@@ -495,14 +506,19 @@ class Spangler(PrynglesCommon):
             verbose(VERB_VERIFY, f"Setting local matrix based on ex: {sum(cond)}")
 
             indices_cond = self.data[cond].index
-            self.data.loc[indices_cond, "wx_ecl"] = pd.Series(
-                [[1.0, 0.0, 0.0]] * len(indices_cond), index=indices_cond, dtype=object
+            self.data.loc[indices_cond, ["wx_ecl_x", "wx_ecl_y", "wx_ecl_z"]] = np.tile(
+                [1.0, 0.0, 0.0], (len(indices_cond), 1)
             )
 
             # wy_ecl: unorm(cross(ns_ecl, wx))[0] — vectorized
-            crosses = np.cross(np.stack(self.data.loc[indices_cond, "ns_ecl"].values), [1.0, 0.0, 0.0])  # (M, 3)
+            crosses = np.cross(
+                self.data.loc[indices_cond, ["ns_ecl_x", "ns_ecl_y", "ns_ecl_z"]].to_numpy(), [1.0, 0.0, 0.0]
+            )  # (M, 3)
             wy = np.divide(crosses, np.linalg.norm(crosses, axis=1)[:, np.newaxis])
-            self.data.loc[indices_cond, "wy_ecl"] = pd.Series(wy.tolist(), index=indices_cond)
+            self.data.loc[indices_cond, ["wy_ecl_x", "wy_ecl_y", "wy_ecl_z"]] = wy
+
+        # Update velocities
+        # Not implemented yet
 
         # Update velocities
         # Not implemented yet
@@ -624,7 +640,7 @@ class Spangler(PrynglesCommon):
         self.data["r_equ"] *= scale
 
         # Update normal vectors
-        self.data["ns_equ"] = pd.Series(list(self.sample.ns), dtype=object)
+        self.data[["ns_equ_x", "ns_equ_y", "ns_equ_z"]] = self.sample.ns
 
         # Hide border points in case of ring
         if shape == "ring":
@@ -1043,10 +1059,12 @@ class Spangler(PrynglesCommon):
 
         for group_name, group in groups:
             M_equ2ecl = self.M_equ2ecl[group_name]
-            c_ecl = np.array(group["center_ecl"].iloc[0])
-            c_equ = np.array(group["center_equ"].iloc[0])
+            c_ecl = group[["center_ecl_x", "center_ecl_y", "center_ecl_z"]].iloc[0].to_numpy()
+            c_equ = group[["center_equ_x", "center_equ_y", "center_equ_z"]].iloc[0].to_numpy()
             c_int = np.matmul(self.M_ecl2int, c_ecl + np.matmul(M_equ2ecl, c_equ) - center)
-            self.data.loc[group.index, "center_int"] = pd.Series([c_int] * len(group), dtype=object, index=group.index)
+            self.data.loc[group.index, ["center_int_x", "center_int_y", "center_int_z"]] = np.tile(
+                c_int, (len(group), 1)
+            )
 
             # #Pseudo-cylindrical coordinates in the observer system
             r_int = (self.data.loc[group.index, ["x_int", "y_int", "z_int"]]).to_numpy()
@@ -1062,29 +1080,29 @@ class Spangler(PrynglesCommon):
         if self.infinite:
             self.data.loc[cond, "z_cen_int"] = -np.inf
         else:
-            z_cen_int = np.stack(self.data.loc[cond, "center_int"])[:, 2]
+            z_cen_int = self.data.loc[cond, "center_int_z"].to_numpy()
             self.data.loc[cond, "z_cen_int"] = z_cen_int
 
         # Compute distance to intersection of each spangle and the
         if self.infinite:
             # Distance to all points is assumed infinite
-            self.data.loc[cond, "n_int"] = pd.Series([[0, 0, 1]] * sum(cond), dtype=object)
+            self.data.loc[cond, ["n_int_x", "n_int_y", "n_int_z"]] = np.tile([0, 0, 1], (sum(cond), 1))
             self.data.loc[cond, "d_int"] = np.inf
-            self.data.loc[cond, "n_int_ecl"] = pd.Series([list(n_int)] * sum(cond), dtype=object)
+            self.data.loc[cond, ["n_int_ecl_x", "n_int_ecl_y", "n_int_ecl_z"]] = np.tile(n_int, (sum(cond), 1))
         else:
             # Distance to origin of coordinates in the int system where the center is located
             r_int = self.data.loc[cond, ["x_int", "y_int", "z_int"]].to_numpy()
             d_int_arr = np.linalg.norm(-r_int, axis=1)
             n_int_arr = -r_int / d_int_arr[:, None]
-            self.data.loc[cond, "n_int"] = pd.Series(n_int_arr.tolist(), dtype=object, index=self.data[cond].index)
+            self.data.loc[cond, ["n_int_x", "n_int_y", "n_int_z"]] = n_int_arr
             self.data.loc[cond, "d_int"] = d_int_arr
             n_int_ecl = (M_int2ecl @ n_int_arr.T).T
-            self.data.loc[cond, "n_int_ecl"] = pd.Series(n_int_ecl.tolist(), dtype=object, index=self.data[cond].index)
+            self.data.loc[cond, ["n_int_ecl_x", "n_int_ecl_y", "n_int_ecl_z"]] = n_int_ecl
 
         # Azimuth of the direction of the intersection vector in the tangent plane of the spangle
-        wy_ecl = np.stack(self.data.loc[cond, "wy_ecl"])
-        wx_ecl = np.stack(self.data.loc[cond, "wx_ecl"])
-        n_int_ecl = np.stack(self.data.loc[cond, "n_int_ecl"])
+        wy_ecl = self.data.loc[cond, ["wy_ecl_x", "wy_ecl_y", "wy_ecl_z"]].to_numpy()
+        wx_ecl = self.data.loc[cond, ["wx_ecl_x", "wx_ecl_y", "wx_ecl_z"]].to_numpy()
+        n_int_ecl = self.data.loc[cond, ["n_int_ecl_x", "n_int_ecl_y", "n_int_ecl_z"]].to_numpy()
         dot_wy_n = np.sum(wy_ecl * n_int_ecl, axis=1)
         dot_wx_n = np.sum(wx_ecl * n_int_ecl, axis=1)
         if "azim_int" not in self.data.columns:
@@ -1094,9 +1112,9 @@ class Spangler(PrynglesCommon):
         self.data.loc[cond, "azim_int"] = np.arctan2(dot_wy_n, dot_wx_n)
 
         # Update spangles orientations
-        ns_ecl = np.stack(self.data.loc[cond, "ns_ecl"])
+        ns_ecl = self.data.loc[cond, ["ns_ecl_x", "ns_ecl_y", "ns_ecl_z"]].to_numpy()
         ns_int = (self.M_ecl2int @ ns_ecl.T).T
-        self.data.loc[cond, "ns_int"] = pd.Series(ns_int.tolist(), dtype=object, index=self.data[cond].index)
+        self.data.loc[cond, ["ns_int_x", "ns_int_y", "ns_int_z"]] = ns_int
 
         # Cosine of the direction of the intersection vector and the normal to the spangle
         # Store cosines as float: pandas >=2 raises LossySetitemError when assigning
@@ -1112,7 +1130,7 @@ class Spangler(PrynglesCommon):
             self.data.loc[cond, "cos_int"] = cos_int
         else:
             # In this case n_int is a per-spangle variable
-            n_int_cond = np.stack(self.data.loc[cond, "n_int"])
+            n_int_cond = self.data.loc[cond, ["n_int_x", "n_int_y", "n_int_z"]].to_numpy()
             cos_int = np.sum(ns_int * n_int_cond, axis=1)
             self.data.loc[cond, "cos_int"] = cos_int
 
@@ -1199,10 +1217,10 @@ class Spangler(PrynglesCommon):
         """
 
         # Convex hulls
-        for name in flatten([self.name]):
+        for name in misc.flatten([self.name]):
             self.qhulls[name] = []
             cond_obj = self.data.name == name
-            center = list(self.data[cond_obj].center_int.iloc[0])
+            center = list(self.data[cond_obj][["center_int_x", "center_int_y", "center_int_z"]].iloc[0])
             zord = min(self.data[cond_obj].z_int)
 
             if (self.data[cond_obj].hidden).sum() == 0:
@@ -1289,20 +1307,13 @@ class Spangler(PrynglesCommon):
         self.center_obs = center.copy() if center else center
 
         self.data.loc[cond, "visible"] = False
-        # self.data.loc[cond,SPANGLER_COL_OBS]=self.data.loc[cond,SPANGLER_COL_INT].values
-        # """
-        # Pandas is strict about assigning float arrays into int columns.
-        # These observer-frame columns can contain continuous floats and/or object-like vectors,
-        # so we coerce them to object dtype before bulk assignment.
+        # Observer-frame coordinates are continuous, so keep them as float dtype.
         for col in SPANGLER_COL_OBS:
             if col not in self.data.columns:
-                self.data[col] = pd.Series([None] * len(self.data), dtype=object, index=self.data.index)
-            elif self.data[col].dtype != object:
-                self.data[col] = self.data[col].astype(object)
-
-        self.data.loc[cond, SPANGLER_COL_OBS] = pd.DataFrame(
-            self.data.loc[cond, SPANGLER_COL_INT].values, columns=SPANGLER_COL_OBS, index=self.data[cond].index
-        )
+                self.data[col] = np.nan
+            if not pd.api.types.is_float_dtype(self.data[col].dtype):
+                self.data[col] = self.data[col].astype(float)
+        self.data.loc[cond, SPANGLER_COL_OBS] = self.data.loc[cond, SPANGLER_COL_INT].to_numpy()
 
         # Beta angle computation (Reference Plane rotation angle)
         # Appendix D arXiv:2404.16606v1
@@ -1310,7 +1321,7 @@ class Spangler(PrynglesCommon):
 
         for _, group in groups:
             # Normal vector of each spangle
-            ns_obs = np.stack(group["ns_obs"].values)
+            ns_obs = group[["ns_obs_x", "ns_obs_y", "ns_obs_z"]].to_numpy()
 
             if group["spangle_type"].iloc[0] == 4:  # Ring Spangle
                 # Cosine of the angle between normal vector and observer vector
@@ -1404,16 +1415,13 @@ class Spangler(PrynglesCommon):
         self.data.loc[cond, "transmit"] = False
 
         # Conditions
-        # self.data.loc[cond,SPANGLER_COL_LUZ]=deepcopy(self.data.loc[cond,SPANGLER_COL_INT].values)
-        # Same rationale as in set_observer: allow float/object assignment safely.
+        # Light-source-frame coordinates are continuous, so keep them as float dtype.
         for col in SPANGLER_COL_LUZ:
             if col not in self.data.columns:
-                self.data[col] = pd.Series([None] * len(self.data), dtype=object, index=self.data.index)
-            elif self.data[col].dtype != object:
-                self.data[col] = self.data[col].astype(object)
-        self.data.loc[cond, SPANGLER_COL_LUZ] = pd.DataFrame(
-            self.data.loc[cond, SPANGLER_COL_INT].values, columns=SPANGLER_COL_LUZ, index=self.data[cond].index
-        )
+                self.data[col] = np.nan
+            if not pd.api.types.is_float_dtype(self.data[col].dtype):
+                self.data[col] = self.data[col].astype(float)
+        self.data.loc[cond, SPANGLER_COL_LUZ] = self.data.loc[cond, SPANGLER_COL_INT].to_numpy()
 
         # Set relative azimuth [-pi,pi]
         azim_obs_luz = (self.data.loc[cond, "azim_obs"] - self.data.loc[cond, "azim_luz"]).to_numpy(dtype=float)
@@ -1886,7 +1894,7 @@ class Spangler(PrynglesCommon):
             raise AssertionError("You must set an intersection vantage point.")
 
         # List of objects in spangler
-        names = list(flatten([self.name]))
+        names = list(misc.flatten([self.name]))
 
         if len(included):
             excluded = [n for n in names if n not in included]

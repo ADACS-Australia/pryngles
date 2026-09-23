@@ -312,40 +312,62 @@ SPANGLER_COLUMNS = OrderedDict(
         # Lengh-scale
         "scale": 1,  # The length scale of the body, eg. for a ring this is the outer radius
         # Body parameters
-        "n_equ": [0, 0, 1],  # Direction of the equator of the body with respect
+        "n_equ_x": 0.0,
+        "n_equ_y": 0.0,
+        "n_equ_z": 1.0,  # Direction of the equator of the body with respect
         "alpha_equ": 0,  # Zero meridian of equatorial system
         "w": 0,  # Rotational angular velocity [rad/ut]
         "q0": 0,  # Initial time [rad], Longitude (azimutal angle) are calculated as: q = q0 + w (t - t0)
         # Coordinates of the spangle (cartesian and spherical) in the body-centric system
-        "center_equ": [0, 0, 0],  # Center of the body with respect to barycenter
+        "center_equ_x": 0.0,
+        "center_equ_y": 0.0,
+        "center_equ_z": 0.0,  # Center of the body with respect to barycenter
         "x_equ": 1,
         "y_equ": 0,
         "z_equ": 0,  # Cartesian coordinates
         "r_equ": 1,
         "q_equ": 0,
         "f_equ": 0,  # Spherical coordinates: q: longitude, f: latitude
-        "ns_equ": [0, 0, 1],  # Unitary vector normal to the spangle
+        "ns_equ_x": 0.0,
+        "ns_equ_y": 0.0,
+        "ns_equ_z": 1.0,  # Unitary vector normal to the spangle
         # Coordinates of the spangle (cartesian and spherical) in the ecliptic system
-        "center_ecl": [0, 0, 0],  # Center of the body with respect to barycenter
+        "center_ecl_x": 0.0,
+        "center_ecl_y": 0.0,
+        "center_ecl_z": 0.0,  # Center of the body with respect to barycenter
         "x_ecl": 1,
         "y_ecl": 0,
         "z_ecl": 0,  # Cartesian coordinates of the spangle
-        "wx_ecl": [1, 0, 0],  # y-axis on the surface of the tangent plane to the spangle: wx = (wy x ns)
-        "wy_ecl": [0, 1, 0],  # y-axis on the surface of the tangent plane to the spangle: wy = (ns x ez)
-        "ns_ecl": [0, 0, 1],  # Unitary vector normal to the spangle, calculated in the class
+        "wx_ecl_x": 1.0,
+        "wx_ecl_y": 0.0,
+        "wx_ecl_z": 0.0,  # y-axis on the surface of the tangent plane to the spangle: wx = (wy x ns)
+        "wy_ecl_x": 0.0,
+        "wy_ecl_y": 1.0,
+        "wy_ecl_z": 0.0,  # y-axis on the surface of the tangent plane to the spangle: wy = (ns x ez)
+        "ns_ecl_x": 0.0,
+        "ns_ecl_y": 0.0,
+        "ns_ecl_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
         # Coordinates of the spangle (cartesian and spherical) in the intersection system
-        "center_int": [0, 0, 0],  # Center of the body
+        "center_int_x": 0.0,
+        "center_int_y": 0.0,
+        "center_int_z": 0.0,  # Center of the body
         "x_int": 1,
         "y_int": 0,
         "z_int": 0,  # Cartesian coordinates
-        "ns_int": [0, 0, 1],  # Unitary vector normal to the spangle, calculated in the class
+        "ns_int_x": 0.0,
+        "ns_int_y": 0.0,
+        "ns_int_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
         "rho_int": 1,
         "az_int": 0,
         "cosf_int": 0,  # Pseudo cylindrical coordinates of the spangle: rho, phi, cos(theta)
         "cos_int": 1,  # Angle between normal to spangle and direction of intersection
         "azim_int": 0,  # Azimuth of the direction of intersection
-        "n_int": [0, 0, -np.inf],  # Vector from the intersection origin to each spangle
-        "n_int_ecl": [0, 0, -1],  # Vector from the intersection origin to each spangle in the ecliptic syste,
+        "n_int_x": 0.0,
+        "n_int_y": 0.0,
+        "n_int_z": -np.inf,  # Vector from the intersection origin to each spangle
+        "n_int_ecl_x": 0.0,
+        "n_int_ecl_y": 0.0,
+        "n_int_ecl_z": -1.0,  # Vector from the intersection origin to each spangle in the ecliptic syste,
         "d_int": -np.inf,  # Distance of the Spangle to intersection
         "asp_int": 1.0,  # Effective area of the spangle with respect to intersection perspective
         "z_cen_int": 0.0,  # z-coordinate of the center of the body to which the spangle belows
@@ -353,17 +375,23 @@ SPANGLER_COLUMNS = OrderedDict(
         "transit_over_int": "",  # Which body is intersected by the Spangle (is transiting over)
         "string_int": "",  # Temporal string
         # Coordinates of the spangle (cartesian and spherical) in the observer system
-        "center_obs": [0, 0, 0],  # Center of the body
+        "center_obs_x": 0.0,
+        "center_obs_y": 0.0,
+        "center_obs_z": 0.0,  # Center of the body
         "x_obs": 1,
         "y_obs": 0,
         "z_obs": 0,  # Cartesian coordinates of the spangle
-        "ns_obs": [0, 0, 1],  # Unitary vector normal to the spangle, calculated in the class
+        "ns_obs_x": 0.0,
+        "ns_obs_y": 0.0,
+        "ns_obs_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
         "rho_obs": 1,
         "az_obs": 0,
         "cosf_obs": 0,  # Cylindrical coordinates of the spangle: rho, phi, cos(theta)
         "cos_obs": 1,  # Angle between normal to spangle and direction of observer
         "azim_obs": 0,  # Azimuth of the direction of the observer
-        "n_obs": [0, 0, -np.inf],  # Vector from the observer origin to each spangle
+        "n_obs_x": 0.0,
+        "n_obs_y": 0.0,
+        "n_obs_z": -np.inf,  # Vector from the observer origin to each spangle
         "d_obs": -np.inf,  # Distance of the Spangle to light-source
         "asp_obs": 1.0,  # Effective area of the spangle with respect to observer perspective
         "z_cen_obs": 0.0,  # z-coordinate of the center of the body to which the spangle belows
@@ -371,17 +399,23 @@ SPANGLER_COLUMNS = OrderedDict(
         "transit_over_obs": "",  # Which body is intersected by the Spangle (is transiting over)
         "beta_loc": 0,  # Beta angle rotates the local scattering plane to the planetary scattering plane
         # Coordinates of the spangle (cartesian and spherical) in the light-source system
-        "center_luz": [0, 0, 0],  # Center of the body
+        "center_luz_x": 0.0,
+        "center_luz_y": 0.0,
+        "center_luz_z": 0.0,  # Center of the body
         "x_luz": 1,
         "y_luz": 0,
         "z_luz": 0,  # Calculated in the class
-        "ns_luz": [0, 0, 1],  # Unitary vector normal to the spangle, calculated in the class
+        "ns_luz_x": 0.0,
+        "ns_luz_y": 0.0,
+        "ns_luz_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
         "rho_luz": 1,
         "az_luz": 0,
         "cosf_luz": 0,  # Cylindrical coordinates of the spangle: rho, phi, cos(theta)
         "cos_luz": 1,  # Angle between normal to spangle and direction of light-source
         "azim_luz": 0,  # Azimuth of the direction of the light-source
-        "n_luz": [0, 0, -np.inf],  # Vector from the light-source origin to each spangle
+        "n_luz_x": 0.0,
+        "n_luz_y": 0.0,
+        "n_luz_z": -np.inf,  # Vector from the light-source origin to each spangle
         "d_luz": -np.inf,  # Distance of the Spangle to light-source
         "asp_luz": 1,  # Effective area of the spangle with respect to light-source perspective
         "z_cen_luz": 0.0,  # z-coordinate of the center of the body to which the spangle belows
@@ -462,10 +496,14 @@ SPANGLER_KEY_ORDERING = [
     "x_ecl",
     "y_ecl",
     "z_ecl",
-    "ns_ecl",
+    "ns_ecl_x",
+    "ns_ecl_y",
+    "ns_ecl_z",
     # Orientation
     "azim_obs",
-    "n_obs",
+    "n_obs_x",
+    "n_obs_y",
+    "n_obs_z",
     "d_obs",
     "asp_obs",
     "cos_obs",
@@ -473,7 +511,9 @@ SPANGLER_KEY_ORDERING = [
     "transit_over_obs",
     "beta_loc",
     "azim_luz",
-    "n_luz",
+    "n_luz_x",
+    "n_luz_y",
+    "n_luz_z",
     "d_luz",
     "asp_luz",
     "cos_luz",
@@ -516,53 +556,81 @@ SPANGLER_KEY_ORDERING = [
     "scale",
     # Internal attributes
     "geometry",
-    "n_equ",
+    "n_equ_x",
+    "n_equ_y",
+    "n_equ_z",
     "alpha_equ",
     "w",
     "q0",
-    "center_equ",
+    "center_equ_x",
+    "center_equ_y",
+    "center_equ_z",
     "x_equ",
     "y_equ",
     "z_equ",
     "r_equ",
     "q_equ",
     "f_equ",
-    "ns_equ",
-    "center_ecl",
-    "wx_ecl",
-    "wy_ecl",
-    "center_int",
+    "ns_equ_x",
+    "ns_equ_y",
+    "ns_equ_z",
+    "center_ecl_x",
+    "center_ecl_y",
+    "center_ecl_z",
+    "wx_ecl_x",
+    "wx_ecl_y",
+    "wx_ecl_z",
+    "wy_ecl_x",
+    "wy_ecl_y",
+    "wy_ecl_z",
+    "center_int_x",
+    "center_int_y",
+    "center_int_z",
     "x_int",
     "y_int",
     "z_int",
-    "ns_int",
+    "ns_int_x",
+    "ns_int_y",
+    "ns_int_z",
     "rho_int",
     "az_int",
     "cosf_int",
     "cos_int",
     "azim_int",
-    "n_int",
-    "n_int_ecl",
+    "n_int_x",
+    "n_int_y",
+    "n_int_z",
+    "n_int_ecl_x",
+    "n_int_ecl_y",
+    "n_int_ecl_z",
     "d_int",
     "asp_int",
     "z_cen_int",
     "hidden_by_int",
     "transit_over_int",
     "string_int",
-    "center_obs",
+    "center_obs_x",
+    "center_obs_y",
+    "center_obs_z",
     "x_obs",
     "y_obs",
     "z_obs",
-    "ns_obs",
+    "ns_obs_x",
+    "ns_obs_y",
+    "ns_obs_z",
     "rho_obs",
     "az_obs",
     "cosf_obs",
     "z_cen_obs",
-    "center_luz",
+    "center_luz_x",
+    "center_luz_y",
+    "center_luz_z",
     "x_luz",
     "y_luz",
     "z_luz",
-    "ns_luz",
+    "ns_luz_x",
+    "ns_luz_y",
+    "ns_luz_z",
     "rho_luz",
     "az_luz",
     "cosf_luz",
@@ -589,17 +657,23 @@ SPANGLER_KEY_SUMMARY = [
     "x_ecl",
     "y_ecl",
     "z_ecl",
-    "ns_ecl",
+    "ns_ecl_x",
+    "ns_ecl_y",
+    "ns_ecl_z",
     # Orientation
     "azim_obs",
-    "n_obs",
+    "n_obs_x",
+    "n_obs_y",
+    "n_obs_z",
     "d_obs",
     "asp_obs",
     "cos_obs",
     "hidden_by_obs",
     "transit_by_obs",
     "azim_luz",
-    "n_luz",
+    "n_luz_x",
+    "n_luz_y",
+    "n_luz_z",
     "d_luz",
     "asp_luz",
     "cos_luz",
@@ -625,6 +699,58 @@ SPANGLER_KEY_SUMMARY = [
     "transit",
     "occult",
     "rho_transit",
+]
+
+# States corresponging to a given point of view
+SPANGLER_EQUIV_COL = dict(obs="visible", int="intersect", luz="illuminated")
+
+# Columns to copy when calculating visibility and illumination
+SPANGLER_COL_COPY = [
+    "center_{}_x",
+    "center_{}_y",
+    "center_{}_z",
+    "x_{}",
+    "y_{}",
+    "z_{}",
+    "ns_{}_x",
+    "ns_{}_y",
+    "ns_{}_z",
+    "rho_{}",
+    "az_{}",
+    "cosf_{}",
+    "n_{}_x",
+    "n_{}_y",
+    "n_{}_z",
+    "cos_{}",
+    "azim_{}",
+    "d_{}",
+    "z_cen_{}",
+    "asp_{}",
+]
+SPANGLER_COL_LUZ = [col.format("luz") for col in SPANGLER_COL_COPY]
+SPANGLER_COL_OBS = [col.format("obs") for col in SPANGLER_COL_COPY]
+SPANGLER_COL_INT = [col.format("int") for col in SPANGLER_COL_COPY]
+
+# Spangler columns wich correspond to lengths
+SPANGLER_LENGTHS = [
+    "x_equ",
+    "y_equ",
+    "z_equ",
+    "x_ecl",
+    "y_ecl",
+    "z_ecl",
+    "x_obs",
+    "y_obs",
+    "z_obs",
+    "d_obs",
+    "x_luz",
+    "y_luz",
+    "z_luz",
+    "d_luz",
+    "r_equ",
+    "rho_obs",
+    "rho_luz",
+    "dsp",
 ]
 
 # States corresponging to a given point of view
@@ -657,18 +783,29 @@ SPANGLER_LENGTHS = [
     "rho_luz",
     "dsp",
 ]
-
-# Spangler columns which correspond to areas
-SPANGLER_AREAS = ["asp", "asp_int", "asp_obs", "asp_luz"]
 # Spangler columns which correspond to vectores
 SPANGLER_VECTORS = [
-    "center_ecl",
-    "center_equ",
-    "center_obs",
-    "center_int",
-    "n_int",
-    "n_obs",
-    "n_luz",
+    "center_ecl_x",
+    "center_ecl_y",
+    "center_ecl_z",
+    "center_equ_x",
+    "center_equ_y",
+    "center_equ_z",
+    "center_obs_x",
+    "center_obs_y",
+    "center_obs_z",
+    "center_int_x",
+    "center_int_y",
+    "center_int_z",
+    "n_int_x",
+    "n_int_y",
+    "n_int_z",
+    "n_obs_x",
+    "n_obs_y",
+    "n_obs_z",
+    "n_luz_x",
+    "n_luz_y",
+    "n_luz_z",
 ]
 
 # Debugging purposes
@@ -680,19 +817,25 @@ SPANGLER_DEBUG_FIELDS = (
         "x_obs",
         "y_obs",
         "z_obs",
-        "n_obs",
+        "n_obs_x",
+        "n_obs_y",
+        "n_obs_z",
         "d_obs",
         "cos_obs",
         "x_luz",
         "y_luz",
         "z_luz",
-        "n_luz",
+        "n_luz_x",
+        "n_luz_y",
+        "n_luz_z",
         "d_luz",
         "cos_luz",
         "x_int",
         "y_int",
         "z_int",
-        "n_int",
+        "n_int_x",
+        "n_int_y",
+        "n_int_z",
         "d_int",
         "cos_int",
     ]
