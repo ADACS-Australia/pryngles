@@ -1931,17 +1931,25 @@ class Spangler(PrynglesCommon):
 
         # Objects included when performing intersection calculation
         cond_included = self.data.name.apply(lambda x: x not in excluded)
+
         if cond_included.sum() == 0:
             raise AssertionError("You have excluded all objects when calculating intersetions.")
         else:
             verbose(VERB_SIMPLE, f"Points included in calculation: {cond_included.sum()}")
 
+        name_arr = self.data.name.to_numpy()
+        hidden_arr = self.data.hidden.to_numpy()
+        cos_int_arr = self.data.cos_int.to_numpy()
+        x_int_arr = self.data.x_int.to_numpy()
+        y_int_arr = self.data.y_int.to_numpy()
+        z_int_arr = self.data.z_int.to_numpy()
+        z_cen_int_arr = self.data.z_cen_int.to_numpy()
+        scale_arr = self.data.scale.to_numpy()
+        cond_included_arr = np.array(cond_included, dtype=bool)
+        semitrans_arr = self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)
+
         # Under the current circumstances all this spangles are intersecting
-        cond = (
-            (~self.data.hidden)
-            & ((self.data.cos_int > 0) | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)))
-            & (cond_included)
-        )
+        cond = (~hidden_arr) & ((cos_int_arr > 0) | (semitrans_arr)) & (cond_included_arr)
 
         self.data.loc[cond, "intersect"] = True
         self.data.hidden_by_int = ""
@@ -1955,13 +1963,11 @@ class Spangler(PrynglesCommon):
                 continue
 
             # Points in present body
-            cond = self.data.name == name
-            self.data[cond].geometry.iloc[0]
-            scale = self.data[cond].scale.iloc[0]
+            cond = name_arr == name
+            scale = scale_arr[cond][0]
 
             # If this body is not in the field-of-view, avoid computation
-            z_cen_int = self.data[cond].z_cen_int.iloc[0]
-            scale = self.data[cond].scale.iloc[0]
+            z_cen_int = z_cen_int_arr[cond][0]
             if (z_cen_int + scale) >= 0:
                 continue
 
@@ -1986,10 +1992,10 @@ class Spangler(PrynglesCommon):
                 verbose(VERB_SIMPLE, f"Hull {i + 1} for '{name}' of type '{htype}'")
 
                 # Evaluate conditions
-                inhull = np.asarray(science.points_in_hull(self.data[["x_int", "y_int"]], qhull), dtype=bool)
-                inhull = inhull & np.asarray((~cond) & (cond_included), dtype=bool)
-                below = np.array([False] * self.nspangles)
-                above = np.array([False] * self.nspangles)
+                inhull = np.asarray(science.points_in_hull(np.column_stack([x_int_arr, y_int_arr]), qhull), dtype=bool)
+                inhull = inhull & (~cond) & (cond_included)
+                below = np.zeros(self.nspangles, dtype=bool)
+                above = np.zeros(self.nspangles, dtype=bool)
 
                 if htype == "hidden":
                     # Holes
@@ -2007,28 +2013,25 @@ class Spangler(PrynglesCommon):
                     ahull += vhull
 
                     # Spangles to evaluate
-                    cond_vis = (self.data.cos_int > 0) | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT))
-                    cond_int = (~self.data.hidden) & (self.data.name != name) & (cond_vis)
+                    cond_vis = (cos_int_arr > 0) | (semitrans_arr)
+                    cond_int = (~hidden_arr) & (name_arr != name) & (cond_vis)
+                    cond_int_arr = np.asarray(cond_int, dtype=bool)
+
+                    not_in_hole = np.asarray(inhull_not_in_hole, dtype=bool)
 
                     if htype == "cen":
-                        not_in_hole = np.asarray(inhull_not_in_hole, dtype=bool)
-                        cond_int_arr = np.asarray(cond_int, dtype=bool)
-                        z_int = self.data["z_int"].to_numpy(dtype=float)
-                        below = not_in_hole & inhull & cond_int_arr & (z_int <= zcen)
-                        above = not_in_hole & inhull & cond_int_arr & (z_int > zcen)
+                        below = not_in_hole & inhull & cond_int_arr & (z_int_arr <= zcen)
+                        above = not_in_hole & inhull & cond_int_arr & (z_int_arr > zcen)
 
                     elif htype == "plane":
                         # Not in hole, inhull, not hidden, not in object and intersect
-                        cond_full = (
-                            np.asarray(inhull_not_in_hole, dtype=bool) & inhull & np.asarray(cond_int, dtype=bool)
-                        )
+                        cond_full = not_in_hole & inhull & cond_int_arr
                         verbose(VERB_SIMPLE, "Fulfilling all conditions:", sum(cond_full))
 
                         plane = hull["plane"]
-                        below[cond_full] = [
-                            plane.is_below(r, [0, 0, 1])
-                            for r in self.data[cond_full][["x_int", "y_int", "z_int"]].values
-                        ]
+                        below[cond_full] = plane.is_below(
+                            np.asarray([x_int_arr[cond_full], y_int_arr[cond_full], z_int_arr[cond_full]]), [0, 0, 1]
+                        )
                         above[cond_full] = ~below[cond_full]
                     else:
                         raise ValueError("Type of hull '{htype}' not recognized")

@@ -640,17 +640,21 @@ class Plane(PrynglesCommon):
 
         Parameters
         ------------
-        p : `list`
-            Cartesian coordinates of the point.
+        p : `list` or `np.ndarray`
+            Cartesian coordinates of the point. May be a single point
+            (length-3) or an array of point coordinates of shape (3, N).
 
         Returns
         ----------
         :
-            v : `list`:
-                Cartesian coordinates of projection point.
+            v : `list` or `np.ndarray`
+                Cartesian coordinates of projection point. A length-3 list
+                for a single point, or an (3, N) array for an (3, N)
+                input.
 
-            d : `float`
-                Distance from evaluated point to its projection
+            d : `float` or `np.ndarray`
+                Distance from evaluated point to its projection. A scalar
+                for a single point, or an (N,) array for an (3, N) input.
 
         Examples
         -----------
@@ -698,11 +702,19 @@ class Plane(PrynglesCommon):
 
         Parameters
         --------------
-        p : `list`
-            Cartesian coordinates of the point.
+        p : `list` or `np.ndarray`
+            Cartesian coordinates of the point. May be a single point
+            (length-3) or an array of point coordinates of shape (3, N).
 
-        vidr : `list`
+        vdir : `list`
             Vector direction
+
+        Returns
+        ----------
+        `bool` or `np.ndarray` of bool
+            ``True`` where the point is above the plane with respect to
+            ``vdir``. Returns a scalar for a single point, or an (N,)
+            boolean array for a (3, N) input.
 
         Examples
         ---------
@@ -714,10 +726,35 @@ class Plane(PrynglesCommon):
         v, d = self.get_projection(p)
         # Sign of (v-p).vdir
         cdir = (v[0] - p[0]) * vdir[0] + (v[1] - p[1]) * vdir[1] + (v[2] - p[2]) * vdir[2]
-        return cdir <= 0
+        return bool(cdir <= 0) if np.ndim(cdir) == 0 else cdir <= 0
 
     def is_below(self, p, vdir):
-        return not self.is_above(p, vdir)
+        """Check if a point is below a plane with respect to a given direction.
+
+        Parameters
+        --------------
+        p : `list` or `np.ndarray`
+            Cartesian coordinates of the point. May be a single point
+            (length-3) or an array of point coordinates of shape (3, N).
+
+        vidr : `list`
+            Vector direction
+
+        Returns
+        ----------
+        `bool` or `np.ndarray` of bool
+            ``True`` where the point is below the plane with respect to
+            ``vdir``. Returns a scalar for a single point, or an (N,)
+            boolean array for a (3, N) input.
+
+        Notes
+        -----
+        This method is vectorized: passing a (3, N) array of points
+        returns an (N,) boolean array, equivalent to
+        ``[plane.is_below(p, vdir) for p in points]``.
+        """
+        is_above = self.is_above(p, vdir)
+        return not is_above if np.ndim(is_above) == 0 else ~is_above
 
     def plot_plane(self, ax=None, p=None, **args):
 
