@@ -557,7 +557,7 @@ def points_in_hull(p, hull, tol=1e-12):
         :align: center
         :width: 600px
     """
-    return np.all(hull.equations[:, :-1] @ p.T + np.repeat(hull.equations[:, -1][None, :], len(p), axis=0).T <= tol, 0)
+    return np.all(hull.equations[:, :-1] @ p.T + hull.equations[:, -1][:, None] <= tol, 0)
 
 
 # --------------------------------------------------
