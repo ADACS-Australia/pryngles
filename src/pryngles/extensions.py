@@ -93,15 +93,13 @@ class StokesScatterer(object):
         self.xmu,self.rfou,self.rtra=xmu,rfou,rtra
 
     def calculate_stokes(self,phi,beta,theta0,theta,apix,qreflection=1):
-        npix=len(phi)
-        stokes = reflection(self.nmat, self.nmugs, self.nfou, # integers
+        return reflection(self.nmat, self.nmugs, self.nfou, # integers
                             self.rfou, self.rtra,             # 3D arrays
                             self.xmu,                         # 1D array
-                            qreflection, npix,                # integers
+                            qreflection,                      # integers
                             phi, beta, theta0, theta, apix    # 1D arrays
                             )
-        return stokes
-    
+
 
 """
 The following routines implement the spline interpolation routine from Press et al. (1986, p.88).
@@ -191,15 +189,17 @@ def splint(ya, y2a, klo, khi, a, b, h):
 @njit(float64[:,:](
         int64, int64, int64,
         float64[:,:,:], float64[:,:,:], float64[:],
-        int64, int64,
+        int64,
         types.Array(dtype=types.float64, ndim=1, layout='C', readonly=True), # phi is readonly, so can't use just float64[:] here
         float64[:], float64[:], float64[:], float64[:],
         ))
 def reflection(nmat, nmugs, nfou,
                 rfou, rtra, xmu,
-                qreflection, npix,
+                qreflection,
                 phi,
                 beta, theta0, theta, apix): 
+
+    npix = len(phi)
     
     # This function returns the following 2D array
     Sarr = np.zeros((npix, nmat+1))
