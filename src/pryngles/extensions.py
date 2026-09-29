@@ -220,8 +220,8 @@ def reflection(nmat, nmugs, nfou,
     SvR = np.zeros(nmat)
 
     Bplus = np.zeros(4)
-    muold = 1
-    mu0old = 1
+    muold = 1.0
+    mu0old = 1.0
 
     # Loop over the Fourier coefficients:
     for m in range(nfou):
