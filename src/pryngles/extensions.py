@@ -260,8 +260,7 @@ def reflection(nmat, nmugs, nfou,
 
             if ((i > 0) and ((np.abs(mu - muold) < 1e-6)) and (np.abs(mu0 - mu0old) < 1e-6)):
 
-                for k in range(nmat):
-                    RM[i,k] = RM[i,k] + 2 * Bplus[k] * fac * rf3save[k]
+                RM[i,:nmat] = RM[i,:nmat] + 2 * Bplus[:nmat] * fac * rf3save[:nmat]
 
             else:
 
@@ -292,8 +291,7 @@ def reflection(nmat, nmugs, nfou,
         mu0 = theta0[i]
 
         # Calculate the locally reflected Stokes vector:
-        for k in range(nmat):
-            SvR[k] = mu0 * RM[i,k]
+        SvR[:nmat] = mu0 * RM[i,:nmat]
 
         # Rotate Stokes elements Q and U to the actual reference plane:
         be = 2 * beta[i]
@@ -317,8 +315,7 @@ def reflection(nmat, nmugs, nfou,
         # Add the Stokes elements of the pixel to an array:
         #   Multiply with mu and the actual pixel area to obtain stokes elements
         #----------------------------------------------------------------------------
-        for k in range(nmat):
-            Sarr[i,k] = SvR[k] * mu * apix[i]
+        Sarr[i,:nmat] = SvR[:nmat] * mu * apix[i]
 
         # The value of the degree of polarization
         Sarr[i,nmat] = P
