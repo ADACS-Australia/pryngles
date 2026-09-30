@@ -1249,10 +1249,10 @@ class Spangler(PrynglesCommon):
         for name in misc.flatten([self.name]):
             self.qhulls[name] = []
             cond_obj = name_arr == name
-            center = list(self.data[cond_obj].vectors.center_int.iloc[0])
-            zord = min(self.data[cond_obj].z_int)
+            center = center_int_arr[cond_obj][0].tolist()
+            zord = z_int_arr[cond_obj].min()
 
-            if (self.data[cond_obj].hidden).sum() == 0:
+            if hidden_arr[cond_obj].sum() == 0:
                 # Convex hull of whole objects
                 cond_hull = (cond_obj) & (~hidden_arr)
                 verbose(VERB_SIMPLE, "Hull points (whole object):", sum(cond_hull))
@@ -2046,10 +2046,8 @@ class Spangler(PrynglesCommon):
                 self.data.loc[below, "occult"] = True
 
                 # Compute distance to center for transiting spangles
-                self.data.loc[above, "string_int"] = [
-                    f"{name}:{zord:.3e}:{((r[0] - xcen) ** 2 + (r[1] - ycen) ** 2) ** 0.5 / scale:.3e}&"
-                    for r in self.data[above][["x_int", "y_int"]].values
-                ]
+                dist = np.sqrt((x_int_arr[above] - xcen) ** 2 + (y_int_arr[above] - ycen) ** 2) / scale
+                self.data.loc[above, "string_int"] = [f"{name}:{zord:.3e}:{d:.3e}&" for d in dist]
                 self.data.loc[above, "transit_over_int"] = (
                     self.data.loc[above, "transit_over_int"] + self.data.loc[above, "string_int"]
                 )
