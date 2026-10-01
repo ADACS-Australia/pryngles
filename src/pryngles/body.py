@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 import math
 
@@ -25,9 +25,9 @@ from scipy.interpolate import interp1d
 
 from pryngles import *
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Body
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 
 class Body(Orbody):
@@ -88,9 +88,9 @@ class Body(Orbody):
     >>> C = pr.Body(kind = "Body", defaults = BODY_DEFAULTS, parent = B, name="C")
     """
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Bassic methods
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def __init__(self, kind, defaults, parent, **props):
 
@@ -193,9 +193,9 @@ class Body(Orbody):
     def show_tree(self):
         print(RenderTree(self))
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Tested methods from module file body
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def spangle_body(self):
         """
@@ -260,9 +260,9 @@ class Body(Orbody):
         self.sg.set_luz()
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Star
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Star(Body):
     """It creates a :data:`~ body.Star` object for self-luminous objects with emission properties.
 
@@ -340,9 +340,9 @@ class Star(Body):
         self._update_star_properties()
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Planet
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Planet(Body):
     """
     It creates a :data:`~ body.Planet` object for non-luminous orbiting bodies with specific orbital
@@ -568,9 +568,9 @@ class Planet(Body):
         # return Ts
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Ring
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Ring(Body):
     """
     It creates a :data:`~ body.Ring` object for particulate systems with unique optical and physical ring properties
@@ -649,9 +649,9 @@ class Ring(Body):
         self._update_ring_properties()
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Observer
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Observer(Body):
     """
     It initializes an Observer object with default properties defined in :any:`consts.OBSERVER_DEFAULTS`
@@ -670,9 +670,9 @@ class Observer(Body):
         Body.__init__(self, "Observer", OBSERVER_DEFAULTS, parent, **props)
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Detector
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Detector(PrynglesCommon):
     """
     It initializes an Detector object with default properties defined in :any:`consts.DETECTOR_PROPERTIES`.

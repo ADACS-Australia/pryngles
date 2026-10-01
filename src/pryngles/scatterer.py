@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 from abc import ABC, abstractmethod
 
@@ -26,9 +26,9 @@ from scipy.optimize import bisect
 from pryngles import *
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Scatterer
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Scatterer(PrynglesCommon, ABC):
     """
     Abstract base class for scattering surfaces or atmospheres.
@@ -61,9 +61,9 @@ class Scatterer(PrynglesCommon, ABC):
     >>>        self.AA = self.A**2
     """
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Bassic methods
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     @abstractmethod
     def __init__(self, **params) -> str:
@@ -104,9 +104,9 @@ class Scatterer(PrynglesCommon, ABC):
         SCATTERERS_CATALOGUE.clear()
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class NeutralSurface
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class NeutralSurface(Scatterer):
     """
     Idealized scattering surface with constant unit albedo.
@@ -122,9 +122,9 @@ class NeutralSurface(Scatterer):
         return 1
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class BlackBodySurface
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class BlackBodySurface(Scatterer):
     """
     Idealized absorbing surface with zero albedo. Represents a perfect black body that absorbs all incoming radiation.
@@ -139,9 +139,9 @@ class BlackBodySurface(Scatterer):
         return 0
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class LambertianGraySurface
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class LambertianGraySurface(Scatterer):
     """
     This is the scatterer corresponding to a surface having a gray lambertian Albedo with optional phase law.
@@ -291,9 +291,9 @@ class LambertianGraySurface(Scatterer):
         self._get_albedo = interp1d(etas, ALs)
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class LambertianGrayAtmosphere
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class LambertianGrayAtmosphere(Scatterer):
     """
     This is the scatterer corresponding to a semi-infinite (:math:`\\tau\\to\\infty`), plane-parallel atmosphere with gray Lambertian scattering.

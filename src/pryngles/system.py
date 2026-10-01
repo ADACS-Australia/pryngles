@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 import numpy as np
 import rebound as rb
@@ -25,9 +25,9 @@ from tqdm import tqdm
 from pryngles import *
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class System
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class System(PrynglesCommon):
     r"""
     High-level interface for building spangled planetary systems.
@@ -90,9 +90,9 @@ class System(PrynglesCommon):
         :align: center
     """
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Bassic methods
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def __init__(self, filename=None, units=["au", "msun", "yr2pi"], resetable=False):
 
@@ -348,9 +348,9 @@ class System(PrynglesCommon):
         else:
             print("Simulation for this system has not been yet initialized. Use System.initialize_simulation()")
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Tested methods from module file scatterer
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def _update_scatterers(self):
         """
@@ -416,9 +416,9 @@ class System(PrynglesCommon):
             cond_body = self.data["name"] == name
             self.data.loc[cond_body, "tau_gray_optical"] = body.tau_gray_optical
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Tested methods from module file system
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def add(self, kind="Star", parent=None, **props):
         """

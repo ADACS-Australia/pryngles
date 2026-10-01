@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 
 import matplotlib.pyplot as plt
@@ -27,9 +27,9 @@ from matplotlib.patches import Circle
 from pryngles import *
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Sampler
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Sampler(PrynglesCommon):
     r"""
     Class for generating evenly distributed points on various geometric shapes
@@ -110,9 +110,9 @@ class Sampler(PrynglesCommon):
         Read object from a binary file | `filename = str`
     """
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Bassic methods
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     def __init__(
         self,
         # Initialize from a file
@@ -235,9 +235,9 @@ class Sampler(PrynglesCommon):
         if self.seed:
             np.random.seed(self.seed)
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Tested methods from module file sampler
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def plot(self, spangled=dict(), **args):
         """

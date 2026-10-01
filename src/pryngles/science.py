@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 import math as mh
 
@@ -28,18 +28,18 @@ from scipy.spatial import ConvexHull
 from pryngles import *
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Science
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Science(PrynglesCommon):
     """
     The Science utility Class defines all the methods to geometric and scientific useful calculations.
     It is a static Class, i.e., that cannot be instantiated and their methods work as regular functions.
     """
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Tested methods from module file science
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def spherical(xyz):
         r"""
@@ -546,9 +546,9 @@ class Science(PrynglesCommon):
         )
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Plane
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Plane(PrynglesCommon):
     """Class with methods to construct a plane in 3-Dimensional space.
     It is useful for geometric manipulation of points on a ring since it is considered a plane

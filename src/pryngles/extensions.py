@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 import ctypes
 import glob
@@ -26,9 +26,9 @@ from pryngles import *
 libfile = glob.glob(Misc.get_data("../cpixx*.so"))[0]
 cpixx_ext = ctypes.CDLL(libfile)
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Stand alone code of the module
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Calculate reflection
 cpixx_ext.reflection.restype = ctypes.c_int
 cpixx_ext.reflection.argtypes = [
@@ -44,9 +44,9 @@ cpixx_ext.reflection.argtypes = [
 ]
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class ExtensionUtil
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class ExtensionUtil:
     """Util routines for extensions."""
 
@@ -156,9 +156,9 @@ class ExtensionUtil:
         return arr
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class FourierCoefficients
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class FourierCoefficients(ctypes.Structure):
     """Fourier coefficients ctypes structure"""
 
@@ -180,9 +180,9 @@ class FourierCoefficients(ctypes.Structure):
         self.rtra = ExtensionUtil.cub2ptr(rtra)
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class StokesScatterer
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class StokesScatterer:
     """Stokes scatterer"""
 
@@ -259,9 +259,9 @@ class StokesScatterer:
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
         self.F = FourierCoefficients(nmat, nmugs, nfou, xmu, rfou, rtra)
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Tested methods from module file extensions
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
 
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
         """ """

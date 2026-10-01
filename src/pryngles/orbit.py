@@ -13,9 +13,9 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # External required packages
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 
 import numpy as np
 import rebound as rb
@@ -24,9 +24,9 @@ from anytree import NodeMixin, RenderTree
 from pryngles import *
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Orbody
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Orbody(PrynglesCommon, NodeMixin):
     """
     Represents an orbital body in a hierarchical N-body system.
@@ -65,9 +65,9 @@ class Orbody(PrynglesCommon, NodeMixin):
         print(RenderTree(self))
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class Orbit
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class Orbit(PrynglesCommon):
     """
     Represents a two-body orbital system, interfacing with the ``rebound`` framework.
@@ -104,9 +104,9 @@ class Orbit(PrynglesCommon):
         If **elements** has a non-valid parameter from :any:`consts.REBOUND_ORBITAL_PROPERTIES`
     """
 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     # Bassic methods
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # --------------------------------------------------
     ORBIT_SIMULATIONS = []
 
     def __init__(self, name=None, units=None, m1=1, m2=1, R=np.array([0, 0, 0]), V=np.array([0, 0, 0]), **elements):
@@ -316,9 +316,9 @@ class Orbit(PrynglesCommon):
         return self.sim, states
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 # Class OrbitUtil
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# --------------------------------------------------
 class OrbitUtil(PrynglesCommon):
     """
     General Celestial Mechanics Utilities Class.
