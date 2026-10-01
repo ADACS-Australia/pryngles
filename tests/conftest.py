@@ -26,6 +26,8 @@ def spangler_df():
     """Build a full spangler DataFrame matching the complete spangler schema.
     Values are arbitrary and just for testing.
     """
+    # Create a test DataFrame from the default values of the spangler columns
+    # The 2 gives two rows of these values in the DataFrame
     return pd.DataFrame([dict(pryngles.SPANGLER_COLUMNS)] * 2)
 
 
