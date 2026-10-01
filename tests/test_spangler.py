@@ -77,7 +77,7 @@ def test_set_scale():
 
     asp_before = sg.data.asp.iloc[0]
     x_before = sg.data.x_equ.iloc[0]
-    center_before = np.array(sg.data.center_equ.iloc[0])
+    center_before = sg.data.vectors.center_equ.iloc[0].to_numpy()
 
     scale = 3
     sg.set_scale(scale)
@@ -85,7 +85,7 @@ def test_set_scale():
     assert sg.scale == scale
     np.testing.assert_allclose(sg.data.asp.iloc[0], asp_before * scale**2)
     np.testing.assert_allclose(sg.data.x_equ.iloc[0], x_before * scale)
-    np.testing.assert_allclose(np.array(sg.data.center_equ.iloc[0]), center_before * scale)
+    np.testing.assert_allclose(sg.data.vectors.center_equ.iloc[0].to_numpy(), center_before * scale)
 
 
 def test_populate_spangler_sphere():
@@ -96,7 +96,7 @@ def test_populate_spangler_sphere():
     sg.set_positions()
     r = np.linalg.norm(sg.data[["x_equ", "y_equ", "z_equ"]].values, axis=1)
     np.testing.assert_allclose(r, scale, atol=1e-6)
-    ns = np.stack(sg.data.ns_equ.values)
+    ns = sg.data.vectors.ns_equ.to_numpy()
     np.testing.assert_allclose(np.linalg.norm(ns, axis=1), 1, atol=1e-6)
 
 

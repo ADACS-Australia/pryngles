@@ -921,7 +921,7 @@ class System(PrynglesCommon):
     
                 verbose(VERB_VERIFY,f"Updating center of body {name} @ {body.center_ecl}")
                 cond=self.sg.data.name==name
-                self.sg.data.loc[cond,"center_ecl"]=pd.Series([list(body.center_ecl)]*sum(cond),dtype=object).values
+                self.sg.data.loc[cond, ["center_ecl_x","center_ecl_y","center_ecl_z"]] = np.tile(body.center_ecl, (sum(cond), 1))
     
             #Update positions (t = t) for rotation
             self.sg.set_positions()

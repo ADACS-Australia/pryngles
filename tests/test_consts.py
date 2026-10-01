@@ -1,5 +1,7 @@
 """Tests for the functions in the ``consts`` module."""
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import pryngles as pr
@@ -35,7 +37,7 @@ def test_get_all():
         "SPANGLER_COL_OBS", "SPANGLER_DEBUG_FIELDS", "SPANGLER_EPS_BORDER",
         "SPANGLER_EQUIV_COL", "SPANGLER_FLUX", "SPANGLER_KEY_ORDERING",
         "SPANGLER_KEY_SUMMARY", "SPANGLER_LENGTHS", "SPANGLER_SOURCE_STATES",
-        "SPANGLER_VECTORS", "SPANGLER_VISIBILITY_STATES",
+        "SPANGLER_VECTORS", "SPANGLER_VEC_GROUPS", "SPANGLER_VISIBILITY_STATES",
         "SPANGLES_DARKNESS_COLOR", "SPANGLES_SEMITRANSPARENT",
         "SPANGLE_ATMOSPHERIC", "SPANGLE_COLORS", "SPANGLE_GASEOUS",
         "SPANGLE_GRANULAR", "SPANGLE_LIQUID", "SPANGLE_SOLID_ICE",
@@ -43,3 +45,30 @@ def test_get_all():
         "T_MODEL_DEFAULTS", "VERB_ALL", "VERB_DEEP", "VERB_NONE",
         "VERB_SIMPLE", "VERB_SYSTEM", "VERB_VERIFY",
     ]
+
+
+def test_vec_groups_columns_exist_in_columns():
+    """Every column referenced by a vector group exists in SPANGLER_COLUMNS."""
+    for group, components in pr.SPANGLER_VEC_GROUPS.items():
+        for c in components:
+            assert c in pr.SPANGLER_COLUMNS, f"group '{group}' references missing column '{c}'"
+
+
+def test_vectors_accessor_returns_subframe(spangler_df):
+    """``df.vectors.<group>`` returns the (N,3) sub-DataFrame for that group."""
+    for group, components in pr.SPANGLER_VEC_GROUPS.items():
+        sub = getattr(spangler_df.vectors, group)
+        pd.testing.assert_frame_equal(sub, spangler_df[components])
+
+
+def test_vectors_accessor_to_numpy(spangler_df):
+    """``df.vectors.<group>.to_numpy()`` returns the expected (N,3) ndarray."""
+    for group, components in pr.SPANGLER_VEC_GROUPS.items():
+        arr = getattr(spangler_df.vectors, group).to_numpy()
+        np.testing.assert_allclose(arr, spangler_df[components].to_numpy())
+
+
+def test_vectors_accessor_unknown_group(spangler_df):
+    """Accessing an unknown group raises AttributeError listing available groups."""
+    with pytest.raises(AttributeError, match="not a known spangler vector group"):
+        spangler_df.vectors.not_a_real_group

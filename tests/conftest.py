@@ -5,6 +5,9 @@ import io
 import os
 import sys
 
+import pandas as pd
+import pytest
+
 # The package uses a ``src`` layout. Make ``src`` importable so the test
 # suite can run even without an explicit ``pip install`` (the editable
 # install also provides it, this is a belt-and-braces fallback).
@@ -16,6 +19,16 @@ if _SRC not in sys.path:
 # Capture it once so pytest output stays clean.
 with contextlib.redirect_stdout(io.StringIO()):
     import pryngles  # noqa: F401
+
+
+@pytest.fixture
+def spangler_df():
+    """Build a full spangler DataFrame matching the complete spangler schema.
+    Values are arbitrary and just for testing.
+    """
+    # Create a test DataFrame from the default values of the spangler columns
+    # The 2 gives two rows of these values in the DataFrame
+    return pd.DataFrame([dict(pryngles.SPANGLER_COLUMNS)] * 2)
 
 
 # Ignore regression tests unless the ``--regression`` flag is passed.
