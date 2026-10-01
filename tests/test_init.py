@@ -1,11 +1,11 @@
 ##################################################################
 #                                                                #
-#.#####...#####...##..##..##..##...####...##......######...####..#
-#.##..##..##..##...####...###.##..##......##......##......##.....#
-#.#####...#####.....##....##.###..##.###..##......####.....####..#
-#.##......##..##....##....##..##..##..##..##......##..........##.#
-#.##......##..##....##....##..##...####...######..######...####..#
-#................................................................#
+# .#####...#####...##..##..##..##...####...##......######...####..#
+# .##..##..##..##...####...###.##..##......##......##......##.....#
+# .#####...#####.....##....##.###..##.###..##......####.....####..#
+# .##......##..##....##....##..##..##..##..##......##..........##.#
+# .##......##..##....##....##..##...####...######..######...####..#
+# ................................................................#
 #                                                                #
 # PlanetaRY spanGLES                                             #
 #                                                                #
@@ -15,20 +15,21 @@
 
 from pryngles import *
 
+
 def test_common():
     import numpy as np
     import pandas as pd
     import os
 
-    Verbose.VERBOSITY=VERB_ALL
+    Verbose.VERBOSITY = VERB_ALL
 
-    p=PrynglesCommon()
-    p.casa=dict(perro=0,gato=3)
-    p.data=pd.DataFrame(np.random.rand(4000,100))
+    p = PrynglesCommon()
+    p.casa = dict(perro=0, gato=3)
+    p.data = pd.DataFrame(np.random.rand(4000, 100))
     p.save_to("/tmp/save.pck")
-    print("File size:",os.path.getsize("/tmp/save.pck")/1e6," Mb")
-    g=PrynglesCommon()
+    print("File size:", os.path.getsize("/tmp/save.pck") / 1e6, " Mb")
+    g = PrynglesCommon()
     g.load_from("/tmp/save.pck")
-    print(g.casa,np.array(g.data).shape)
+    print(g.casa, np.array(g.data).shape)
 
-    Verbose.VERBOSITY=VERB_NONE
+    Verbose.VERBOSITY = VERB_NONE

@@ -61,8 +61,9 @@ def test_orbit_calculate_and_states():
     assert states[0]["m"] == 1
     assert states[1]["m"] == 1e-3
     # The relative separation should be ~a*(1-e)=0.3.
-    r = np.array([states[1]["x"], states[1]["y"], states[1]["z"]]) - \
-        np.array([states[0]["x"], states[0]["y"], states[0]["z"]])
+    r = np.array([states[1]["x"], states[1]["y"], states[1]["z"]]) - np.array(
+        [states[0]["x"], states[0]["y"], states[0]["z"]]
+    )
     np.testing.assert_allclose(np.linalg.norm(r), 0.3, rtol=1e-6)
 
 
@@ -79,11 +80,11 @@ def test_orbit_hierarchical():
 
     # The states are deterministic; compare against the reference values.
     expected = [
-        {'m': 1.0, 'x': -2.65, 'y': -4.0, 'z': 0.0, 'vx': 0.1, 'vy': -2.1304644185603037, 'vz': 0.0},
-        {'m': 1.0, 'x': -2.35, 'y': -4.0, 'z': 0.0, 'vx': 0.1, 'vy': 1.236037227560388, 'vz': 0.0},
-        {'m': 1.0, 'x': 2.0, 'y': -4.0, 'z': 0.0, 'vx': 0.1, 'vy': -0.2598931856865896, 'vz': 0.0},
-        {'m': 1.0, 'x': 3.0, 'y': -4.0, 'z': 0.0, 'vx': 0.1, 'vy': 1.1543203766865053, 'vz': 0.0},
-        {'m': 1.0, 'x': 0.0, 'y': 16.0, 'z': 0.0, 'vx': -0.4, 'vy': 2.449293598294706e-17, 'vz': 0.0}
+        {"m": 1.0, "x": -2.65, "y": -4.0, "z": 0.0, "vx": 0.1, "vy": -2.1304644185603037, "vz": 0.0},
+        {"m": 1.0, "x": -2.35, "y": -4.0, "z": 0.0, "vx": 0.1, "vy": 1.236037227560388, "vz": 0.0},
+        {"m": 1.0, "x": 2.0, "y": -4.0, "z": 0.0, "vx": 0.1, "vy": -0.2598931856865896, "vz": 0.0},
+        {"m": 1.0, "x": 3.0, "y": -4.0, "z": 0.0, "vx": 0.1, "vy": 1.1543203766865053, "vz": 0.0},
+        {"m": 1.0, "x": 0.0, "y": 16.0, "z": 0.0, "vx": -0.4, "vy": 2.449293598294706e-17, "vz": 0.0},
     ]
     for state, exp in zip(states, expected):
         assert state["m"] == exp["m"]
@@ -117,8 +118,8 @@ def test_build_system():
     assert len(states) == 2
 
     expected = [
-        {'m': 3.0, 'x': -0.2, 'y': 0.0, 'z': 0.0, 'vx': 0.0, 'vy': -3.8475768228866953, 'vz': 0.0}, 
-        {'m': 1.0, 'x': 0.6, 'y': 0.0, 'z': 0.0, 'vx': 0.0, 'vy': 11.542730468660086, 'vz': 0.0}
+        {"m": 3.0, "x": -0.2, "y": 0.0, "z": 0.0, "vx": 0.0, "vy": -3.8475768228866953, "vz": 0.0},
+        {"m": 1.0, "x": 0.6, "y": 0.0, "z": 0.0, "vx": 0.0, "vy": 11.542730468660086, "vz": 0.0},
     ]
     for state, exp in zip(states, expected):
         assert state["m"] == exp["m"]

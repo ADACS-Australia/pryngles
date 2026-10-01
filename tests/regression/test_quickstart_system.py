@@ -13,6 +13,7 @@ On first run the golden files are generated next to this test (in the
 ``test_quickstart_system/`` data directory). Regenerate them with:
     uv run pytest tests/regression/test_quickstart_system.py --force-regen
 """
+
 import numpy as np
 import pytest
 
@@ -26,7 +27,6 @@ _N_TIMES = 11
 
 
 class TestQuickstartSystem(SystemChecks):
-
     @pytest.fixture(scope="class")
     def system(self):
         """Build the star/planet/ring system and compute its lightcurve.
@@ -37,13 +37,13 @@ class TestQuickstartSystem(SystemChecks):
         system = pr.System()
 
         star = system.add(
-            kind='Star',
+            kind="Star",
             radius=pr.Consts.rsun / system.ul,
             limb_coeffs=[0.65],
         )
 
         planet = system.add(
-            kind='Planet',
+            kind="Planet",
             parent=star,
             a=0.2,
             e=0.0,
@@ -51,7 +51,7 @@ class TestQuickstartSystem(SystemChecks):
         )
 
         ring = system.add(
-            kind='Ring',
+            kind="Ring",
             parent=planet,
             fi=1.5,
             fe=2.5,
@@ -65,13 +65,13 @@ class TestQuickstartSystem(SystemChecks):
         system.initialize_simulation()
         system.spangle_system()
 
-        period_days = 365.25 * (planet.a ** 1.5)
+        period_days = 365.25 * (planet.a**1.5)
         times_days = np.linspace(0.0, period_days, _N_TIMES)
         times_system = times_days * pr.Consts.day / system.ut
 
         system.compute_lightcurve(
             times=times_system,
-            effects=['polarization'],
+            effects=["polarization"],
         )
 
         return system

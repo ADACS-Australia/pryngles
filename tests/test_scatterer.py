@@ -69,9 +69,7 @@ def test_lambertian_surface_albedo():
     AL = 0.5
     s = pr.LambertianGraySurface(AL=AL)
     for eta in np.linspace(0.1, 1.0, 10):
-        np.testing.assert_allclose(
-            s.get_albedo(eta, 0.5, 0.0, 0.0), AL, atol=1e-3
-        )
+        np.testing.assert_allclose(s.get_albedo(eta, 0.5, 0.0, 0.0), AL, atol=1e-3)
 
 
 def test_lambertian_surface_al_controls_max():
@@ -84,26 +82,29 @@ def test_lambertian_surface_al_controls_max():
 def test_lambertian_surface_custom_phase_law():
     """A custom phase law is used in the albedo computation."""
     AL = 0.5
-    s = pr.LambertianGraySurface(
-        AL=AL, phase_law=lambda eta, zeta, delta, lamb, params: eta**2
-    )
+    s = pr.LambertianGraySurface(AL=AL, phase_law=lambda eta, zeta, delta, lamb, params: eta**2)
     for eta in np.linspace(0.1, 1.0, 10):
-        np.testing.assert_allclose(
-            s.get_albedo(eta, 0.5, 0.0, 0.0), AL * eta, atol=1e-3
-        )
+        np.testing.assert_allclose(s.get_albedo(eta, 0.5, 0.0, 0.0), AL * eta, atol=1e-3)
+
 
 def test_lambertian_atmosphere_reference_values():
     """``LambertianGrayAtmosphere`` reproduces the expected albedo values."""
     s = pr.LambertianGrayAtmosphere(AS=0.5)
     etas = np.linspace(0.1, 1.0, 10)
     expected = [
-        0.647888, 0.611716, 0.581048, 0.554042, 0.530023,
-        0.508227, 0.488222, 0.469920, 0.453186, 0.437472,
+        0.647888,
+        0.611716,
+        0.581048,
+        0.554042,
+        0.530023,
+        0.508227,
+        0.488222,
+        0.469920,
+        0.453186,
+        0.437472,
     ]
     for eta, ref in zip(etas, expected):
-        np.testing.assert_allclose(
-            s.get_albedo(eta, 0.5, 0.0, 0.0), ref, atol=1e-3
-        )
+        np.testing.assert_allclose(s.get_albedo(eta, 0.5, 0.0, 0.0), ref, atol=1e-3)
 
 
 def test_lambertian_atmosphere_conservative_scattering():
@@ -113,9 +114,7 @@ def test_lambertian_atmosphere_conservative_scattering():
 
     assert s.gamma0 == 1
     for eta in np.linspace(0.1, 1.0, 10):
-        np.testing.assert_allclose(
-            s.get_albedo(eta, 0.5, 0.0, 0.0), 1.0, atol=1e-2
-        )
+        np.testing.assert_allclose(s.get_albedo(eta, 0.5, 0.0, 0.0), 1.0, atol=1e-2)
 
 
 def test_lambertian_atmosphere_decreasing():

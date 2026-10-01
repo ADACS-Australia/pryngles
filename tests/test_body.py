@@ -79,7 +79,7 @@ def test_star():
 def test_star_invalid_parent():
     """A ``Star`` parent must be another ``Star``."""
     B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B")
-    
+
     with pytest.raises(ValueError):
         pr.Star(parent=B)
 
@@ -118,7 +118,7 @@ def test_planet():
         pr.Planet()
     P = pr.Planet(parent=S)
     assert P.kind == "Planet"
-    
+
     P.update_planet(vz=0.2)
     assert P.vz == 0.2
 
@@ -189,12 +189,10 @@ def test_planet_two_temperature():
     S = pr.Star()
     P = pr.Planet(parent=S, nspangles=100)
     P.spangle_body()
-    P.set_temperature_model(
-        {"type": "Two Temperature", "params": {"T_day": 2000, "T_night": 500}}
-    )
+    P.set_temperature_model({"type": "Two Temperature", "params": {"T_day": 2000, "T_night": 500}})
     P.update_temperature()
 
-    cond_day = (P.sg.data.cos_luz > 0)
+    cond_day = P.sg.data.cos_luz > 0
     cond_night = ~cond_day
     assert (P.sg.data.loc[cond_day, "Tem"] == 2000).all()
     assert (P.sg.data.loc[cond_night, "Tem"] == 500).all()
@@ -209,9 +207,7 @@ def test_planet_zhang_showman_temperature():
     P.center_ecl = np.array([1.0, 0.0, 0.0])
     P.root.center_ecl = np.array([0.0, 0.0, 0.0])
     P.spangle_body()
-    P.set_temperature_model(
-        {"type": "Zhang-Showman", "params": {"xi_ratio": 0.3, "T_night": 1200, "Delta_T": 800}}
-    )
+    P.set_temperature_model({"type": "Zhang-Showman", "params": {"xi_ratio": 0.3, "T_night": 1200, "Delta_T": 800}})
     P.update_temperature()
     assert np.isfinite(P.sg.data["Tem"]).all()
 

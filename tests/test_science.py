@@ -15,76 +15,48 @@ def test_spherical_cartesian_roundtrip():
 
 def test_spherical_known_value():
     """``spherical`` returns the documented value for [1, 1, 1]."""
-    np.testing.assert_allclose(
-        pr.Science.spherical([1, 1, 1]),
-        [np.sqrt(3), np.pi / 4, 0.61547971],
-        atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.spherical([1, 1, 1]), [np.sqrt(3), np.pi / 4, 0.61547971], atol=1e-6)
     # +x axis: radius 1, azimuth 0, elevation 0.
-    np.testing.assert_allclose(
-        pr.Science.spherical([1, 0, 0]), [1, 0, 0], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.spherical([1, 0, 0]), [1, 0, 0], atol=1e-6)
     # +z axis: radius 1, azimuth 0, elevation pi/2.
-    np.testing.assert_allclose(
-        pr.Science.spherical([0, 0, 1]), [1, 0, np.pi / 2], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.spherical([0, 0, 1]), [1, 0, np.pi / 2], atol=1e-6)
 
 
 def test_cospherical_known_value():
     """``cospherical`` returns the documented value for [1, 1, 1]."""
     np.testing.assert_allclose(
-        pr.Science.cospherical([1, 1, 1]),
-        [1 / np.sqrt(2), 1 / np.sqrt(2), 1 / np.sqrt(3)],
-        atol=1e-6
+        pr.Science.cospherical([1, 1, 1]), [1 / np.sqrt(2), 1 / np.sqrt(2), 1 / np.sqrt(3)], atol=1e-6
     )
     # +x axis: cos(az)=1, sin(az)=0, sin(elev)=0.
-    np.testing.assert_allclose(
-        pr.Science.cospherical([1, 0, 0]), [1, 0, 0], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.cospherical([1, 0, 0]), [1, 0, 0], atol=1e-6)
     # +z axis: cos(az)=1, sin(az)=0, sin(elev)=1.
-    np.testing.assert_allclose(
-        pr.Science.cospherical([0, 0, 1]), [1, 0, 1], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.cospherical([0, 0, 1]), [1, 0, 1], atol=1e-6)
 
 
 def test_pcylindrical_known_value():
     """``pcylindrical`` returns the documented value for [1, 1, 1]."""
-    np.testing.assert_allclose(
-        pr.Science.pcylindrical([1, 1, 1]),
-        [np.sqrt(2), np.pi / 4, 1 / np.sqrt(3)],
-        atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.pcylindrical([1, 1, 1]), [np.sqrt(2), np.pi / 4, 1 / np.sqrt(3)], atol=1e-6)
     # +x axis: rho=1, az=0, cos(elev)=0.
-    np.testing.assert_allclose(
-        pr.Science.pcylindrical([1, 0, 0]), [1, 0, 0], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.pcylindrical([1, 0, 0]), [1, 0, 0], atol=1e-6)
     # +z axis: rho=0, az=0, cos(elev)=1.
-    np.testing.assert_allclose(
-        pr.Science.pcylindrical([0, 0, 1]), [0, 0, 1], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.pcylindrical([0, 0, 1]), [0, 0, 1], atol=1e-6)
 
 
 def test_cartesian_known_value():
     """``cartesian`` returns the documented value for [1, 30deg, 60deg]."""
     np.testing.assert_allclose(
-        pr.Science.cartesian([1, 30 * pr.Consts.deg, 60 * pr.Consts.deg]),
-        [0.4330127, 0.25, 0.8660254],
-        atol=1e-6
+        pr.Science.cartesian([1, 30 * pr.Consts.deg, 60 * pr.Consts.deg]), [0.4330127, 0.25, 0.8660254], atol=1e-6
     )
     # Azimuth 90 deg, elevation 0 -> +y axis.
-    np.testing.assert_allclose(
-        pr.Science.cartesian([1, 90 * pr.Consts.deg, 0]), [0, 1, 0], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.cartesian([1, 90 * pr.Consts.deg, 0]), [0, 1, 0], atol=1e-6)
     # Elevation 90 deg, azimuth 0 -> +z axis.
-    np.testing.assert_allclose(
-        pr.Science.cartesian([1, 0, 90 * pr.Consts.deg]), [0, 0, 1], atol=1e-6
-    )
+    np.testing.assert_allclose(pr.Science.cartesian([1, 0, 90 * pr.Consts.deg]), [0, 0, 1], atol=1e-6)
 
 
 def test_direction_roundtrip():
     """``direction`` round-trips between (lon, lat) and cartesian."""
     nvec = pr.Science.direction(120, 45)
-    np.testing.assert_allclose(nvec, [-np.sqrt(2)/4, np.sqrt(6)/4, np.sqrt(2)/2], atol=1e-6)
+    np.testing.assert_allclose(nvec, [-np.sqrt(2) / 4, np.sqrt(6) / 4, np.sqrt(2) / 2], atol=1e-6)
     lon, lat = pr.Science.direction(*nvec)
     np.testing.assert_allclose(lon, 120, atol=1e-6)
     np.testing.assert_allclose(lat, 45, atol=1e-6)
@@ -131,9 +103,7 @@ def test_rotation_matrix_rotates_vector():
     # The rotation preserves the vector's length.
     np.testing.assert_allclose(np.linalg.norm(rotated), np.linalg.norm(v), atol=1e-12)
     # The rotated vector has the expected values.
-    np.testing.assert_allclose(
-        rotated, [-np.sqrt(2) / 10, 0.3, -0.6 * np.sqrt(2)], atol=1e-12
-    )
+    np.testing.assert_allclose(rotated, [-np.sqrt(2) / 10, 0.3, -0.6 * np.sqrt(2)], atol=1e-12)
     # Applying the inverse rotation restores the original vector.
     np.testing.assert_allclose(Muni2sys @ rotated, v, atol=1e-12)
 
@@ -269,10 +239,7 @@ def test_points_in_hull():
     """``points_in_hull`` correctly identifies points inside/outside."""
     pts = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
     hull = pr.Science.get_convexhull(pts)
-    inside = pr.Science.points_in_hull(
-        np.array([[0.5, 0.5], [2, 2], [0.8, 0.1], [0.5, 1.5]]),
-        hull
-    )
+    inside = pr.Science.points_in_hull(np.array([[0.5, 0.5], [2, 2], [0.8, 0.1], [0.5, 1.5]]), hull)
     np.testing.assert_array_equal(inside, [True, False, True, False])
 
 
@@ -323,4 +290,4 @@ def test_plane_get_z():
     np.testing.assert_allclose(plane.get_z(1, 1), -4, atol=1e-12)
 
     # Check one extra point
-    np.testing.assert_allclose(plane.get_z(0, 0), -1/3, atol=1e-12)
+    np.testing.assert_allclose(plane.get_z(0, 0), -1 / 3, atol=1e-12)

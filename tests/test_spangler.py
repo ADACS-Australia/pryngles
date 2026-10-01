@@ -48,7 +48,6 @@ def test_join():
     assert set(sgj.data.name.unique()) == {"A", "B"}
 
 
-
 def test_reset_state():
     """reset_state clears all visibility/source states and sets unset."""
     sg = pr.Spangler(nspangles=100)
