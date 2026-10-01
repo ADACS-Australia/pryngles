@@ -104,7 +104,7 @@ skip_empty = true
 
 [tool.ruff]
 # Explicitly tell Ruff to only look at these file extensions
-include = ["*.py"]
+include = ["src/*.py", "tests/*.py"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
