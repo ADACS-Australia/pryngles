@@ -97,7 +97,7 @@ def test_build_tree():
     S = pr.Star()
     P = pr.Planet(parent=S)
     M = pr.Planet(parent=P)
-    R = pr.Ring(parent=P)
+    pr.Ring(parent=P)
 
     tree = pr.OrbitUtil.build_tree(S)
     # The tree is [S, [P, M]] (the ring is skipped).
@@ -109,7 +109,7 @@ def test_build_tree():
 def test_build_system():
     """``build_system`` builds an ``Orbit`` from an orbital tree."""
     S = pr.Star(m=3)
-    P = pr.Planet(parent=S, m=1, a=1, e=0.2)
+    pr.Planet(parent=S, m=1, a=1, e=0.2)
 
     tree = pr.OrbitUtil.build_tree(S)
     orbit, pelements = pr.OrbitUtil.build_system(tree, units=["au", "msun", "yr"])

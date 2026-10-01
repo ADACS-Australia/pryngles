@@ -1869,7 +1869,7 @@ class Spangler(PrynglesCommon):
 
             # Points in present body
             cond = self.data.name == name
-            geometry = self.data[cond].geometry.iloc[0]
+            self.data[cond].geometry.iloc[0]
             scale = self.data[cond].scale.iloc[0]
 
             # If this body is not in the field-of-view, avoid computation

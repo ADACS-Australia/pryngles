@@ -420,7 +420,6 @@ class Science(PrynglesCommon):
         # Constantes físicas (SI)
         h = 6.62607015e-34  # Constante de Planck [J·s]
         c = 299792458  # Velocidad de la luz [m/s]
-        k_B = 1.380649e-23  # Constante de Boltzmann [J/K]
 
         # BlackBody Distribution
         B_lambda = Science.blackbody_intensity(wavelength, temperature)
