@@ -17,10 +17,10 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-
 import ctypes
 import glob
+
+from pryngles import *
 
 # Load library
 libfile = glob.glob(Misc.get_data("../cpixx*.so"))[0]
@@ -47,7 +47,7 @@ cpixx_ext.reflection.argtypes = [
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class ExtensionUtil
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class ExtensionUtil(object):
+class ExtensionUtil:
     """Util routines for extensions."""
 
     def vec2ptr(arr):
@@ -183,7 +183,7 @@ class FourierCoefficients(ctypes.Structure):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class StokesScatterer
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class StokesScatterer(object):
+class StokesScatterer:
     """Stokes scatterer"""
 
     def __init__(self, filename):

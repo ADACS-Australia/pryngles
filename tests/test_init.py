@@ -17,9 +17,10 @@ from pryngles import *
 
 
 def test_common():
+    import os
+
     import numpy as np
     import pandas as pd
-    import os
 
     Verbose.VERBOSITY = VERB_ALL
 

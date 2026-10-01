@@ -16,11 +16,9 @@ On first run the golden files are generated next to this test (in the
 
 import numpy as np
 import pytest
-
 import spiceypy as spy
 
 import pryngles as pr
-
 from tests.regression.utils import SystemChecks
 
 _N_TIMES = 11

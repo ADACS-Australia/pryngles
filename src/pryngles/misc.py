@@ -17,14 +17,15 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-from collections import OrderedDict as odict
-from collections.abc import Iterable
 import inspect
 import os
+from collections.abc import Iterable
+from sys import maxsize as HASH_MAXSIZE
+
 import gdown
 import pandas as pd
-from sys import maxsize as HASH_MAXSIZE
+
+from pryngles import *
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Constants of module miscelaneous
@@ -42,7 +43,7 @@ DATA_INDEX = dict(
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Misc
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class Misc(object):
+class Misc:
     """
     Miscelaneous routines.
 

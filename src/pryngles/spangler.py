@@ -17,21 +17,13 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-
-# Aliases
-
-import pandas as pd
 import random
 
+# Aliases
+import pandas as pd
+
 # Specialized plotting methods
-from scipy.spatial import ConvexHull, convex_hull_plot_2d
-from matplotlib.lines import Line2D
-from matplotlib.collections import LineCollection
-from matplotlib import animation
-from celluloid import Camera  # getting the camera
-import itertools
-from tqdm import tqdm
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,7 +208,7 @@ class Spangler(PrynglesCommon):
                 self.M_equ2ecl[self.name], _ = Science.rotation_matrix(n_equ, alpha_equ)
 
             else:
-                verbose(VERB_SIMPLE, f"Creating a blank Spangler")
+                verbose(VERB_SIMPLE, "Creating a blank Spangler")
                 # Creat a blank DataFrame
                 self.data = pd.DataFrame(columns=self._defaults.keys())
 
@@ -346,9 +338,9 @@ class Spangler(PrynglesCommon):
         """
         mem_usage = self.data.memory_usage(deep=True).sum() / 1024**2
         if info:
-            print(f"Basic information:\n")
+            print("Basic information:\n")
             self.data.info(memory_usage="deep")
-            print(f"\nDetailed size:\n")
+            print("\nDetailed size:\n")
             print(self.data.memory_usage(deep=True).to_string())
             print(f"\nTotal size: {mem_usage:.1g} Mb")
 
@@ -385,7 +377,7 @@ class Spangler(PrynglesCommon):
         "wx_ecl", and "wy_ecl". Transformation matrices in `M_equ2ecl` are updated if `n_equ`
         is provided.
         """
-        verbose(VERB_VERIFY, f"Setting positions")
+        verbose(VERB_VERIFY, "Setting positions")
 
         # Pandas >= 2.2 is strict about assigning floats into int columns.
         # These coordinates are continuous, so keep them as float dtype.
@@ -412,7 +404,7 @@ class Spangler(PrynglesCommon):
         # If equatorial positions have been changed
         if qupdate and self.sample:
             # Update spangles orientations
-            verbose(VERB_VERIFY, f"Generating normal vectors")
+            verbose(VERB_VERIFY, "Generating normal vectors")
 
             # If the spangler has been poputaled update normals
             if self.sample:
@@ -421,7 +413,7 @@ class Spangler(PrynglesCommon):
                 )
 
         # Convert from equatorial to ecliptic
-        verbose(VERB_VERIFY, f"Converting to equatorial")
+        verbose(VERB_VERIFY, "Converting to equatorial")
         groups = self.data.groupby("name", sort=False)
         for name, group in groups:
             M_equ2ecl = self.M_equ2ecl[name]
@@ -523,7 +515,7 @@ class Spangler(PrynglesCommon):
             preset = (shape, shape_args)
             self.sample = Sampler(preset=preset, N=self.nspangles, seed=seed)
         else:
-            verbose(VERB_VERIFY, f"Generating spangler from scratch")
+            verbose(VERB_VERIFY, "Generating spangler from scratch")
             self.sample = Sampler(N=self.nspangles, seed=seed)
             exec(f"self.sample.gen_{shape}(**shape_args)")
 
@@ -533,7 +525,7 @@ class Spangler(PrynglesCommon):
 
         if self.sample.geometry in [SAMPLER_GEOMETRY_SPHERE]:
             # Purge sample if it is in 3d
-            verbose(VERB_VERIFY, f"Purging 3d sample")
+            verbose(VERB_VERIFY, "Purging 3d sample")
             self.sample.purge_sample()
             self.nhidden = 0
 
@@ -566,7 +558,7 @@ class Spangler(PrynglesCommon):
             self.nhidden = nhidden
 
         # Check if number of samples is not equal to that of spangles defined when the spangler was created
-        if self.sample.N != self.nspangles:
+        if self.nspangles != self.sample.N:
             verbose(VERB_SYSTEM, f"Sample size {self.sample.N} is different from spangles {self.nspangles}. Adjusting.")
 
             # Difference between sampler number of points and number of spanglers
@@ -912,7 +904,7 @@ class Spangler(PrynglesCommon):
 
         fmark = ""
         if statemark:
-            fmark = f", I/D: Illum./Dark, V/N: Visible/Invisible, S: Shadow, T: Transmit"
+            fmark = ", I/D: Illum./Dark, V/N: Visible/Invisible, S: Shadow, T: Transmit"
 
         # Scale
         ax.text2D(0, 0, f"Axis scale: {maxval * factor:.2g} {fmark}", fontsize=7, color="w", transform=ax.transAxes)
@@ -1246,7 +1238,7 @@ class Spangler(PrynglesCommon):
         Updates the `data` DataFrame with observer coordinates and sets the "visible" state.
         Calls :meth:`set_intersect` internally.
         """
-        verbose(VERB_SIMPLE, f"Setting observer")
+        verbose(VERB_SIMPLE, "Setting observer")
 
         # Set observer
         cond, self.n_obs, self.d_obs = self.set_intersect(nvec, alpha, center)
@@ -1351,7 +1343,7 @@ class Spangler(PrynglesCommon):
         "transmit" states. Requires :meth:`set_observer` to be called first for accurate transmission.
         """
 
-        verbose(VERB_SIMPLE, f"Setting light-source")
+        verbose(VERB_SIMPLE, "Setting light-source")
 
         # Set intersect of all points in order to prepare the update luz
         cond, self.n_luz, self.d_luz = self.set_intersect(nvec, alpha, center, name=None)
@@ -1775,15 +1767,15 @@ class Spangler(PrynglesCommon):
             if coords == "obs":
                 lamb = self.rqf_obs[1] * Consts.rad
                 phi = self.rqf_obs[2] * Consts.rad
-                coords_label = f"($\lambda$,$\\beta$) : ({lamb:.1f}$^\circ$,{phi:.1f}$^\circ$)"
+                coords_label = f"($\\lambda$,$\\beta$) : ({lamb:.1f}$^\\circ$,{phi:.1f}$^\\circ$)"
             elif coords == "luz":
                 lamb = self.rqf_luz[1] * Consts.rad
                 phi = self.rqf_luz[2] * Consts.rad
-                coords_label = f"($\lambda$,$\\beta$) : ({lamb:.1f}$^\circ$,{phi:.1f}$^\circ$)"
+                coords_label = f"($\\lambda$,$\\beta$) : ({lamb:.1f}$^\\circ$,{phi:.1f}$^\\circ$)"
             elif coords == "int":
                 lamb = self.rqf_int[1] * Consts.rad
                 phi = self.rqf_int[2] * Consts.rad
-            coords_label = f"($\lambda$,$\\beta$) : ({lamb:.1f}$^\circ$,{phi:.1f}$^\circ$)"
+            coords_label = f"($\\lambda$,$\\beta$) : ({lamb:.1f}$^\\circ$,{phi:.1f}$^\\circ$)"
 
             if coords == "ecl":
                 coords_label = ""

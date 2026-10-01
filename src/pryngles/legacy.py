@@ -17,34 +17,34 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-
+import math
 import pickle
-import unittest
-import spiceypy as spy
+
 import numpy as np
 import scipy as sp
-from scipy.optimize import newton, least_squares
-import math
+import spiceypy as spy
+from scipy.optimize import least_squares
+
+from pryngles import *
 
 math.arctan = math.atan
 math.arcsin = math.asin
 math.arccos = math.acos
 math.arctan2 = math.atan2
-from copy import deepcopy
 import os
-import tqdm
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.interpolate import interp1d, RectBivariateSpline
-from scipy.integrate import quad, dblquad
-import dill
+from copy import deepcopy
+
 import cmasher as cmr
-import matplotlib.pyplot as plt
+import dill
 
 # Added
 import matplotlib as mpl
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.pyplot as plt
+import tqdm
 from matplotlib.ticker import LogLocator
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.integrate import dblquad, quad
+from scipy.interpolate import RectBivariateSpline, interp1d
 
 # Don't force an interactive backend (nbagg) here; it can prevent rendering in some notebook frontends.
 # Let the notebook/environment choose the backend (e.g., inline in Colab/Cursor previews).
@@ -62,7 +62,7 @@ mh = math  # Faster but not suitable for arrays
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-class Const(object):
+class Const:
     # Astronomical constans
     Rsun = 6.95510e8  # meters
     Msun = 1.98e30  # kg
@@ -88,7 +88,7 @@ DEG = Const.deg
 NORMFACTOR = 1  # Originally it was 1e6 for ppm
 
 
-class CanonicalUnits(object):
+class CanonicalUnits:
     def __init__(self, UL=0, UT=0, UM=0):
         if (UL == 0) + (UT == 0) + (UM == 0) != 1:
             raise AssertionError("You should provide at least two units.")
@@ -118,7 +118,7 @@ class CanonicalUnits(object):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Util
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class Util(object):
+class Util:
     def solveKeplerEquation(M, e):
         """
         Solves Kepler Equation
@@ -549,14 +549,14 @@ class Util(object):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Conf
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class Conf(object):
+class Conf:
     FIGDIR = "./paper2-model/figures/"
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Sample
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class Sample(object):
+class Sample:
     """
     Fibonacci sampling of disks, hemispheres and spheres.
 
@@ -949,7 +949,7 @@ class Sample(object):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class RingedPlanet
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class RingedPlanet(object):
+class RingedPlanet:
     """
     Class Ringed Planet.
 
@@ -1960,7 +1960,7 @@ class RingedPlanet(object):
         fig1 = fig2 = fig3 = None
         if not showfig:
             plt.ioff()
-        label = f"$t/T={self.t / self.T:.2f}$, $r/a={self.rstar * self.Rstar / self.a:.2f}$, $\lambda={self.estar_ecl[0] * RAD:+0.2f}^\circ$ [ $i={self.i * RAD:g}^\circ$, Obs ($\lambda$,$\\beta$) : ({self.eobs_ecl[0] * RAD:g}$^\circ$,{self.eobs_ecl[1] * RAD:g}$^\circ$) ] "
+        label = f"$t/T={self.t / self.T:.2f}$, $r/a={self.rstar * self.Rstar / self.a:.2f}$, $\\lambda={self.estar_ecl[0] * RAD:+0.2f}^\\circ$ [ $i={self.i * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({self.eobs_ecl[0] * RAD:g}$^\\circ$,{self.eobs_ecl[1] * RAD:g}$^\\circ$) ] "
 
         onlyrings = np.arange(self.Nrt) < (self.Nrt if showborder else self.Nr)
 
@@ -1984,8 +1984,8 @@ class RingedPlanet(object):
             icond = 1
             iplot = 2
             sgn = -1
-            xaxis = "$x_\mathrm{ecl}$"
-            yaxis = "$z_\mathrm{ecl}$"
+            xaxis = r"$x_\mathrm{ecl}$"
+            yaxis = r"$z_\mathrm{ecl}$"
             # Direction of sight
             b_equ = [270 * DEG, -self.i]
         elif view == "top":
@@ -1994,8 +1994,8 @@ class RingedPlanet(object):
             sgn = +1
             # Direction of sight
             b_equ = [0 * DEG, 90.0 * DEG]
-            xaxis = "$x_\mathrm{ecl}$"
-            yaxis = "$y_\mathrm{ecl}$"
+            xaxis = r"$x_\mathrm{ecl}$"
+            yaxis = r"$y_\mathrm{ecl}$"
         else:
             raise AssertionError(f"The view '{view}' is not available")
 
@@ -2097,7 +2097,7 @@ class RingedPlanet(object):
         # Title
         if showtitle:
             ax.set_title(
-                f"Ecliptic\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center"
+                "Ecliptic\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center"
             )
 
         # Equatl axis
@@ -2312,7 +2312,7 @@ class RingedPlanet(object):
         # Title
         if showtitle:
             ax.set_title(
-                f"Observer\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center"
+                "Observer\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center"
             )
 
         # Equatl axis
@@ -2328,10 +2328,10 @@ class RingedPlanet(object):
             ax.axhline(0.0, xmin=0.5, xmax=1, color=fccolor, lw=1, zorder=-100, alpha=0.3)
             ax.axvline(0.0, ymin=0.5, ymax=1, color=fccolor, lw=1, zorder=-100, alpha=0.3)
             ax.text(
-                1.0, 0.5, "$x_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, ha="right", color=fccolor
+                1.0, 0.5, r"$x_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, ha="right", color=fccolor
             )
             ax.text(
-                0.5, 1.0, "$y_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, va="top", color=fccolor
+                0.5, 1.0, r"$y_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, va="top", color=fccolor
             )
 
         ax.axis("off")
@@ -2380,7 +2380,7 @@ class RingedPlanet(object):
 
         # Title
         if showtitle:
-            ax.set_title(f"Star\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center")
+            ax.set_title("Star\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center")
 
         # Equatl axis
         values = [rps_str / self.Rp]
@@ -2395,10 +2395,10 @@ class RingedPlanet(object):
             ax.axhline(0.0, xmin=0.5, xmax=1, color=fccolor, lw=1, zorder=-100, alpha=0.3)
             ax.axvline(0.0, ymin=0.5, ymax=1, color=fccolor, lw=1, zorder=-100, alpha=0.3)
             ax.text(
-                1.0, 0.5, "$y_\mathrm{str}$", fontsize=10, alpha=0.5, transform=ax.transAxes, ha="right", color=fccolor
+                1.0, 0.5, r"$y_\mathrm{str}$", fontsize=10, alpha=0.5, transform=ax.transAxes, ha="right", color=fccolor
             )
             ax.text(
-                0.5, 1.0, "$z_\mathrm{str}$", fontsize=10, alpha=0.5, transform=ax.transAxes, va="top", color=fccolor
+                0.5, 1.0, r"$z_\mathrm{str}$", fontsize=10, alpha=0.5, transform=ax.transAxes, va="top", color=fccolor
             )
         ax.axis("off")
 
@@ -2478,7 +2478,7 @@ class RingedPlanet(object):
         fig1 = None
         if not showfig:
             plt.ioff()
-        label = f"$t/T={self.t / self.T:.2f}$, $r/a={self.rstar * self.Rstar / self.a:.2f}$, $\lambda={self.estar_ecl[0] * RAD:+0.2f}^\circ$\n [ $i={self.i * RAD:g}^\circ$,  Obs ($\lambda$,$\\beta$) : ({self.eobs_ecl[0] * RAD:g}$^\circ$,{self.eobs_ecl[1] * RAD:g}$^\circ$) ] "
+        label = f"$t/T={self.t / self.T:.2f}$, $r/a={self.rstar * self.Rstar / self.a:.2f}$, $\\lambda={self.estar_ecl[0] * RAD:+0.2f}^\\circ$\n [ $i={self.i * RAD:g}^\\circ$,  Obs ($\\lambda$,$\\beta$) : ({self.eobs_ecl[0] * RAD:g}$^\\circ$,{self.eobs_ecl[1] * RAD:g}$^\\circ$) ] "
 
         # onlyrings=np.arange(self.Nrt)<(self.Nrt if showborder else self.Nr)
 
@@ -2660,7 +2660,7 @@ class RingedPlanet(object):
         # Title
         if showtitle:
             ax.set_title(
-                f"Observer\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center"
+                "Observer\n" + label, color=fccolor, fontsize=self._plot["fn"], position=(0.5, -0.1), ha="center"
             )
 
         # Equatl axis
@@ -2676,10 +2676,10 @@ class RingedPlanet(object):
             ax.axhline(0.0, xmin=0.5, xmax=1, color=fccolor, lw=1, zorder=-100, alpha=0.3)
             ax.axvline(0.0, ymin=0.5, ymax=1, color=fccolor, lw=1, zorder=-100, alpha=0.3)
             ax.text(
-                1.0, 0.5, "$x_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, ha="right", color=fccolor
+                1.0, 0.5, r"$x_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, ha="right", color=fccolor
             )
             ax.text(
-                0.5, 1.0, "$y_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, va="top", color=fccolor
+                0.5, 1.0, r"$y_\mathrm{obs}$", fontsize=10, alpha=0.5, transform=ax.transAxes, va="top", color=fccolor
             )
 
         ax.axis("off")
@@ -3721,7 +3721,7 @@ class RingedPlanet(object):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Extra
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class Extra(object):
+class Extra:
     def drawPryngles(iobs=1, dark=False):
         ############################################################
         # Simulation
@@ -3777,7 +3777,7 @@ class Extra(object):
 
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(projection="3d")
-        title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\circ$ ($i_0={P.io * RAD:.1f}^\circ$), $\lambda_\mathrm{{q}}={P.lambq * RAD:g}^\circ$, Obs ($\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\circ$,{P.eobs_ecl[1] * RAD:g}$^\circ$)"
+        title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\\circ$ ($i_0={P.io * RAD:.1f}^\\circ$), $\\lambda_\\mathrm{{q}}={P.lambq * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\\circ$,{P.eobs_ecl[1] * RAD:g}$^\\circ$)"
         theta = np.linspace(0, 2 * np.pi, no)
         x = np.cos(theta)
         y = np.sin(theta)

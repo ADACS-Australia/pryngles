@@ -22,13 +22,10 @@ On first run the golden files are generated next to this test (in the
 
 import numpy as np
 import pytest
-
 import spiceypy as spy
 
 import pryngles as pr
-
 from tests.regression.utils import SystemChecks
-
 
 # WASP-43 system parameters.
 _PERIOD = 0.81347753  # Orbital period [days]

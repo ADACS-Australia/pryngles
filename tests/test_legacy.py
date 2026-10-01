@@ -12,9 +12,10 @@
 ##################################################################
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
-import pytest
-from pryngles import *
 import matplotlib
+import pytest
+
+from pryngles import *
 
 matplotlib.use("Agg")  # Backend for testing (no display needed)
 

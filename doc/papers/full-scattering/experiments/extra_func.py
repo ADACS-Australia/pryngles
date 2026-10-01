@@ -1,17 +1,19 @@
-import numpy as np
-import pandas as pd
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from pryngles import *
 from pryngles import pixx
-import time
 
 extension = "pixx"
 # extension="cpixx"
 import multiprocessing as mp
-import os, sys, glob
+import os
+import sys
+
 import matplotlib.ticker as ticker
-from scipy.optimize import minimize, differential_evolution, least_squares
-import cv2 as cv
+from scipy.optimize import least_squares, minimize
 
 
 def pool_handler(loc_num, params, func, multiplier, max_process=None):
@@ -1072,7 +1074,7 @@ def transitFitMie(x, fitx, fity, run_num, save_everything=False, allow_non_uni=T
 
         optical_thickness = optical_thickness_values[int(x[10])]
     elif int(x[10]) == 0:
-        fname_ring = f"./fou_files/Ring/fou_ring_0_001_0_3.dat"
+        fname_ring = "./fou_files/Ring/fou_ring_0_001_0_3.dat"
         optical_thickness = 0.0
 
     pixx_sys = System()

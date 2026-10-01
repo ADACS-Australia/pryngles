@@ -17,11 +17,11 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
 import numpy as np
 import rebound as rb
-from tqdm import tqdm
-from anytree import NodeMixin, RenderTree, ZigZagGroupIter
+from anytree import NodeMixin, RenderTree
+
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,7 +153,7 @@ class Orbit(PrynglesCommon):
             )
 
         if not qmixed and (sum(R) != 0 or sum(V) != 0):
-            raise ValueError(f"You cannot provide a center of mass position and velocity for a non-mixed system.")
+            raise ValueError("You cannot provide a center of mass position and velocity for a non-mixed system.")
 
         # Total mass
         self.Mtot = self.m1 + self.m2

@@ -17,24 +17,21 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
+
 import matplotlib.pyplot as plt
-import numpy as np
-import itertools
 
 # Plotting in 3d
-import mpl_toolkits.mplot3d.art3d as art3d
-from matplotlib.patches import Circle, PathPatch
-from mpl_toolkits import mplot3d
-from scipy.spatial.transform import Rotation
-import math
+import numpy as np
+from matplotlib.patches import Circle
+
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Sampler
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 class Sampler(PrynglesCommon):
-    """
+    r"""
     Class for generating evenly distributed points on various geometric shapes
     using the Fibonacci spiral algorithm. It allows for customization of the
     number of points, random seed for reproducibility, and loading/saving of samples

@@ -128,7 +128,7 @@ def test_cut_hole():
     S.gen_circle()
     n_before = S.N
     S._cut_hole(0.5)
-    assert S.N < n_before
+    assert n_before > S.N
     radii = np.linalg.norm(S.ss[:, :2], axis=1)
     assert radii.min() >= 0.5 - 1e-12
     np.testing.assert_allclose(S.A, np.pi * (1 - 0.5**2), atol=1e-12)
@@ -140,7 +140,7 @@ def test_purge_sample_reduces_n():
     S.gen_sphere()
     n_before = S.N
     S.purge_sample()
-    assert S.N <= n_before
+    assert n_before >= S.N
     assert S.purged is True
 
 
@@ -151,7 +151,7 @@ def test_purge_sample_idempotent():
     S.purge_sample()
     n_after_first = S.N
     S.purge_sample()
-    assert S.N == n_after_first
+    assert n_after_first == S.N
 
 
 def test_purge_sample_threshold():

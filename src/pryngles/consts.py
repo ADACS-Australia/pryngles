@@ -17,23 +17,22 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-import numpy as np
-from rebound import units
-import re
-
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Stand alone code of the module
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 import os
+import re
+
+import numpy as np
+from rebound import units
+
+from pryngles import *
 
 # Root directory
 try:
     FILE = __file__
     ROOTDIR = os.path.abspath(os.path.dirname(FILE))
 except:
-    import IPython
 
     FILE = ""
     ROOTDIR = os.path.abspath("")
@@ -41,7 +40,7 @@ except:
 IN_JUPYTER = "ipykernel" in sys.modules
 
 
-class Consts(object):
+class Consts:
     """
     The ``pr.Consts`` class is where we define all physical and astronomical constants.
     It contains the ``rebound`` imported constants and so the defined ones
@@ -84,7 +83,6 @@ class Consts(object):
         'msaturn', 'msolar', 'msun', 'muranus', 'mvenus', 'myr', 'parsec', 'pc', 'ppb', 'ppm', 'rad',
         'rearth', 'rjupiter', 'rsaturn', 'rsun', 's', 'solarmass', 'sunmass', 'year', 'years', 'yr', 'yrs']
         """
-        import pryngles as pr
 
         all_constants = []
         for key in Consts.__dict__.keys():

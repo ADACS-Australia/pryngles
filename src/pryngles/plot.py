@@ -17,26 +17,26 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-import matplotlib.pyplot as plt
-import numpy as np
 import math
 from colorsys import hls_to_rgb
-import rebound as rb
-from tqdm import tqdm
+
+import matplotlib.pyplot as plt
 
 # Plotting in 3d
-import mpl_toolkits.mplot3d.art3d as art3d
-from matplotlib.patches import Circle, PathPatch
+import numpy as np
+from matplotlib import animation
+from matplotlib.patches import Circle
 from mpl_toolkits import mplot3d
 from scipy.spatial.transform import Rotation
-from matplotlib import animation
+from tqdm import tqdm
+
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Plot
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class Plot(object):
+class Plot:
     """Plotting util class"""
 
     def _pathpatch_2d_to_3d(pathpatch, pivot=[0, 0, 0], zDir=[0, 0, 1]):
@@ -134,9 +134,7 @@ class Plot(object):
         """
         rgb_color = hls_to_rgb(hls[0] / 360.0, hls[1], hls[2])
         if to_hex:
-            hex_color = "#{:02x}{:02x}{:02x}".format(
-                int(rgb_color[0] * 255), int(rgb_color[1] * 255), int(rgb_color[2] * 255)
-            )
+            hex_color = f"#{int(rgb_color[0] * 255):02x}{int(rgb_color[1] * 255):02x}{int(rgb_color[2] * 255):02x}"
             return hex_color
         return rgb_color
 
@@ -213,7 +211,7 @@ class Plot(object):
 
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(projection="3d")
-        title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\circ$ ($i_0={P.io * RAD:.1f}^\circ$), $\lambda_\mathrm{{q}}={P.lambq * RAD:g}^\circ$, Obs ($\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\circ$,{P.eobs_ecl[1] * RAD:g}$^\circ$)"
+        title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\\circ$ ($i_0={P.io * RAD:.1f}^\\circ$), $\\lambda_\\mathrm{{q}}={P.lambq * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\\circ$,{P.eobs_ecl[1] * RAD:g}$^\\circ$)"
         theta = np.linspace(0, 2 * np.pi, no)
         x = np.cos(theta)
         y = np.sin(theta)

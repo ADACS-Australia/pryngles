@@ -17,19 +17,19 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-
-import spiceypy as spy
 import numpy as np
 import rebound as rb
+import spiceypy as spy
 from tqdm import tqdm
+
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class System
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 class System(PrynglesCommon):
-    """
+    r"""
     High-level interface for building spangled planetary systems.
     Integrates Rebound simulations with the Pryngles spangling pipeline to generate discrete surface facets,
     manage bodies, compute photometric states, and evolve dynamics.
@@ -346,7 +346,7 @@ class System(PrynglesCommon):
             )
             self.sim.status()
         else:
-            print(f"Simulation for this system has not been yet initialized. Use System.initialize_simulation()")
+            print("Simulation for this system has not been yet initialized. Use System.initialize_simulation()")
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # Tested methods from module file scatterer
@@ -507,7 +507,7 @@ class System(PrynglesCommon):
         if self.__body.source:
             # Check that the source is a body
             if not isinstance(self.__body.source, Body):
-                raise ValueError(f"The source of body must be an actual Body.")
+                raise ValueError("The source of body must be an actual Body.")
             # Check that the source is among the bodies
             if self.__body.source.name not in self.bodies:
                 raise ValueError(
@@ -1033,7 +1033,7 @@ class System(PrynglesCommon):
         Note
         ---------
         - Only illuminated spangles not associated with stars are considered in the computation.
-        - The computation follows the Flux Law (:math:`\propto d^{-2}`)
+        - The computation follows the Flux Law (:math:`\\propto d^{-2}`)
 
         .. math::
             F = \\frac{L}{4 \\pi d^2}

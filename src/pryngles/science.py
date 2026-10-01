@@ -17,15 +17,15 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-import numpy as np
 import math as mh
+
+import matplotlib.pyplot as plt
+import numpy as np
 import spiceypy as spy
 from scipy.integrate import quad
 from scipy.spatial import ConvexHull
-from celluloid import Camera  # getting the camera
-import rebound as rb
-import matplotlib.pyplot as plt
+
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,7 +42,7 @@ class Science(PrynglesCommon):
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def spherical(xyz):
-        """
+        r"""
         Transform cartesian coordinates into spherical coordinates
 
         Parameters
@@ -71,7 +71,7 @@ class Science(PrynglesCommon):
         return np.array([r, theta, phi])
 
     def cospherical(xyz):
-        """Transform cartesian coordinates into cosine/sine of spherical angles
+        r"""Transform cartesian coordinates into cosine/sine of spherical angles
 
         Parameters
         ----------
@@ -111,7 +111,7 @@ class Science(PrynglesCommon):
         ------------
         :
             rhoazcf : `np.array`
-                Cylindrical coordinates expresed as :math:`\\rho, \phi` (azimutal angle) and :math:`\cos\\theta` (cosine
+                Cylindrical coordinates expresed as :math:`\\rho, \\phi` (azimutal angle) and :math:`\\cos\\theta` (cosine
                 of polar angle).
 
         Examples
@@ -143,7 +143,7 @@ class Science(PrynglesCommon):
         return result[0] if single_input else result
 
     def cartesian(rqf):
-        """
+        r"""
         Transform spherical coordinates into cartesian coordinates
 
         Parameters
@@ -174,14 +174,14 @@ class Science(PrynglesCommon):
         Parameters
         --------------
             args : `np.array`
-                If ``len(args) == 2``, components are longitude and latitude (:math:`\lambda,\\beta`) of the direction (in degrees).
-                If ``len(args) == 3``, components are cartisian coordinates of the vector :math:`\hat{n}`.
+                If ``len(args) == 2``, components are longitude and latitude (:math:`\\lambda,\\beta`) of the direction (in degrees).
+                If ``len(args) == 3``, components are cartisian coordinates of the vector :math:`\\hat{n}`.
 
         Returns
         ------------
         :
             nx, ny, nz: `float`
-                Cartesian components (if ``len(args) == 2``) of the unitary direction vector :math:`\hat{n}`.
+                Cartesian components (if ``len(args) == 2``) of the unitary direction vector :math:`\\hat{n}`.
 
             lamb, beta: `float` [deg]
                 If ``len(args) == 3``, Longitude and Latitude (angle with respect to x-axis & elevation angle with respect to xy-plane)
@@ -216,7 +216,7 @@ class Science(PrynglesCommon):
 
     def rotation_matrix(ez, alpha):
         """
-        Set a rotation matrix from the direction of the :math:`\hat{e_z}` vector and a rotation angle :math:`\\alpha`
+        Set a rotation matrix from the direction of the :math:`\\hat{e_z}` vector and a rotation angle :math:`\\alpha`
 
         Parameters
         -----------------------
@@ -230,14 +230,14 @@ class Science(PrynglesCommon):
         ---------------
         :
             Msys2uni : `np.array(3x3)`
-                Rotation matrix from the system defined by :math:`\hat{e_z}` and the universal system.
+                Rotation matrix from the system defined by :math:`\\hat{e_z}` and the universal system.
 
             Muni2sys : `np.array(3x3)`
-                Rotation matrix from the universal system to the system defined by :math:`\hat{e_z}`
+                Rotation matrix from the universal system to the system defined by :math:`\\hat{e_z}`
 
         Note
         ----------------
-        Universal System refers to the euclidean base :math:`\{\hat{e_i}\}`
+        Universal System refers to the euclidean base :math:`\\{\\hat{e_i}\\}`
 
         Examples
         -----------
@@ -431,7 +431,7 @@ class Science(PrynglesCommon):
         return J_lambda
 
     def integrate_planck_flux(T, lambda_min, lambda_max):
-        """
+        r"""
         Integrate Planck's blackbody distribution function over a wavelength range.
 
         :math:`\int_{\lambda_{min}}^{\lambda_{max}} B_λ(λ, T) dλ`
@@ -456,7 +456,7 @@ class Science(PrynglesCommon):
         return result
 
     def integrate_planck_photons(T, lambda_min, lambda_max):
-        """
+        r"""
         Integrate Planck's blackbody photon distribution function over a wavelength range.
 
         :math:`\int_{\lambda_{min}}^{\lambda_{max}} J_λ(λ, T) dλ`

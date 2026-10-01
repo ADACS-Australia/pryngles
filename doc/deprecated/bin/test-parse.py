@@ -35,8 +35,8 @@ Example:
     unittest.main(argv=['first-arg-is-ignored'],exit=False)
 """
 
-from sys import argv
 import os
+from sys import argv
 
 if len(argv) <= 1:
     raise AssertionError("You must provide a filename.")
@@ -56,7 +56,7 @@ if os.path.exists(filesrc):
 # Create
 os.system(f"cat src/header.py > {filetest}")
 
-fp = open(filepath, "r")
+fp = open(filepath)
 fo = open(filesrc, "w")
 ft = open(filetest, "a")
 

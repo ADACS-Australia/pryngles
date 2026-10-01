@@ -18,21 +18,22 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+import inspect
+import sys
 import unittest
 import warnings
-import dill
-import inspect
-import sigfig
-from copy import deepcopy
-import sys
 from collections import OrderedDict as odict
+from copy import deepcopy
+
+import dill
+import sigfig
 
 warnings.filterwarnings("ignore")
 
 # JupDev: Jupyter compatibility
-from IPython.display import HTML, Image, display
 import IPython.core.autocall as autocall
 from IPython import get_ipython
+from IPython.display import HTML, Image, display
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Stand alone code of the module
@@ -47,7 +48,7 @@ VERB_DEEP = 4
 VERB_ALL = 100
 
 
-class Verbose(object):
+class Verbose:
     """Verbose print in the package
 
     Attributes:
@@ -92,7 +93,7 @@ class Verbose(object):
 verbose = Verbose.print
 
 
-class PrynglesCommon(object):
+class PrynglesCommon:
     """Base class of the package.
 
     All major classes are children of PrynglesCommon class.
@@ -127,7 +128,7 @@ class PrynglesCommon(object):
         pikd = open(filename, "rb")
         data = dill.load(pikd)
         pikd.close()
-        verbose(VERB_VERIFY, f"Transferring data to new object")
+        verbose(VERB_VERIFY, "Transferring data to new object")
         self.__dict__ = data.__dict__
         return data
 
@@ -142,27 +143,27 @@ class PrynglesCommon(object):
         return str({k: v for k, v in self.__dict__.items() if k[0] != "_"})
 
 
-from pryngles.version import *
+from pryngles.body import *
 
 # Constants
 from pryngles.consts import *
-
-# Utility modules
-from pryngles.misc import *
 from pryngles.extensions import *
-from pryngles.science import *
-from pryngles.plot import *
-from pryngles.orbit import *
-from pryngles.scatterer import *
 
 # Legacy module
 from pryngles.legacy import *
 
+# Utility modules
+from pryngles.misc import *
+from pryngles.orbit import *
+from pryngles.plot import *
+
 # Core modules
 from pryngles.sampler import *
+from pryngles.scatterer import *
+from pryngles.science import *
 from pryngles.spangler import *
-from pryngles.body import *
 from pryngles.system import *
+from pryngles.version import *
 
 
 def _welcome():

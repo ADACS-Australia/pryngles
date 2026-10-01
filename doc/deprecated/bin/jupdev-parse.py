@@ -20,9 +20,9 @@ It uses decorators of the type "#@" and the JupDev convention (see
 DEVELOPERS.md)
 """
 
-from sys import argv
 import os
 import re
+from sys import argv
 
 # Tabulation
 TAB = " " * 4
@@ -41,7 +41,7 @@ module = filename.split(".")[0]
 print(f"Parsing source file {filepath}")
 
 # Open file
-fp = open(filepath, "r")
+fp = open(filepath)
 
 # Structures to store information
 floating = []
@@ -64,7 +64,7 @@ for line in fp:
     elif "#@class" in line:
         qcapture = True
         qtype = "class"
-        print(f"Class found...")
+        print("Class found...")
 
     elif "#@external" in line:
         qcapture = True
@@ -121,7 +121,7 @@ for line in fp:
             docstrings[classname] = block
 
         elif qtype == "class":
-            pattern = re.compile("^class ([\w^\(]+)\(", re.DOTALL)
+            pattern = re.compile(r"^class ([\w^\(]+)\(", re.DOTALL)
             classname = pattern.findall(block[0])[0]
             classes[classname] = block
 
@@ -211,7 +211,7 @@ for classname, classcontent in classes.items():
                 i = 0
                 for line in docstrings[classname]:
                     if i == 0:
-                        tab = f""
+                        tab = ""
                         line = line.strip(" ")
                     else:
                         tab = f"{TAB}"

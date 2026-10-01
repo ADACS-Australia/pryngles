@@ -3,7 +3,6 @@
 import ctypes
 
 import numpy as np
-import pytest
 
 import pryngles as pr
 

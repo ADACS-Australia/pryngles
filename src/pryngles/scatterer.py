@@ -17,12 +17,13 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-
 from abc import ABC, abstractmethod
+
+from scipy.integrate import dblquad, quad
+from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.optimize import bisect
-from scipy.integrate import quad, dblquad
-from scipy.interpolate import interp1d, RectBivariateSpline
+
+from pryngles import *
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,13 +174,13 @@ class LambertianGraySurface(Scatterer):
 
     .. math::
 
-        f(\eta, \zeta) = 
+        f(\\eta, \\zeta) = 
         \\begin{cases}
-            \cos\eta, & \\text{(Lambertian phase law)} \\\\
-            \dfrac{\cos\eta \cos \zeta}{\cos\eta + \cos \zeta}, & \\text{(Lommel-Seeliger phase law)}
-        \end{cases}
+            \\cos\\eta, & \\text{(Lambertian phase law)} \\\\
+            \\dfrac{\\cos\\eta \\cos \\zeta}{\\cos\\eta + \\cos \\zeta}, & \\text{(Lommel-Seeliger phase law)}
+        \\end{cases}
     
-    Where :math:`\eta` is the angle of incidence and :math:`\zeta` is the angle of reflection or emission.
+    Where :math:`\\eta` is the angle of incidence and :math:`\\zeta` is the angle of reflection or emission.
     
     The provided `phase_law` function must follow this prototype:
 
@@ -226,7 +227,7 @@ class LambertianGraySurface(Scatterer):
 
     def get_albedo(self, eta, zeta, delta, lamb, **params):
         """
-        Compute the directional albedo for a given incident angle :math:`\eta` in a planetary gray Lambertian surface, assuming a gray, isotropic scattering law.
+        Compute the directional albedo for a given incident angle :math:`\\eta` in a planetary gray Lambertian surface, assuming a gray, isotropic scattering law.
 
         Parameters
         ----------
@@ -248,19 +249,19 @@ class LambertianGraySurface(Scatterer):
         -------
         :
             `float`
-                Wavelength-independent Lambertian directional albedo :math:`A_L(\eta)` at the given incident angle :math:`\eta`.
+                Wavelength-independent Lambertian directional albedo :math:`A_L(\\eta)` at the given incident angle :math:`\\eta`.
 
         Note
         ------------
         | The directional-dependent albedo is precomputed via numerical integration of the phase law and interpolated for efficiency.
         Since you provide a value for surface albedo ``AL``,
-        we implement a root method to find the `single scattering albedo` :math:`\gamma` in order to compute
-        the directional dependence (:math:`\cos\eta_i`) of albedo (Eq. 12) **[1]**, where :math:`\eta_i` refers to the
+        we implement a root method to find the `single scattering albedo` :math:`\\gamma` in order to compute
+        the directional dependence (:math:`\\cos\\eta_i`) of albedo (Eq. 12) **[1]**, where :math:`\\eta_i` refers to the
         incidence angle of the light on each of the surface's `Spangles`.}
 
         .. math::
 
-            A_L(\eta_i) = 2\pi\gamma\int_0^1\\frac{f(\eta_i,\,\zeta)}{\cos\eta_i}\,d(\cos\zeta)
+            A_L(\\eta_i) = 2\\pi\\gamma\\int_0^1\\frac{f(\\eta_i,\\,\\zeta)}{\\cos\\eta_i}\\,d(\\cos\\zeta)
 
         **[1]** Zuluaga, J. I., Sucerquia, M., & Alvarado-Montes, J. A. (2022).
         `The bright side of the light curve: A general photometric model of non-transiting exorings`.
@@ -295,7 +296,7 @@ class LambertianGraySurface(Scatterer):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 class LambertianGrayAtmosphere(Scatterer):
     """
-    This is the scatterer corresponding to a semi-infinite (:math:`\\tau\\to\infty`), plane-parallel atmosphere with gray Lambertian scattering.
+    This is the scatterer corresponding to a semi-infinite (:math:`\\tau\\to\\infty`), plane-parallel atmosphere with gray Lambertian scattering.
     Models the diffuse reflection properties assuming an atmosphere composed of particles that scatter isotropically
 
     Parameters
@@ -324,7 +325,7 @@ class LambertianGrayAtmosphere(Scatterer):
 
     def get_albedo(self, eta, zeta, delta, lamb, **params):
         """
-        Compute the directional Lambertian albedo :math:`A_L(\eta)`, at a given incident angle of illumination :math:`\eta`, of a planetary atmosphere
+        Compute the directional Lambertian albedo :math:`A_L(\\eta)`, at a given incident angle of illumination :math:`\\eta`, of a planetary atmosphere
         assuming gray scattering and a semi-infinite layers.
 
         Parameters
@@ -345,26 +346,26 @@ class LambertianGrayAtmosphere(Scatterer):
         -------
         :
             `float`
-                directional-dependent Lambertian albedo :math:`A_L(\eta)` of the atmosphere for a given incident angle :math:`\eta`.
+                directional-dependent Lambertian albedo :math:`A_L(\\eta)` of the atmosphere for a given incident angle :math:`\\eta`.
 
         Note
         -------
-        For a given spherical albedo, we derive, by root-finding methods, the  `single scattering albedo` :math:`\gamma` that reproduces the desired hemispheric reflectance ``AS`` (Eq. 10) **[2]**
+        For a given spherical albedo, we derive, by root-finding methods, the  `single scattering albedo` :math:`\\gamma` that reproduces the desired hemispheric reflectance ``AS`` (Eq. 10) **[2]**
 
         .. math::
 
-            A_S = 4 \int_0^1 \int_0^1 \cos \Lambda \cos Z \, \\rho(\gamma, \Lambda, Z) \, d(\cos \Lambda) \, d(\cos Z)
+            A_S = 4 \\int_0^1 \\int_0^1 \\cos \\Lambda \\cos Z \\, \\rho(\\gamma, \\Lambda, Z) \\, d(\\cos \\Lambda) \\, d(\\cos Z)
 
-        We also implement a 2D interpolation of pre-tabulated reflection coefficient :math:`\\rho(\gamma, \eta, \zeta)` (Eq. 7) **[2]**,
+        We also implement a 2D interpolation of pre-tabulated reflection coefficient :math:`\\rho(\\gamma, \\eta, \\zeta)` (Eq. 7) **[2]**,
         based on radiative transfer solutions (Table 2.3  in Sobolev, 1975) **[1]** to model the direction-dependent Lambertian albedo efficiently (Eq. 8) **[2]**.
 
         .. math::
 
-            \\rho(\gamma, \Lambda, Z) = \\frac{\gamma}{4} \\frac{f(\gamma, Z) \, f(\gamma, \Lambda)}{\cos \Lambda + \cos Z}
+            \\rho(\\gamma, \\Lambda, Z) = \\frac{\\gamma}{4} \\frac{f(\\gamma, Z) \\, f(\\gamma, \\Lambda)}{\\cos \\Lambda + \\cos Z}
 
         .. math::
 
-            A_{L_i}(\Lambda_i) = 2 \int_0^1 \cos Z \, \\rho(\gamma, \Lambda_i, Z) \, d(\cos Z)
+            A_{L_i}(\\Lambda_i) = 2 \\int_0^1 \\cos Z \\, \\rho(\\gamma, \\Lambda_i, Z) \\, d(\\cos Z)
 
 
         References

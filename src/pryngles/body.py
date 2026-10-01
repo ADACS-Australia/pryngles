@@ -17,15 +17,13 @@
 # External required packages
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-from pryngles import *
-
-import spiceypy as spy
 import math
+
 import numpy as np
-from copy import deepcopy
-from anytree import NodeMixin, RenderTree
+from anytree import RenderTree
 from scipy.interpolate import interp1d
 
+from pryngles import *
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Class Body

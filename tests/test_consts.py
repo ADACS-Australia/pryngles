@@ -1,6 +1,5 @@
 """Tests for the functions in the ``consts`` module."""
 
-import pytest
 
 import pryngles as pr
 
