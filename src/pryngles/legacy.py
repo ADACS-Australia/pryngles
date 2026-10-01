@@ -1960,8 +1960,13 @@ class RingedPlanet:
         fig1 = fig2 = fig3 = None
         if not showfig:
             plt.ioff()
-        label = f"$t/T={self.t / self.T:.2f}$, $r/a={self.rstar * self.Rstar / self.a:.2f}$, $\\lambda={self.estar_ecl[0] * RAD:+0.2f}^\\circ$ [ $i={self.i * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({self.eobs_ecl[0] * RAD:g}$^\\circ$,{self.eobs_ecl[1] * RAD:g}$^\\circ$) ] "
-
+        label = (
+            f"$t/T={self.t / self.T:.2f}$, "
+            f"$r/a={self.rstar * self.Rstar / self.a:.2f}$, "
+            f"$\\lambda={self.estar_ecl[0] * RAD:+0.2f}^\\circ$ "
+            f"[ $i={self.i * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : "
+            f"({self.eobs_ecl[0] * RAD:g}$^\\circ$,{self.eobs_ecl[1] * RAD:g}$^\\circ$) ] "
+        )
         onlyrings = np.arange(self.Nrt) < (self.Nrt if showborder else self.Nr)
 
         # ========================================
@@ -2478,7 +2483,13 @@ class RingedPlanet:
         fig1 = None
         if not showfig:
             plt.ioff()
-        label = f"$t/T={self.t / self.T:.2f}$, $r/a={self.rstar * self.Rstar / self.a:.2f}$, $\\lambda={self.estar_ecl[0] * RAD:+0.2f}^\\circ$\n [ $i={self.i * RAD:g}^\\circ$,  Obs ($\\lambda$,$\\beta$) : ({self.eobs_ecl[0] * RAD:g}$^\\circ$,{self.eobs_ecl[1] * RAD:g}$^\\circ$) ] "
+        label = (
+            f"$t/T={self.t / self.T:.2f}$, "
+            f"$r/a={self.rstar * self.Rstar / self.a:.2f}$, "
+            f"$\\lambda={self.estar_ecl[0] * RAD:+0.2f}^\\circ$\n "
+            f"[ $i={self.i * RAD:g}^\\circ$,  Obs ($\\lambda$,$\\beta$) : "
+            f"({self.eobs_ecl[0] * RAD:g}$^\\circ$,{self.eobs_ecl[1] * RAD:g}$^\\circ$) ] "
+        )
 
         # onlyrings=np.arange(self.Nrt)<(self.Nrt if showborder else self.Nr)
 
@@ -2775,10 +2786,12 @@ class RingedPlanet:
             if verbose:
                 print(f"Creating video '{filemovie}'...")
             os.system(
-                f"convert -delay 20 -loop 0 {animdir}/{preffix}{imgtype}*.png {figdir}/{filemovie}.gif > {figdir}/animate.log 2>&1"
+                f"convert -delay 20 -loop 0 {animdir}/{preffix}{imgtype}*.png "
+                f"{figdir}/{filemovie}.gif > {figdir}/animate.log 2>&1"
             )
             os.system(
-                f"ffmpeg -y -i {figdir}/{filemovie}.gif -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' {figdir}/{filemovie}.mp4 >> {figdir}/animate.log 2>&1"
+                f"ffmpeg -y -i {figdir}/{filemovie}.gif -movflags faststart -pix_fmt yuv420p "
+                f"-vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' {figdir}/{filemovie}.mp4 >> {figdir}/animate.log 2>&1"
             )
             print(f"Animations generated:\n\t{figdir}/{filemovie}.gif\n\t{figdir}/{filemovie}.mp4")
 
@@ -3778,7 +3791,13 @@ class Extra:
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(projection="3d")
         # This title variable is not being used
-        # title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\\circ$ ($i_0={P.io * RAD:.1f}^\\circ$), $\\lambda_\\mathrm{{q}}={P.lambq * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\\circ$,{P.eobs_ecl[1] * RAD:g}$^\\circ$)"
+        # title = (
+        #     f"$a={P.a:g}$ au, "
+        #     f"$i={P.i * RAD:g}^\\circ$ ($i_0={P.io * RAD:.1f}^\\circ$), "
+        #     f"$\\lambda_\\mathrm{{q}}={P.lambq * RAD:g}^\\circ$, "
+        #     f"Obs ($\\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\\circ$, ""
+        #     f"{P.eobs_ecl[1] * RAD:g}$^\\circ$)"
+        # )
         theta = np.linspace(0, 2 * np.pi, no)
         x = np.cos(theta)
         y = np.sin(theta)

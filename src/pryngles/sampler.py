@@ -49,7 +49,8 @@ class Sampler(PrynglesCommon):
 
     filename : `str`
         To initialize and load object from a binary file.
-        The binary file should be previously prepared with the method :data:`~ __init__.PrynglesCommon.save_to` of the class.
+        The binary file should be previously prepared with the method :data:`~ __init__.PrynglesCommon.save_to`
+        of the class.
         | **Default =** None
 
     preset : `tuple`

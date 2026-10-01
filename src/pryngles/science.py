@@ -111,8 +111,8 @@ class Science(PrynglesCommon):
         ------------
         :
             rhoazcf : `np.array`
-                Cylindrical coordinates expresed as :math:`\\rho, \\phi` (azimutal angle) and :math:`\\cos\\theta` (cosine
-                of polar angle).
+                Cylindrical coordinates expresed as :math:`\\rho, \\phi` (azimutal angle)
+                and :math:`\\cos\\theta` (cosine of polar angle).
 
         Examples
         ------------
@@ -174,7 +174,8 @@ class Science(PrynglesCommon):
         Parameters
         --------------
             args : `np.array`
-                If ``len(args) == 2``, components are longitude and latitude (:math:`\\lambda,\\beta`) of the direction (in degrees).
+                If ``len(args) == 2``, components are longitude and latitude (:math:`\\lambda,\\beta`)
+                of the direction (in degrees).
                 If ``len(args) == 3``, components are cartisian coordinates of the vector :math:`\\hat{n}`.
 
         Returns
@@ -184,7 +185,8 @@ class Science(PrynglesCommon):
                 Cartesian components (if ``len(args) == 2``) of the unitary direction vector :math:`\\hat{n}`.
 
             lamb, beta: `float` [deg]
-                If ``len(args) == 3``, Longitude and Latitude (angle with respect to x-axis & elevation angle with respect to xy-plane)
+                If ``len(args) == 3``, Longitude and Latitude (angle with respect to x-axis
+                & elevation angle with respect to xy-plane)
 
         Raises
         ----------
@@ -268,7 +270,8 @@ class Science(PrynglesCommon):
             Distance to center of the star in units of stellar radius.
 
         cs : `list`
-            List of limb darkening coefficients. Its lenght determines the model to use between Linear, Quadratic and 3/4 Parameter Non-Linear | **Default** = `[0.6562]`
+            List of limb darkening coefficients. Its length determines the model to use between Linear,
+            Quadratic and 3/4 Parameter Non-Linear | **Default** = `[0.6562]`
 
         N : `float`
             Normalization constant | **Default** = `None`
@@ -290,7 +293,8 @@ class Science(PrynglesCommon):
 
         Note
         -------------
-        This method implements the non-linear limb-darkening model described in **[1]** and implements limb darkening coefficients from **[2]**.
+        This method implements the non-linear limb-darkening model described in **[1]**
+        and implements limb darkening coefficients from **[2]**.
 
         .. math::
 

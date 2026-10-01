@@ -84,7 +84,8 @@ class Scatterer(PrynglesCommon, ABC):
         if scatterer.hash in SCATTERERS_CATALOGUE:
             verbose(
                 VERB_SIMPLE,
-                f"Scatterer with name {scatterer.params['name']} and hash {scatterer.hash} already exist at {id(SCATTERERS_CATALOGUE)}",
+                f"Scatterer with name {scatterer.params['name']} and hash {scatterer.hash} " +
+                f"already exist at {id(SCATTERERS_CATALOGUE)}",
             )
             scatterer.__dict__ = deepcopy(SCATTERERS_CATALOGUE[scatterer.hash].__dict__)
             return False
@@ -154,7 +155,8 @@ class LambertianGraySurface(Scatterer):
         It is interpreted as the hemispherical albedo under normal incidence.
 
     phase_law : function, optional
-        | Law of diffuse reflection used to describe the scattering behavior of the surface and compute the angular dependence of the surface albedo.
+        | Law of diffuse reflection used to describe the scattering behavior of the surface
+          and compute the angular dependence of the surface albedo.
         | By default, a Lambertian phase law is assumed:
 
         .. code-block:: python
@@ -227,7 +229,8 @@ class LambertianGraySurface(Scatterer):
 
     def get_albedo(self, eta, zeta, delta, lamb, **params):
         """
-        Compute the directional albedo for a given incident angle :math:`\\eta` in a planetary gray Lambertian surface, assuming a gray, isotropic scattering law.
+        Compute the directional albedo for a given incident angle :math:`\\eta`in a planetary
+        gray Lambertian surface, assuming a gray, isotropic scattering law.
 
         Parameters
         ----------
@@ -243,21 +246,24 @@ class LambertianGraySurface(Scatterer):
             Wavelength-independent albedo of the surface (0 ≤ ``AL`` ≤ 1).
             It is interpreted as the hemispherical albedo under normal incidence
         phase_law : function, optional
-            Law of diffuse reflection used to describe the scattering behavior of the surface and compute the angular dependence of the surface albedo.
+            Law of diffuse reflection used to describe the scattering behavior of the surface and
+            compute the angular dependence of the surface albedo.
 
         Returns
         -------
         :
             `float`
-                Wavelength-independent Lambertian directional albedo :math:`A_L(\\eta)` at the given incident angle :math:`\\eta`.
+                Wavelength-independent Lambertian directional albedo :math:`A_L(\\eta)`
+                at the given incident angle :math:`\\eta`.
 
         Note
         ------------
-        | The directional-dependent albedo is precomputed via numerical integration of the phase law and interpolated for efficiency.
-        Since you provide a value for surface albedo ``AL``,
-        we implement a root method to find the `single scattering albedo` :math:`\\gamma` in order to compute
-        the directional dependence (:math:`\\cos\\eta_i`) of albedo (Eq. 12) **[1]**, where :math:`\\eta_i` refers to the
-        incidence angle of the light on each of the surface's `Spangles`.}
+        | The directional-dependent albedo is precomputed via numerical integration of the phase law
+          and interpolated for efficiency.
+        Since you provide a value for surface albedo ``AL``, we implement a root method to find the
+        `single scattering albedo` :math:`\\gamma` in order to compute the directional dependence
+        (:math:`\\cos\\eta_i`) of albedo (Eq. 12) **[1]**, where :math:`\\eta_i` refers to the incidence
+        angle of the light on each of the surface's `Spangles`.
 
         .. math::
 
@@ -296,8 +302,9 @@ class LambertianGraySurface(Scatterer):
 # --------------------------------------------------
 class LambertianGrayAtmosphere(Scatterer):
     """
-    This is the scatterer corresponding to a semi-infinite (:math:`\\tau\\to\\infty`), plane-parallel atmosphere with gray Lambertian scattering.
-    Models the diffuse reflection properties assuming an atmosphere composed of particles that scatter isotropically
+    This is the scatterer corresponding to a semi-infinite (:math:`\\tau\\to\\infty`), plane-parallel atmosphere
+    with gray Lambertian scattering. Models the diffuse reflection properties assuming an atmosphere composed
+    of particles that scatter isotropically.
 
     Parameters
     ----------------
@@ -325,8 +332,8 @@ class LambertianGrayAtmosphere(Scatterer):
 
     def get_albedo(self, eta, zeta, delta, lamb, **params):
         """
-        Compute the directional Lambertian albedo :math:`A_L(\\eta)`, at a given incident angle of illumination :math:`\\eta`, of a planetary atmosphere
-        assuming gray scattering and a semi-infinite layers.
+        Compute the directional Lambertian albedo :math:`A_L(\\eta)`, at a given incident angle of illumination
+        :math:`\\eta`, of a planetary atmosphere assuming gray scattering and a semi-infinite layers.
 
         Parameters
         ----------
@@ -346,22 +353,28 @@ class LambertianGrayAtmosphere(Scatterer):
         -------
         :
             `float`
-                directional-dependent Lambertian albedo :math:`A_L(\\eta)` of the atmosphere for a given incident angle :math:`\\eta`.
+                directional-dependent Lambertian albedo :math:`A_L(\\eta)` of the atmosphere
+                for a given incident angle :math:`\\eta`.
 
         Note
         -------
-        For a given spherical albedo, we derive, by root-finding methods, the  `single scattering albedo` :math:`\\gamma` that reproduces the desired hemispheric reflectance ``AS`` (Eq. 10) **[2]**
+        For a given spherical albedo, we derive, by root-finding methods, the `single scattering albedo`
+        :math:`\\gamma` that reproduces the desired hemispheric reflectance ``AS`` (Eq. 10) **[2]**
 
         .. math::
 
-            A_S = 4 \\int_0^1 \\int_0^1 \\cos \\Lambda \\cos Z \\, \\rho(\\gamma, \\Lambda, Z) \\, d(\\cos \\Lambda) \\, d(\\cos Z)
+            A_S = 4 \\int_0^1 \\int_0^1 \\cos \\Lambda \\cos Z \\,
+            \\rho(\\gamma, \\Lambda, Z) \\, d(\\cos \\Lambda) \\, d(\\cos Z)
 
-        We also implement a 2D interpolation of pre-tabulated reflection coefficient :math:`\\rho(\\gamma, \\eta, \\zeta)` (Eq. 7) **[2]**,
-        based on radiative transfer solutions (Table 2.3  in Sobolev, 1975) **[1]** to model the direction-dependent Lambertian albedo efficiently (Eq. 8) **[2]**.
+        We also implement a 2D interpolation of pre-tabulated reflection coefficient
+        :math:`\\rho(\\gamma, \\eta, \\zeta)` (Eq. 7) **[2]**, based on radiative transfer solutions
+        (Table 2.3  in Sobolev, 1975) **[1]** to model the direction-dependent Lambertian albedo
+        efficiently (Eq. 8) **[2]**.
 
         .. math::
 
-            \\rho(\\gamma, \\Lambda, Z) = \\frac{\\gamma}{4} \\frac{f(\\gamma, Z) \\, f(\\gamma, \\Lambda)}{\\cos \\Lambda + \\cos Z}
+            \\rho(\\gamma, \\Lambda, Z) = \\frac{\\gamma}{4} 
+            \\frac{f(\\gamma, Z) \\, f(\\gamma, \\Lambda)}{\\cos \\Lambda + \\cos Z}
 
         .. math::
 

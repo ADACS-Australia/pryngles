@@ -50,7 +50,8 @@ class Body(Orbody):
         Object in the center of the orbit of this body.
 
     **properties: `dict`
-        Specify additional body properties and its values from :any:`consts.REBOUND_ORBITAL_PROPERTIES` or :any:`consts.BODY_DEFAULTS`
+        Specify additional body properties and its values from :any:`consts.REBOUND_ORBITAL_PROPERTIES`
+        or :any:`consts.BODY_DEFAULTS`
 
     Returns
     -------
@@ -67,7 +68,8 @@ class Body(Orbody):
     ----------
     sg : :any:`spangler.Spangler`
         Abbreviation of `spangler`. This is one of the most important objects in ``pryngles``.
-        It contains the :data:`~ spangler.Spangler` object in wich we sample and discretize the surface of the :data:`~ body.Body` object in order to compute light-matter interactions.
+        It contains the :data:`~ spangler.Spangler` object in wich we sample and discretize the surface
+        of the :data:`~ body.Body` object in order to compute light-matter interactions.
         | **Default** is ``None``.
 
     childs, children: `dict, tuple`
@@ -226,7 +228,7 @@ class Body(Orbody):
         --------------
         :any:`consts.SPANGLER_COLUMNS`
             To see a description for each column in the data attribute
-        """
+        """  # noqa: E501
 
         # Create spangler
         self.sg = Spangler(
@@ -403,7 +405,8 @@ class Planet(Body):
 
     def set_temperature_model(self, model: dict):
         """
-        Set the temperature model for the planet. It defines how the temperature is distributed over the planet's surface.
+        Set the temperature model for the planet. It defines how the temperature is distributed
+        over the planet's surface.
 
         Parameters
         ----------
@@ -459,12 +462,14 @@ class Planet(Body):
 
         if self.sg is None:
             raise RuntimeError(
-                "Spangler not defined. Please spangle the body before applying a temperature model: Planet.spangle_body() or System.spangle_system()"
+                "Spangler not defined. Please spangle the body before applying a temperature model: " \
+                "Planet.spangle_body() or System.spangle_system()"
             )
 
         if not hasattr(self, "T_model"):
             raise RuntimeError(
-                "Temperature model not defined. Please set a temperature model before applying it: Planet.set_temperature_model()"
+                "Temperature model not defined. Please set a temperature model before applying it: " \
+                "Planet.set_temperature_model()"
             )
 
         model_type = self.T_model["type"]
@@ -694,7 +699,8 @@ class Detector(PrynglesCommon):
     apperture: `float`
         Aperture size of the detector in meters. Defaults to 0.5 m.
     quantum_eff: `float`
-        Quantum efficiency of the detector, which defines the ratio of detected photons to incident photons. Defaults to 1.
+        Quantum efficiency of the detector, which defines the ratio of detected photons to incident photons.
+        Defaults to 1.
     t_cad: `float`
         Time of Cadence of the detector in seconds. Defaults to 10 minutes (600 s).
     distance: `float`

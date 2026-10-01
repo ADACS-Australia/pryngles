@@ -79,7 +79,8 @@ class Orbit(PrynglesCommon):
     -----------------
     m1-m2 : `float`, :data:`~ orbit.Orbit`
         | If ``float``, it represents the mass of the body.
-        | If :data:`~ orbit.Orbit` instance, it represents a children system, i.e., a 2-body subsystem by the hierarchical N-body approximation.
+        | If :data:`~ orbit.Orbit` instance, it represents a children system,
+          i.e., a 2-body subsystem by the hierarchical N-body approximation.
 
     elements : `dict`
         Dictionary with the orbital elements provided for the second body.
@@ -328,7 +329,8 @@ class OrbitUtil(PrynglesCommon):
     def build_tree(root):
         """
         Construct the Orbital Tree for the hierarchical N-body system.
-        It is a recursively method for identifying the children bodies from a primary body, excluding bodies of kind :data:`~ body.Ring`.
+        It is a recursively method for identifying the children bodies from a primary body,
+        excluding bodies of kind :data:`~ body.Ring`.
 
         Parameters
         -------------
@@ -425,7 +427,8 @@ class OrbitUtil(PrynglesCommon):
             | You can pass it or generate it by the :any:`orbit.OrbitUtil.build_tree` method.
 
         units : `list`
-            List of string containing the units convention used in calculations. The order **SHOULD** always be MKS: length, mass, time (in that order).
+            List of string containing the units convention used in calculations.
+            The order **SHOULD** always be MKS: length, mass, time (in that order).
             The allowed units are defined in our :doc:`consts` and imported from ``rebound`` package.
             | **Default** =  `['au', 'msun', 'yr2pi']`
 
@@ -433,7 +436,8 @@ class OrbitUtil(PrynglesCommon):
         ---------------
         :
             orbit : :data:`~ orbit.Orbit`
-                :data:`~ orbit.Orbit` instance class containing the `rebound` simulation of the hierarchical N-body system.
+                :data:`~ orbit.Orbit` instance class containing the `rebound` simulation of the
+                hierarchical N-body system.
             pelements : `dict`
                 Dictionary of orbital elements from the primary component (root body).
                 It will be useful in case you want to reproduce the dynamics of the root body

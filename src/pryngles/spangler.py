@@ -491,7 +491,8 @@ class Spangler(PrynglesCommon):
         preset : bool, optional
             If True, uses a precomputed sample from :class:`pryngles.sampler.Sampler`. Default is False.
         spangle_type : int, optional
-            CousinsType of spangle, as defined in :mod:`pryngles.consts` (e.g, :data:`pryngles.consts.SPANGLE_SOLID_ROCK`).
+            CousinsType of spangle, as defined in :mod:`pryngles.consts`
+            (e.g, :data:`pryngles.consts.SPANGLE_SOLID_ROCK`).
             Default is `SPANGLE_SOLID_ROCK`.
         scale : float, optional
             Scaling factor for the spangle sizes and positions. Default is 1.

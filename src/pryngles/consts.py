@@ -103,12 +103,14 @@ class Consts:
 
         Examples
         --------
-        Because some of numerical constants are grouped by modules, you can get those specifying it's module in uppercase.
+        Because some of numerical constants are grouped by modules, you can get those specifying
+        it's module in uppercase.
 
         >>> [const for const in pr.Consts.get_all() if 'SPANGLER' in const]
-        ['SPANGLER_AREAS', 'SPANGLER_COLUMNS', 'SPANGLER_COLUMNS_DOC', 'SPANGLER_COL_COPY', 'SPANGLER_COL_INT', 'SPANGLER_COL_LUZ',
-        'SPANGLER_COL_OBS', 'SPANGLER_DEBUG_FIELDS', 'SPANGLER_EPS_BORDER', 'SPANGLER_EQUIV_COL', 'SPANGLER_KEY_ORDERING',
-        'SPANGLER_KEY_SUMMARY', 'SPANGLER_LENGTHS', 'SPANGLER_SOURCE_STATES', 'SPANGLER_VECTORS', 'SPANGLER_VISIBILITY_STATES']
+        ['SPANGLER_AREAS', 'SPANGLER_COLUMNS', 'SPANGLER_COLUMNS_DOC', 'SPANGLER_COL_COPY', 'SPANGLER_COL_INT',
+        'SPANGLER_COL_LUZ', 'SPANGLER_COL_OBS', 'SPANGLER_DEBUG_FIELDS', 'SPANGLER_EPS_BORDER', 'SPANGLER_EQUIV_COL',
+        'SPANGLER_KEY_ORDERING', 'SPANGLER_KEY_SUMMARY', 'SPANGLER_LENGTHS', 'SPANGLER_SOURCE_STATES',
+        'SPANGLER_VECTORS', 'SPANGLER_VISIBILITY_STATES']
         """
         import pryngles as pr
 
@@ -849,7 +851,8 @@ BODY_DEFAULTS = dict()
 `dict` : Defines the default keys and values used to initialize an astrophysical body.
 
 - **name** (str or None) — The name of the body. Defaults to None.
-- **name_by_kind** (bool) — If True, the name will be automatically generated based on the body's kind. Defaults to False.
+- **name_by_kind** (bool) — If True, the name will be automatically generated based on the body's kind.
+  Defaults to False.
 - **source** (object or None) — The source object associated with this body. Defaults to None.
 
 **Orbit Parameters:**
@@ -922,11 +925,15 @@ BODY_KINDS = []
 
 STAR_DEFAULTS = deepcopy(BODY_DEFAULTS)
 """
-`dict` : Defines the default attributes for bodies of the kind :data:`~ body.Star`. Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`. You can also define extra Orbital Parameters included in :data:`~ consts.REBOUND_ORBITAL_PROPERTIES`
+`dict` : Defines the default attributes for bodies of the kind :data:`~ body.Star`.
+Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
+You can also define extra Orbital Parameters included in :data:`~ consts.REBOUND_ORBITAL_PROPERTIES`
 
 - **radius** (float) — Radius of the star. Defaults to 0.1.
-- **limb_coeffs** (list of floats) — List of limb darkening coefficients [2]. Its lenght defines the model to implement [1]. **Defaults = `[]`**.
-- **spangle_type** (constant) — Type of spangle used for the star's surface. Defaults to  :data:`~ consts.SPANGLE_STELLAR`.
+- **limb_coeffs** (list of floats) — List of limb darkening coefficients [2].
+  Its length defines the model to implement [1]. **Defaults = `[]`**.
+- **spangle_type** (constant) — Type of spangle used for the star's surface.
+  Defaults to  :data:`~ consts.SPANGLE_STELLAR`.
 - **shape** (str) — The overall shape of the star. Defaults to "sphere".
 
 References
@@ -952,12 +959,15 @@ BODY_KINDS += ["Star"]
 
 PLANET_DEFAULTS = deepcopy(BODY_DEFAULTS)
 """
-`dict` : Defines the default attributes for bodies of the kind :data:`~ body.Planet`. Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`. You can also define extra Orbital Parameters included in :data:`~ consts.REBOUND_ORBITAL_PROPERTIES`
+`dict` : Defines the default attributes for bodies of the kind :data:`~ body.Planet`.
+Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
+You can also define extra Orbital Parameters included in :data:`~ consts.REBOUND_ORBITAL_PROPERTIES`
 
 - **a** (float) — Semi-major axis of the planet's orbit. Defaults to 1.
 - **e** (float) — Eccentricity of the planet's orbit. Defaults to 0.
 - **radius** (float) — Radius of the planet. Defaults to 0.1.
-- **spangle_type** (constant) — Type of spangle used for the planet's surface. Defaults to :data:`~ consts.SPANGLE_ROCK`.
+- **spangle_type** (constant) — Type of spangle used for the planet's surface.
+  Defaults to :data:`~ consts.SPANGLE_ROCK`.
 - **geometry** (str) — The geometry of the planet's surface representation. Defaults to "sphere".
 """
 PLANET_DEFAULTS.update(
@@ -982,13 +992,16 @@ PLANET_DEFAULTS.update(
 BODY_KINDS += ["Planet"]
 
 """
-`dict` : Defines the default parameters for various temperature models [1] for bodies of the kind :data:`~ body.Planet`. 
+`dict` : Defines the default parameters for various temperature models [1]
+for bodies of the kind :data:`~ body.Planet`. 
 
 References
 ---------------
 Temperature Models are taken and adapted from the SPIDERMAN code
 
-[1] Tom Louden, Laura Kreidberg, SPIDERMAN: an open-source code to model phase curves and secondary eclipses, Monthly Notices of the Royal Astronomical Society, Volume 477, Issue 2, June 2018, Pages 2613–2627, https://doi.org/10.1093/mnras/sty558
+[1] Tom Louden, Laura Kreidberg, SPIDERMAN: an open-source code to model phase curves and secondary eclipses,
+Monthly Notices of the Royal Astronomical Society, Volume 477, Issue 2, June 2018, Pages 2613–2627,
+https://doi.org/10.1093/mnras/sty558
 """
 T_MODEL_DEFAULTS = {
     "Uniform Temperature": {
@@ -1008,12 +1021,14 @@ T_MODEL_DEFAULTS = {
 
 RING_DEFAULTS = deepcopy(BODY_DEFAULTS)
 """
-`dict` : Defines the default attributes for bodies of the kind :data:`~ body.Ring`. Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
+`dict` : Defines the default attributes for bodies of the kind :data:`~ body.Ring`.
+Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
 
 - **fi** (float) — Inner radius of the ring. Defaults to 1.5.
 - **fe** (float) — Outer radius of the ring. Defaults to 2.0.
 - **tau_gray_optical** (float) — Wavelength-independent optical depth of the ring. Defaults to 0.4.
-- **spangle_type** (constant) — Type of spangle used for the ring particles. Defaults to :data:`~ consts.SPANGLE_GRANULAR`.
+- **spangle_type** (constant) — Type of spangle used for the ring particles.
+  Defaults to :data:`~ consts.SPANGLE_GRANULAR`.
 - **shape** (str) — The overall shape of the body. Defaults to "ring".
 
 Note that Rings typically do not utilize orbital properties in the same way as other body kinds
@@ -1042,7 +1057,8 @@ BODY_KINDS += ["Ring"]
 
 OBSERVER_DEFAULTS = deepcopy(BODY_DEFAULTS)
 """
-`dict` : Defines the default attributes for bodies of the kind 'Observer'. Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
+`dict` : Defines the default attributes for bodies of the kind 'Observer'.
+Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
 
 - **lamb** (float) — Ecliptic longitude of the observer in radians. Defaults to 0.
 - **beta** (float) — Ecliptic latitude of the observer in radians. Defaults to 0.
@@ -1081,7 +1097,9 @@ LEGACY_PHYSICAL_PROPERTIES = dict(
 - **AL** (float) — Lambertian albedo. Defaults to 1.
 - **taug** (float) — Geometrical opacity of rings. Defaults to 1.0.
 - **diffeff** (float) — Diffraction efficiency of rings. Defaults to 1.0.
-- **reflection_rings_law** (callable) — Function defining the law of diffuse reflection on the ring surface. Takes two arguments (likely angles) and returns a reflection coefficient. Defaults to a lambda function returning the first argument.
+- **reflection_rings_law** (callable) — Function defining the law of diffuse reflection on the ring surface.
+  Takes two arguments (likely angles) and returns a reflection coefficient.
+  Defaults to a lambda function returning the first argument.
 - **wavelength** (float) — Observation wavelength in meters. Defaults to 550e-9.
 - **limb_cs** (list - array) — Stellar limb darkening coefficients (legacy). Defaults to an empty list.
 - **particles** (dict) — Dictionary containing properties of ring particles
@@ -1110,12 +1128,16 @@ DETECTOR_PROPERTIES = dict(
 """
 `dict` : Defines the properties for the detector used in :data:`~ system.System`.
 
-- **wavelength_min** (float) — Minimum wavelength of the detector's sensitivity range in meters [m]. Defaults to 500 nm.
-- **wavelength_max** (float) — Maximum wavelength of the detector's sensitivity range in meters [m]. Defaults to 700 nm.
+- **wavelength_min** (float) — Minimum wavelength of the detector's sensitivity range in meters [m].
+  Defaults to 500 nm.
+- **wavelength_max** (float) — Maximum wavelength of the detector's sensitivity range in meters [m].
+  Defaults to 700 nm.
 - **apperture** (float) — Aperture size of the detector in meters [m]. Defaults to 0.5 m.
-- **quantum_eff** (float) — Quantum efficiency of the detector. Defines the ratio of detected photons to incident photons. Defaults to 1.
+- **quantum_eff** (float) — Quantum efficiency of the detector. Defines the ratio of detected photons to incident
+  photons. Defaults to 1.
 - **t_cadence** (float) — Time of cadence for observations in seconds [s]. Defaults to 10 minutes.
-- **distance** (float) — Distance from the observer to the system being observed in meters [m]. Defaults to 1 kiloparsec.
+- **distance** (float) — Distance from the observer to the system being observed in meters [m].
+  Defaults to 1 kiloparsec.
 """
 
 # --------------------------------------------------

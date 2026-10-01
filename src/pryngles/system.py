@@ -201,15 +201,18 @@ class System(PrynglesCommon):
         # Check units
         if units[0] not in rb.units.lengths_SI:
             raise ValueError(
-                f"Length unit provided '{units[0]}' is not recognized by Rebound.  Use one of these: {tuple(rb.units.lengths_SI.keys())}"
+                f"Length unit provided '{units[0]}' is not recognized by Rebound. "
+                f"Use one of these: {tuple(rb.units.lengths_SI.keys())}"
             )
         if units[1] not in rb.units.masses_SI:
             raise ValueError(
-                f"Mass unit provided '{units[1]}' is not recognized by Rebound.  Use one of these: {tuple(rb.units.masses_SI.keys())}"
+                f"Mass unit provided '{units[1]}' is not recognized by Rebound. "
+                f"Use one of these: {tuple(rb.units.masses_SI.keys())}"
             )
         if units[2] not in rb.units.times_SI:
             raise ValueError(
-                f"Time unit provided '{units[2]}' is not recognized by Rebound.  Use one of these: {tuple(rb.units.times_SI.keys())}"
+                f"Time unit provided '{units[2]}' is not recognized by Rebound. "
+                f"Use one of these: {tuple(rb.units.times_SI.keys())}"
             )
 
         # Units
@@ -384,7 +387,8 @@ class System(PrynglesCommon):
     def _update_albedos(self):
         """
         Compute directional-dependent Lambertian albedo per spangle.
-        It implements :data:`~ scatterer.Scatterer.get_albedo()` method. See our :doc:`scatterer` for the theory behind it.
+        It implements :data:`~ scatterer.Scatterer.get_albedo()` method.
+        See our :doc:`scatterer` for the theory behind it.
 
         Note
         ------
@@ -431,7 +435,8 @@ class System(PrynglesCommon):
         parent : Body or None
             Parent body (orbital central object); None for the root star.
         **props : dict
-            Properties forwarded to the Body constructor (mass, radius, orbital elements). It came from :any:`consts.BODY_DEFAULTS`
+            Properties forwarded to the Body constructor (mass, radius, orbital elements).
+            It came from :any:`consts.BODY_DEFAULTS`
 
         Returns
         -------
@@ -483,7 +488,8 @@ class System(PrynglesCommon):
         if not parent:
             if self.root:
                 raise ValueError(
-                    f"A root object alread exist in the system ({self.root.name}) and you do not provided a parent body for {self.__body.name}."
+                    f"A root object alread exist in the system ({self.root.name}) "
+                    f"and you do not provided a parent body for {self.__body.name}."
                 )
             else:
                 self.root = self.__body
@@ -516,7 +522,8 @@ class System(PrynglesCommon):
             # Check that the source be a star
             if self.__body.source.kind != "Star":
                 raise ValueError(
-                    f"The source of body {self.__body.name} must be a Star.  You set {self.__body.source.name} which is a {self.__body.source.kind}."
+                    f"The source of body {self.__body.name} must be a Star. "
+                    f"You set {self.__body.source.name} which is a {self.__body.source.kind}."
                 )
             self.__body.source.shined += [self.__body.name]
         else:
@@ -651,7 +658,8 @@ class System(PrynglesCommon):
         Attributes
         ------------
         sg : :any:`spangler.Spangler`
-            It contains the :data:`~ spangler.Spangler` object in wich we sample and discretize the surface of all bodies defined in system in order to compute light-matter interactions
+            It contains the :data:`~ spangler.Spangler` object in wich we sample and discretize
+            the surface of all bodies defined in system in order to compute light-matter interactions
         data : `pd.DataFrame`
             Contains :any:`consts.SPANGLER_COLUMNS` and sets the  default observer/light states.
 
@@ -879,7 +887,8 @@ class System(PrynglesCommon):
         # Check if among props there is any property related to position
         if any(k in props for k in REBOUND_ORBITAL_PROPERTIES):
             raise ValueError(
-                f"You cannot update an orbital property {props} without compromising the full simulation. Rebuild the system from scratch."
+                f"You cannot update an orbital property {props} without compromising the full simulation. "
+                "Rebuild the system from scratch."
             )
 
     def reset(self):
@@ -1069,8 +1078,10 @@ class System(PrynglesCommon):
         Note
         -------
         - Only visible and illuminated spangles reflect the incident stellar flux.
-        - Diffuse reflection considers the illuminated side of the spangles, where the condition ``cos_obs * cos_luz > 0`` ensures the observer perceives the illuminated side.
-        - The computation follows Lambert's Cosine Law (Lommel - Selliger Law is also available, see :any:`scatterer.Scatterer` for details).
+        - Diffuse reflection considers the illuminated side of the spangles, where the condition
+          ``cos_obs * cos_luz > 0`` ensures the observer perceives the illuminated side.
+        - The computation follows Lambert's Cosine Law (Lommel - Selliger Law is also available,
+          see :any:`scatterer.Scatterer` for details).
 
         .. math::
             \\frac{F}{F_0} = \\sum_i \\frac{a_{s_i}\\cos \\Lambda_i}{4 \\pi d_i^2}A_{L_i}(\\Lambda_i)\\cos Z_i
@@ -1144,7 +1155,8 @@ class System(PrynglesCommon):
         - :math:`\\beta_i(Z_i)` is the attenuation factor for the spangle at angle :math:`Z_i` **[1]**
         .. math::
             \\beta_i(Z_i) = 1 - \\frac{\\tau}{2\\cos Z_i}e^{-\\frac{\\tau}{\\cos Z_i}}
-        - :math:`I(\\mu)/I_0` is the intensity of the light at projected distance over stellar disk (see :any:`science.Science.limb_darkening` for details).
+        - :math:`I(\\mu)/I_0` is the intensity of the light at projected distance over stellar disk
+          (see :any:`science.Science.limb_darkening` for details).
 
         **[1]**  French, R.G., Nicholson, P.D., 2000. Icarus 145, 502–523. doi:10. 1006/icar.2000.6357.
 
@@ -1210,7 +1222,8 @@ class System(PrynglesCommon):
         [1]
 
         .. math::
-            \\frac{F}{F_0} = \\sum_i \\epsilon_i A_{s_i} \\cos Z_i \\frac{\\int_{\\lambda_{min}}^{\\lambda_{max}} B(\\lambda, T_i) d\\lambda}{F_{star}}
+            \\frac{F}{F_0} = \\sum_i \\epsilon_i A_{s_i} \\cos Z_i
+            \\frac{\\int_{\\lambda_{min}}^{\\lambda_{max}} B(\\lambda, T_i) d\\lambda}{F_{star}}
 
         where:
         - :math:`F/F_0` is the thermal emission flux.
@@ -1224,7 +1237,9 @@ class System(PrynglesCommon):
         -------------
         Temperature Models are taken and adapted from the SPIDERMAN code for tidally locked exoplanets
 
-        [1] Tom Louden, Laura Kreidberg, SPIDERMAN: an open-source code to model phase curves and secondary eclipses, Monthly Notices of the Royal Astronomical Society, Volume 477, Issue 2, June 2018, Pages 2613–2627, https://doi.org/10.1093/mnras/sty558
+        [1] Tom Louden, Laura Kreidberg, SPIDERMAN: an open-source code to model phase curves and secondary eclipses,
+        Monthly Notices of the Royal Astronomical Society, Volume 477, Issue 2, June 2018, Pages 2613–2627,
+        https://doi.org/10.1093/mnras/sty558
         """
         # Considered Spangles
         body_names = [name for name, body in self.bodies.items() if (body.kind != "Star") and (body.kind != "Ring")]
@@ -1235,7 +1250,8 @@ class System(PrynglesCommon):
 
             if not hasattr(self.bodies[body], "T_model"):
                 raise AttributeError(
-                    f"Body '{body}' lacks a temperature model ('T_model'). Cannot compute thermal emission, please define one by Planet.set_temperature_model() method."
+                    f"Body '{body}' lacks a temperature model ('T_model'). "
+                    "Cannot compute thermal emission, please define one by Planet.set_temperature_model() method."
                 )
 
             self.bodies[body].update_temperature()
@@ -1517,20 +1533,25 @@ class System(PrynglesCommon):
         times : `np.ndarray`
             Array of times at which to compute the lightcurve.
         bodies : `list` or None
-            List of body names to include in the lightcurve computation. If None, all bodies except the root (:data:`~ body.Star`) are included.
+            List of body names to include in the lightcurve computation.
+            If None, all bodies except the root (:data:`~ body.Star`) are included.
         bandwidth : `tuple`
             Wavelength range (in meters) over which to integrate the Planck function for thermal emission.
         effects : `list`
-            List of effects to include in the lightcurve computation. Options are 'reflection', 'transit', and 'emission'.
+            List of effects to include in the lightcurve computation.
+            Options are 'reflection', 'transit', and 'emission'.
         observer : `tuple` or None
-            Observer direction in ecliptic coordinates (lambda_ecl, beta_ecl) in radians. If None, the current observer direction is used.
+            Observer direction in ecliptic coordinates (lambda_ecl, beta_ecl) in radians.
+            If None, the current observer direction is used.
         signal : `dict` or None
-            Dictionary of detector parameters to simulate observational signal. If None, no signal simulation is performed.
+            Dictionary of detector parameters to simulate observational signal.
+            If None, no signal simulation is performed.
 
         Attributes
         ------------
         lightcurve : `dict`
-            The computed lightcurve data, including times, flux, model details, effects, bodies, observer information, bandwidth, and simulated signal (if applicable).
+            The computed lightcurve data, including times, flux, model details, effects, bodies,
+            observer information, bandwidth, and simulated signal (if applicable).
         detector : :data:`~body.Detector`
             The detector instance used for simulating the observational signal, if applicable.
 
@@ -1539,7 +1560,8 @@ class System(PrynglesCommon):
 
         if not self._spangled:
             raise AssertionError(
-                "You must Spangle the system before calling compute_lightcurve(). Please call System.spangle_system() first."
+                "You must Spangle the system before calling compute_lightcurve(). "
+                "Please call System.spangle_system() first."
             )
 
         times = np.asarray(times, dtype=float)
