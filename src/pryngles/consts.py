@@ -747,7 +747,7 @@ SPANGLER_COLUMNS=odict({
     "ns_ecl":[0,0,1],#Unitary vector normal to the spangle, calculated in the class
 
     #Coordinates of the spangle (cartesian and spherical) in the intersection system
-    "center_int":[0,0,0],#Center of the body 
+    "center_int":[0,0,0],#Center of the body
     "x_int":1,"y_int":0,"z_int":0,#Cartesian coordinates
     "ns_int":[0,0,1],#Unitary vector normal to the spangle, calculated in the class
     "rho_int":1,"az_int":0,"cosf_int":0, #Pseudo cylindrical coordinates of the spangle: rho, phi, cos(theta)
@@ -756,13 +756,13 @@ SPANGLER_COLUMNS=odict({
     "n_int":[0,0,-np.inf],#Vector from the intersection origin to each spangle
     "n_int_ecl":[0,0,-1],#Vector from the intersection origin to each spangle in the ecliptic syste,
     "d_int":-np.inf, #Distance of the Spangle to intersection
-    "asp_int":1.0, #Effective area of the spangle with respect to intersection perspective 
+    "asp_int":1.0, #Effective area of the spangle with respect to intersection perspective
     "z_cen_int":0.0, #z-coordinate of the center of the body to which the spangle belows
     "hidden_by_int":"", #Which body intersect the observer or light coming to a Spangle
     "transit_over_int":"", #Which body is intersected by the Spangle (is transiting over)
 
     "string_int":"",#Temporal string
-    
+
     #Coordinates of the spangle (cartesian and spherical) in the observer system
     "center_obs":[0,0,0], #Center of the body
     "x_obs":1,"y_obs":0,"z_obs":0, #Cartesian coordinates of the spangle
@@ -772,11 +772,11 @@ SPANGLER_COLUMNS=odict({
     "azim_obs":0, #Azimuth of the direction of the observer
     "n_obs":[0,0,-np.inf],#Vector from the observer origin to each spangle
     "d_obs":-np.inf, #Distance of the Spangle to light-source
-    "asp_obs":1.0, #Effective area of the spangle with respect to observer perspective 
+    "asp_obs":1.0, #Effective area of the spangle with respect to observer perspective
     "z_cen_obs":0.0, #z-coordinate of the center of the body to which the spangle belows
     "hidden_by_obs":"", #Which body intersect the observer or light coming to a Spangle
     "transit_over_obs":"", #Which body is intersected by the Spangle (is transiting over)
-    
+
     #Coordinates of the spangle (cartesian and spherical) in the light-source system
     "center_luz":[0,0,0],#Center of the body
     "x_luz":1,"y_luz":0,"z_luz":0,#Calculated in the class
@@ -786,16 +786,16 @@ SPANGLER_COLUMNS=odict({
     "azim_luz":0, #Azimuth of the direction of the light-source
     "n_luz":[0,0,-np.inf],#Vector from the light-source origin to each spangle
     "d_luz":-np.inf, #Distance of the Spangle to light-source
-    "asp_luz":1, #Effective area of the spangle with respect to light-source perspective 
+    "asp_luz":1, #Effective area of the spangle with respect to light-source perspective
     "z_cen_luz":0.0, #z-coordinate of the center of the body to which the spangle belows
     "hidden_by_luz":"", #Which body intersect the observer or light coming to a Spangle
     "transit_over_luz":"", #Which body is intersected by the Spangle (is transiting over)
-    
+
     #Azimutal angles
     "azim_obs_luz":0,#Difference between the azimuth of the observer over the spangle and that of light-source
 
     #Geometrical parameters
-    "asp":1.0, #Effective area of the spangle in 3D 
+    "asp":1.0, #Effective area of the spangle in 3D
     "dsp":1.0, #Effective diameter of spangle, dsp = 2*(asp/pi)**0.5
 
     #Optical parameters
@@ -803,13 +803,13 @@ SPANGLER_COLUMNS=odict({
     "albedo_gray_normal":1.0,#Wavelength-independent normal albedo
     "albedo_gray_spherical":1.0,#Wavelength-independent spherical albedo
     "tau_gray_optical":0.0,#Wavelength-independent optical depth
-    
+
     #Thermal characteristics
     "emmitter":"",#Hash (identifier) of the emmitter used for this spangle
     "Teq":273.15,#K, equilibrium temperature
     "Tem":273.15,#K, emmision temperature
     "emmisivity":1,#1 perfect black body
-    
+
     #Special states
     "unset":True, #State has not been set
     "hidden":False, #The spangle is not taken into account for photometry
@@ -847,7 +847,7 @@ SPANGLER_COLUMNS.update(SPANGLER_FLUX)
 BODY_KINDS = []  #:
 
 BODY_DEFAULTS = dict()
-""" 
+"""
 `dict` : Defines the default keys and values used to initialize an astrophysical body.
 
 - **name** (str or None) — The name of the body. Defaults to None.
@@ -993,7 +993,7 @@ BODY_KINDS += ["Planet"]
 
 """
 `dict` : Defines the default parameters for various temperature models [1]
-for bodies of the kind :data:`~ body.Planet`. 
+for bodies of the kind :data:`~ body.Planet`.
 
 References
 ---------------

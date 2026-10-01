@@ -27,7 +27,7 @@ Output #0, mp4, to './figures/stellar-i_3.0e+01-lambobs_9.0e+01-betaobs_9.0e+01.
     Side data:
       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
 frame=    1 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=N/A    [mp4 @ 0x146e06af0] Starting second pass: moving the moov atom to the beginning of the file
-frame=   20 fps=0.0 q=-1.0 Lsize=     285kB time=00:00:03.40 bitrate= 686.9kbits/s speed=37.5x    
+frame=   20 fps=0.0 q=-1.0 Lsize=     285kB time=00:00:03.40 bitrate= 686.9kbits/s speed=37.5x
 video:284kB audio:0kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.375798%
 [libx264 @ 0x146e08a10] frame I:1     Avg QP: 5.90  size: 16101
 [libx264 @ 0x146e08a10] frame P:5     Avg QP:19.98  size: 17667

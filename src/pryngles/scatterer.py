@@ -151,7 +151,7 @@ class LambertianGraySurface(Scatterer):
     Parameters
     ----------
     AL : `float`
-        Wavelength-independent albedo of the surface (0 ≤ AL ≤ 1). 
+        Wavelength-independent albedo of the surface (0 ≤ AL ≤ 1).
         It is interpreted as the hemispherical albedo under normal incidence.
 
     phase_law : function, optional
@@ -162,28 +162,28 @@ class LambertianGraySurface(Scatterer):
         .. code-block:: python
 
             lambda eta, zeta, delta, lamb, params: eta
-        
+
         | An alternative commonly used in planetary science is the **Lommel-Seeliger law**:
 
         .. code-block:: python
 
             lambda eta, zeta, delta, params: eta*zeta/(eta + zeta)
 
-    
+
     Note
     -----------
     The phase law can be customized. This are the functional form of Lambert's cosine law & Lommel-Seeliger law.
 
     .. math::
 
-        f(\\eta, \\zeta) = 
+        f(\\eta, \\zeta) =
         \\begin{cases}
             \\cos\\eta, & \\text{(Lambertian phase law)} \\\\
             \\dfrac{\\cos\\eta \\cos \\zeta}{\\cos\\eta + \\cos \\zeta}, & \\text{(Lommel-Seeliger phase law)}
         \\end{cases}
-    
+
     Where :math:`\\eta` is the angle of incidence and :math:`\\zeta` is the angle of reflection or emission.
-    
+
     The provided `phase_law` function must follow this prototype:
 
     .. code-block:: python
@@ -373,7 +373,7 @@ class LambertianGrayAtmosphere(Scatterer):
 
         .. math::
 
-            \\rho(\\gamma, \\Lambda, Z) = \\frac{\\gamma}{4} 
+            \\rho(\\gamma, \\Lambda, Z) = \\frac{\\gamma}{4}
             \\frac{f(\\gamma, Z) \\, f(\\gamma, \\Lambda)}{\\cos \\Lambda + \\cos Z}
 
         .. math::

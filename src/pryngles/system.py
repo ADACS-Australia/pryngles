@@ -150,28 +150,28 @@ class System(PrynglesCommon):
         """
         This is the list of the class of scatterers used to calculate the scattering in
         different types of spangles.
-        
+
         The structure of this dictionary is:
-        
+
             key: integer (or enumerator):
                 This is the column spangle_type in the spangler DataFrame.
-                
+
             item: tuple (2):
-                Component 1: 
+                Component 1:
                     Class of scatterer.
-                Component 2: 
+                Component 2:
                     Dictionary mapping the initialization properties of the scatterer to columns
                     in the spangler DataFrame.
-        
+
         Example of item:
-        
+
             SPANGLE_ATMOSPHERIC:(LambertianGrayAtmosphere,dict(AS="albedo_gray_spherical"))
-            
-                This means that for spangles of the type SPANGLE_ATMOSPHERIC Pryngles will 
+
+                This means that for spangles of the type SPANGLE_ATMOSPHERIC Pryngles will
                 instantiate an object of the class LambertianGrayAtmosphere.  This class have a
-                single parameter, the spherical albedo AS.  The dictionary means that when 
-                instantiating the object the column "albedo_gray_spherical" will be used to 
-                initialize the object.                
+                single parameter, the spherical albedo AS.  The dictionary means that when
+                instantiating the object the column "albedo_gray_spherical" will be used to
+                initialize the object.
         """
         self.spangle_scatterers = {
             SPANGLE_ATMOSPHERIC: (LambertianGrayAtmosphere, dict(AS="albedo_gray_spherical")),

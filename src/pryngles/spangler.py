@@ -535,11 +535,11 @@ class Spangler(PrynglesCommon):
             """
             The number of hidden points for a ring is choosen in such a way that the ratio between t
             he area of the circle sector to the area of the circle segment is larger than (1-epsilon)
-            
+
             Ag / As = (r^2 sin(teta)/2)/(r^2 teta/2) > (1-epsilon)
-            
+
             Expanding sin(teta) we get:
-            
+
             1 - teta^2/6 > 1 - epsilon
             """
             nhidden = int(2 * np.pi / (6 * SPANGLER_EPS_BORDER) ** 0.5)
@@ -1114,13 +1114,13 @@ class Spangler(PrynglesCommon):
             scale = Body Lenght Scale (Radius)
             r_int = Internal Radius (Only for Ring)
 
-        - Normalization Factor by Areas Relation 
+        - Normalization Factor by Areas Relation
 
             expected_area = Projected Disk Area -> pi*(1 - r_int^2)*(scale^2)*cos
             facets_area = Sum of face-on Spangles area -> sum(asp*cos)
 
             norm_factor = expected_area/facets_area
-            
+
         - Area Correction by Perspective
 
             asp_int/obs/luz = asp*norm_factor
@@ -1416,7 +1416,7 @@ class Spangler(PrynglesCommon):
             & Spangle type is semitransparent
             & cos_obs . cos_luz < 0: observer and light source are in opposite sides
         )
-        
+
         ATTENTION: TRANSMISSION IS ONLY PROPERLY SET IF OBSERVER HAVE BEEN PREVIOUSLY SET.
         """
         cond = (
