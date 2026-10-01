@@ -17,6 +17,8 @@
 # External required packages
 # --------------------------------------------------
 
+from pryngles import *
+
 import math
 from colorsys import hls_to_rgb
 
@@ -24,13 +26,12 @@ import matplotlib.pyplot as plt
 
 # Plotting in 3d
 import numpy as np
+from celluloid import Camera # getting the camera
 from matplotlib import animation
 from matplotlib.patches import Circle
 from mpl_toolkits import mplot3d
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
-
-from pryngles import *
 
 
 # --------------------------------------------------
