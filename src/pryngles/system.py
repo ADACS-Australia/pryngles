@@ -13,6 +13,8 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
+from pryngles import *
+
 # --------------------------------------------------
 # External required packages
 # --------------------------------------------------
@@ -21,8 +23,6 @@ import numpy as np
 import rebound as rb
 import spiceypy as spy
 from tqdm import tqdm
-
-from pryngles import *
 
 
 # --------------------------------------------------
