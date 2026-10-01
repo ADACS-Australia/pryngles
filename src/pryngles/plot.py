@@ -211,7 +211,8 @@ class Plot:
 
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(projection="3d")
-        title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\\circ$ ($i_0={P.io * RAD:.1f}^\\circ$), $\\lambda_\\mathrm{{q}}={P.lambq * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\\circ$,{P.eobs_ecl[1] * RAD:g}$^\\circ$)"
+        # This title variable is not being used
+        # title = f"$a={P.a:g}$ au, $i={P.i * RAD:g}^\\circ$ ($i_0={P.io * RAD:.1f}^\\circ$), $\\lambda_\\mathrm{{q}}={P.lambq * RAD:g}^\\circ$, Obs ($\\lambda$,$\\beta$) : ({P.eobs_ecl[0] * RAD:g}$^\\circ$,{P.eobs_ecl[1] * RAD:g}$^\\circ$)"
         theta = np.linspace(0, 2 * np.pi, no)
         x = np.cos(theta)
         y = np.sin(theta)

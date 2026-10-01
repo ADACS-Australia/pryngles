@@ -48,7 +48,7 @@ class TestQuickstartSystem(SystemChecks):
             radius=pr.Consts.rsaturn / system.ul,
         )
 
-        ring = system.add(
+        system.add(
             kind="Ring",
             parent=planet,
             fi=1.5,

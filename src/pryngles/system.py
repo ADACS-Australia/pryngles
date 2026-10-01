@@ -913,7 +913,7 @@ class System(PrynglesCommon):
         """
         # Time of integration
         t = args[0]
-        verbose(VERB_SIMPLE, "Integrating up to {t}")
+        verbose(VERB_SIMPLE, f"Integrating up to {t}")
 
         if self._spangled:
             # Integrate

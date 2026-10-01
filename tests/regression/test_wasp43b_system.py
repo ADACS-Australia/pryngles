@@ -96,7 +96,7 @@ class TestWasp43bSystem(SystemChecks):
             omega=pr.DEG * _OMEGA,
         )
 
-        ring = system.add(
+        system.add(
             kind="Ring",
             parent=planet,
             fi=_R_IN,
