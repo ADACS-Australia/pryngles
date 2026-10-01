@@ -143,27 +143,27 @@ class PrynglesCommon:
         return str({k: v for k, v in self.__dict__.items() if k[0] != "_"})
 
 
-from pryngles.body import *
+from pryngles.version import *
 
 # Constants
 from pryngles.consts import *
+
+# Utility modules
+from pryngles.misc import *
 from pryngles.extensions import *
+from pryngles.science import *
+from pryngles.plot import *
+from pryngles.orbit import *
+from pryngles.scatterer import *
 
 # Legacy module
 from pryngles.legacy import *
 
-# Utility modules
-from pryngles.misc import *
-from pryngles.orbit import *
-from pryngles.plot import *
-
 # Core modules
 from pryngles.sampler import *
-from pryngles.scatterer import *
-from pryngles.science import *
 from pryngles.spangler import *
+from pryngles.body import *
 from pryngles.system import *
-from pryngles.version import *
 
 
 def _welcome():
