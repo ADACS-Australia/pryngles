@@ -750,7 +750,7 @@ class Detector(PrynglesCommon):
 
         try:
             integral = bam2 * (w1 * func(bam2 * x1 + bap2) + w2 * func(bam2 * x2 + bap2) + w3 * func(bam2 * x3 + bap2))
-        except:
+        except Exception:
             integral = bam2 * (w1 * func(bam2 * x1 + bap2) + w2 * func(bam2 * x2 + bap2) + w3 * func(bam2 * x3 + bap2))
 
         return integral

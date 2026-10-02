@@ -201,7 +201,7 @@ class Util:
         """
         try:
             return mh.arctan2(mh.sin(angle1 - angle2), mh.cos(angle1 - angle2))
-        except:
+        except Exception:
             return np.arctan2(np.sin(angle1 - angle2), np.cos(angle1 - angle2))
 
     def transfromLoc2Equ(r, Ra=1, Rb=1, Rc=1):

@@ -489,7 +489,7 @@ class Science(PrynglesCommon):
         if len(data) > 0:
             try:
                 qhull = ConvexHull(data)
-            except:
+            except Exception:
                 qhull = None
         else:
             qhull = None

@@ -32,7 +32,7 @@ from pryngles import *
 try:
     FILE = __file__
     ROOTDIR = os.path.abspath(os.path.dirname(FILE))
-except:
+except Exception:
 
     FILE = ""
     ROOTDIR = os.path.abspath("")
@@ -1145,5 +1145,5 @@ DETECTOR_PROPERTIES = dict(
 # --------------------------------------------------
 try:
     SCATTERERS_CATALOGUE
-except:
+except Exception:
     SCATTERERS_CATALOGUE = dict()

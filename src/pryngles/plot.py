@@ -115,7 +115,7 @@ class Plot:
         try:
             ax.add_collection3d
             plt_text = ax.text2D
-        except:
+        except Exception:
             plt_text = ax.text
 
         text = plt_text(1, 1, mark, **args)
