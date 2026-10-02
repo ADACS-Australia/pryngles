@@ -13,47 +13,44 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# --------------------------------------------------
-# External required packages
-# --------------------------------------------------
-
 import random
+from copy import deepcopy
 
-# Aliases
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import spiceypy as spy
 
-# Specialized plotting methods
-from pryngles import *
-from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY, VERB_SIMPLE, VERB_SYSTEM
+from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
-    Consts,
     SAMPLER_GEOMETRY_CIRCLE,
     SAMPLER_GEOMETRY_SPHERE,
+    SHADOW_COLOR_LUZ,
+    SHADOW_COLOR_OBS,
     SPANGLE_COLORS,
     SPANGLE_SOLID_ROCK,
     SPANGLE_STELLAR,
-    SPANGLES_SEMITRANSPARENT,
-    SHADOW_COLOR_LUZ,
-    SHADOW_COLOR_OBS,
-    SPANGLES_DARKNESS_COLOR,
-    SPANGLER_COLUMNS,
-    SPANGLER_VISIBILITY_STATES,
-    SPANGLER_SOURCE_STATES,
-    SPANGLER_KEY_ORDERING,
+    SPANGLER_AREAS,
+    SPANGLER_COL_INT,
     SPANGLER_COL_LUZ,
     SPANGLER_COL_OBS,
-    SPANGLER_COL_INT,
-    SPANGLER_LENGTHS,
-    SPANGLER_AREAS,
-    SPANGLER_VECTORS,
+    SPANGLER_COLUMNS,
     SPANGLER_EPS_BORDER,
+    SPANGLER_KEY_ORDERING,
+    SPANGLER_LENGTHS,
+    SPANGLER_SOURCE_STATES,
+    SPANGLER_VECTORS,
+    SPANGLER_VISIBILITY_STATES,
+    SPANGLES_DARKNESS_COLOR,
+    SPANGLES_SEMITRANSPARENT,
+    Consts,
 )
 from pryngles.misc import flatten
+from pryngles.plot import Plot
+from pryngles.sampler import Sampler
+from pryngles.science import Plane, Science
 
 
-# --------------------------------------------------
-# Class Spangler
-# --------------------------------------------------
 class Spangler(PrynglesCommon):
     """
     Represents a collection of spangles associated with one or more astrophysical objects.
@@ -1717,8 +1714,8 @@ class Spangler(PrynglesCommon):
             quiver_args = dict(scale=15, scale_units="width", width=0.005, alpha=0.6, zorder=+1000, headwidth=0)
 
             # Quiver plot of azimuth for light
-            azx = [mh.cos(x) for x in self.data[cond].azim_luz]
-            azy = [mh.sin(x) for x in self.data[cond].azim_luz]
+            azx = [np.cos(x) for x in self.data[cond].azim_luz]
+            azy = [np.sin(x) for x in self.data[cond].azim_luz]
 
             self.ax2d.quiver(
                 self.data[cond]["x_" + coords] - x_cen,
@@ -1731,8 +1728,8 @@ class Spangler(PrynglesCommon):
             )
 
             # Quiver plot of azimuth for observer
-            azx = [mh.cos(x) for x in self.data[cond].azim_luz]
-            azy = [mh.sin(x) for x in self.data[cond].azim_luz]
+            azx = [np.cos(x) for x in self.data[cond].azim_luz]
+            azy = [np.sin(x) for x in self.data[cond].azim_luz]
             self.ax2d.quiver(
                 self.data[cond]["x_" + coords] - x_cen,
                 self.data[cond]["y_" + coords] - y_cen,
