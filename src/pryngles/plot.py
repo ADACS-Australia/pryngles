@@ -17,23 +17,28 @@
 # External required packages
 # --------------------------------------------------
 
-from pryngles import *
-from pryngles.consts import DEG
-from pryngles.common import Verbose, VERB_NONE
-
 import math
 from colorsys import hls_to_rgb
 
+import cmasher as cmr
 import matplotlib.pyplot as plt
 
 # Plotting in 3d
 import numpy as np
+import sigfig
+import spiceypy as spy
 from celluloid import Camera  # getting the camera
 from matplotlib import animation
 from matplotlib.patches import Circle
 from mpl_toolkits import mplot3d
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
+
+from pryngles.common import VERB_NONE, Verbose
+from pryngles.consts import DEG, days
+from pryngles.legacy import RingedPlanet
+from pryngles.science import Science
+from pryngles.version import version
 
 
 # --------------------------------------------------
@@ -207,7 +212,7 @@ class Plot:
         ts = np.array(ts)
         Rps = np.array(Rps)
         Rrs = np.array(Rrs)
-        ts = ts / Const.days
+        ts = ts / days
 
         ############################################################
         # Plot
