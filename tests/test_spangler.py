@@ -21,7 +21,7 @@ def test_init_basic():
     # Default state: unset True, visibility/source states False
     assert sg.data.unset.all()
     for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
-        assert not sg.data[col].all()
+        assert not sg.data[col].any()
 
 
 def test_init_join():
@@ -62,7 +62,7 @@ def test_reset_state():
     sg.reset_state()
     assert sg.data.unset.all()
     for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
-        assert not sg.data[col].all()
+        assert not sg.data[col].any()
     for coords in "int", "obs", "luz":
         assert (sg.data["hidden_by_" + coords] == "").all()
         assert (sg.data["transit_over_" + coords] == "").all()
