@@ -156,9 +156,8 @@ class Sampler(PrynglesCommon):
                 qring = True
 
             # Calculate the closest Npreset
-            exec(
-                f"self.Npreset=SAMPLER_{geometry.upper()}_PRESETS[abs({N}-SAMPLER_{geometry.upper()}_PRESETS).argmin()]"
-            )
+            presets = globals()[f"SAMPLER_{geometry.upper()}_PRESETS"]
+            self.Npreset = presets[abs(N - presets).argmin()]
 
             Npreset = self.Npreset
             filename = get_data(f"sampler_presets/sample_{geometry}_N_{Npreset}.pkl")
