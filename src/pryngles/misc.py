@@ -27,7 +27,6 @@ from IPython.display import HTML, display
 import gdown
 import pandas as pd
 
-from pryngles import *
 from pryngles.consts import ROOTDIR
 
 # --------------------------------------------------
