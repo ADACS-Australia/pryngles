@@ -18,13 +18,14 @@
 # --------------------------------------------------
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 
+import numpy as np
 from scipy.integrate import dblquad, quad
 from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.optimize import bisect
 
-from pryngles import *
-from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE
+from pryngles.common import VERB_SIMPLE, PrynglesCommon, verbose
 from pryngles.consts import SCATTERERS_CATALOGUE
 from pryngles.misc import calc_hash, get_data
 
