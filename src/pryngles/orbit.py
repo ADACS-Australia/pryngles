@@ -110,7 +110,13 @@ class Orbit(PrynglesCommon):
     # --------------------------------------------------
     ORBIT_SIMULATIONS = []
 
-    def __init__(self, name=None, units=None, m1=1, m2=1, R=np.array([0, 0, 0]), V=np.array([0, 0, 0]), **elements):
+    def __init__(self, name=None, units=None, m1=1, m2=1, R=None, V=None, **elements):
+
+        # Defaults
+        if R is None:
+            R = np.zeros(3)
+        if V is None:
+            V = np.zeros(3)
 
         # System
         self.name = "system" if name is None else name
@@ -169,7 +175,7 @@ class Orbit(PrynglesCommon):
         # Update states
         self._update_states(R, V)
 
-    def _update_states(self, R=np.array([0, 0, 0]), V=np.array([0, 0, 0])):
+    def _update_states(self, R=None, V=None):
         """Updates the position and velocity states of the bodies in the system.
 
         Parameters
@@ -177,6 +183,12 @@ class Orbit(PrynglesCommon):
         R-V : `np.array(3)`
             Center of mass position/velocity vector | **Defaults** =  `[0, 0, 0]`
         """
+        # Defaults
+        if R is None:
+            R = np.zeros(3)
+        if V is None:
+            V = np.zeros(3)
+
         # Create rebound options
         self._rb_options = {k: v for k, v in self.__dict__.items() if k in REBOUND_ORBITAL_PROPERTIES}
         self._rb_options.update(dict(m=0))

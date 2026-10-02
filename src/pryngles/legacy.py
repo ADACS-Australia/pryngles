@@ -1215,7 +1215,7 @@ class RingedPlanet:
     def __init__(
         self,
         # Units
-        CU=CanonicalUnits(UL=Consts.au, UM=Consts.msun),
+        CU=None,
         # Basic
         Rstar=Consts.rsun / Consts.au,
         Rplanet=Consts.rsaturn / Consts.au,
@@ -1232,7 +1232,7 @@ class RingedPlanet:
         t0=0,
         kepler=False,
         # Observer
-        eobs_ecl=np.array([90.0 * DEG, 90.0 * DEG]),
+        eobs_ecl=None,
         # Sampling
         Np=100,
         Nr=100,
@@ -1246,6 +1246,14 @@ class RingedPlanet:
         """
         The initialization routine only sets the basic geometric properties of the ring
         """
+
+        # Defaults
+        if CU is None:
+            CU = CanonicalUnits(UL=Consts.au, UM=Consts.msun)
+
+        if eobs_ecl is None:
+            eobs_ecl = np.array([90.0 * DEG, 90.0 * DEG])
+
         # Save values for debugging purposes
         if physics is None:
             physics = dict()
