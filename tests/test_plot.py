@@ -1,6 +1,7 @@
 """Tests for the functions in the ``plot`` module."""
 
 import matplotlib
+
 matplotlib.use("Agg")  # headless backend so tests don't need a display
 
 import matplotlib.pyplot as plt

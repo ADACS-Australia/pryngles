@@ -1,18 +1,18 @@
       SUBROUTINE spline(x,y,n,y2)
 
 *----------------------------------------------------------------------------
-*     Spline interpolation routine from Press et al. (1986, p.88). 
+*     Spline interpolation routine from Press et al. (1986, p.88).
 *
 *     Given arrays x and y of length n containing a tabulated function,
-*     i.e. y(i)=f(x(i)), with x(1)<x(2)<...<x(n), and given values yp1 
+*     i.e. y(i)=f(x(i)), with x(1)<x(2)<...<x(n), and given values yp1
 *     and ypn for the first derivative of the interpolating function at
-*     points 1 and n respectively, this routine returns an array y2 of  
-*     length n which contains the second derivatives of the interpola- 
-*     ting function at the tabulated points x(i).                     
+*     points 1 and n respectively, this routine returns an array y2 of
+*     length n which contains the second derivatives of the interpola-
+*     ting function at the tabulated points x(i).
 *
-*     If yp1 and/or yp2 are equal to 1x10^30 or larger, the routine is 
-*     signalled to set the corresponding boundary condition for a natu- 
-*     ral spline, with zero second derivative on that boundary.        
+*     If yp1 and/or yp2 are equal to 1x10^30 or larger, the routine is
+*     signalled to set the corresponding boundary condition for a natu-
+*     ral spline, with zero second derivative on that boundary.
 *
 *     n is the number of elements in x and y
 
@@ -57,19 +57,19 @@ Cf2py depend(n) x, y, y2
       SUBROUTINE splint(xa,ya,y2a,n,x,y)
 
 *----------------------------------------------------------------------------
-*     Spline interpolation routine from Press et al. (1986, p.88).   
-*                                                                 
+*     Spline interpolation routine from Press et al. (1986, p.88).
+*
 *     Given the arrays xa and ya of length n, which tabulate a function
-*     (with the xa(i)'s in order), and given the array y2a, which is  
-*     the output from SPLINE above, and given a value of x, this     
-*     routine returns a cubic-spline interpolated value y.       
+*     (with the xa(i)'s in order), and given the array y2a, which is
+*     the output from SPLINE above, and given a value of x, this
+*     routine returns a cubic-spline interpolated value y.
 *----------------------------------------------------------------------------
       IMPLICIT DOUBLE PRECISION (a-h,o-z)
-      
+
       INTEGER n
-      
+
       DOUBLE PRECISION x,y
-      
+
       DOUBLE PRECISION xa(n),ya(n),y2a(n)
 
 Cf2py intent(in) xa, ya, y2a, n, x
@@ -80,7 +80,7 @@ Cf2py depend(n) xa, ya, y2a
       khi=n
 
     1 IF (khi-klo.GT.1) THEN
-	 k= (klo+khi)/2.D0  
+	 k= (klo+khi)/2.D0
          IF (xa(k).GT.x) THEN
 	    khi= k
          ELSE
@@ -91,7 +91,7 @@ Cf2py depend(n) xa, ya, y2a
 
       h= xa(khi)-xa(klo)
 
-      IF (DABS(h).LT.1.D-10) WRITE(*,10) 
+      IF (DABS(h).LT.1.D-10) WRITE(*,10)
       a= (xa(khi)-x)/h
       b= (x-xa(klo))/h
       y= a*ya(klo)+b*ya(khi)+
@@ -113,7 +113,7 @@ Cf2py depend(n) xa, ya, y2a
 * PURPOSE:
 * Find a bracket around "el" in the first "n" elements of
 * "array".
-* 
+*
 * INPUT:
 * 	el	: element to be bracketed
 * 	array   : array in which bracket must be found
@@ -126,8 +126,8 @@ Cf2py depend(n) xa, ya, y2a
 *
 *
 * COMMENTS:
-* If "el" is outside the range of "array", "i1" and "i2" are 
-* set to the appropriate extreme index value.    
+* If "el" is outside the range of "array", "i1" and "i2" are
+* set to the appropriate extreme index value.
 * If "el" is equal to one of the elements of "array", "i2" is
 * set to the appropriate index value.
 *-------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ Cf2py depend(n) xa, ya, y2a
       INTEGER j1(npix)
 
       DOUBLE PRECISION mu,xmu(nmugs),theta(npix)
-      
+
 Cf2py intent(in) theta, npix, xmu, nmugs
 Cf2py intent(out) j1
 Cf2py depend(npix) theta, j1
@@ -154,11 +154,11 @@ Cf2py depend(nmugs) xmu
       DO ni=1,npix
         i1= -1
         j1(ni)= i1
-        
+
         mu= theta(ni)
-        
+
         IF (DACOS(mu)*radfac.LT.(0.D0)) GOTO 33
-        
+
         IF (mu.LE.(xmu(1)+eps)) THEN
            i1= 0
         ELSEIF (mu.GT.(xmu(nmugs)-eps)) THEN
@@ -191,15 +191,15 @@ Cf2py depend(nmugs) xmu
       SUBROUTINE reflection(npix,phi,beta,theta0,theta,
      .                      nmugs,nmat,nfou,xmu,rfou,
      .                      apix,method,Sarr)
-      
+
 *----------------------------------------------------------------------------
 *     Read a Fourier coefficients file and calculate the Stokes vector
 *     for a given geometry.
 *
-*     It is assumed that the Stokes vector of the incoming sunlight 
+*     It is assumed that the Stokes vector of the incoming sunlight
 *     is [1,0,0,0], with the flux measured perpendicular to the direction
 *     of incidence equal to pi.
-*     
+*
 *     phi and beta are assumed to be in radian
 *     theta0 and theta are given as cos(theta0) and cos(theta) respectively
 *
@@ -226,11 +226,11 @@ Cf2py depend(nmugs) xmu
      .                 rfou(nmat*nmugs,nmugs,0:nfou),
      .                 rf(nmat,nmugs,nmugs),rfsec(nmat,nmugs,nmugs),
      .                 rftemp(nmugs),rfmu0(nmat,nmugs),
-     .                 rfsecmu0(nmugs),     
+     .                 rfsecmu0(nmugs),
      .                 Bplus(4),SvR(nmat),RM(npix,nmat),rf3save(nmat),
      .                 RMbi(nmat),
      .                 P,Sarr(npix,nmat+1)
-     
+
       CHARACTER method*25
 
 Cf2py intent(in) npix, phi, beta, theta0, theta, apix
@@ -256,10 +256,10 @@ Cf2py depend(nmugs) rfou, xmu
 *     Loop over the Fourier coefficients:
 *----------------------------------------------------------------------------
       DO m=0,nfou
-      
+
         fac=1.D0
         IF (m.EQ.0) fac=0.5D0
-          
+
 *------------------------------------------------------------------------------
 *     Initialize the interpolation matrix for the current fourier coefficient:
 *------------------------------------------------------------------------------
@@ -273,14 +273,14 @@ Cf2py depend(nmugs) rfou, xmu
                 rfsec(k,j,:) = rftemp
             ENDDO
         ENDDO
-        
+
 *----------------------------------------------------------------------------
 *     Loop over the pixels:
 *       If the input angles are (very) similar to a previously calculated case
 *       use those values.
 *       To obtain obtain the fourier coefficient at (mu,mu0) spline has to be
 *       called a second time.
-*----------------------------------------------------------------------------      
+*----------------------------------------------------------------------------
         DO i=1,npix
             mu = theta(i)
             mu0 = theta0(i)
@@ -288,11 +288,11 @@ Cf2py depend(nmugs) rfou, xmu
             Bplus(2)= DCOS(m*phi(i))
             Bplus(3)= DSIN(m*phi(i))
             Bplus(4)= DSIN(m*phi(i))
-            
+
             IF ((i.GT.1).AND.
      .          (ABS(mu-muold).LT.1.D-6).AND.
      .          (ABS(mu0-mu0old).LT.1.D-6)) THEN
-                DO k=1,nmat 
+                DO k=1,nmat
                     RM(i,k)=RM(i,k)+ 2.D0*Bplus(k)*fac*rf3save(k)
                 ENDDO
             ELSE
@@ -303,7 +303,7 @@ Cf2py depend(nmugs) rfou, xmu
      .                              nmugs,mu0,rf3)
                         rfmu0(k,j) = rf3
                     ENDDO
-                ENDDO                    
+                ENDDO
                 DO k=1,nmat
                     CALL spline(xmu,rfmu0(k,:),nmugs,rfsecmu0)
                     CALL splint(xmu,rfmu0(k,:),rfsecmu0,nmugs,mu,rf3)
@@ -317,24 +317,24 @@ Cf2py depend(nmugs) rfou, xmu
       ENDDO
 *----------------------------------------------------------------------------
 *     Loop again over the pixels to rotate Stokes vector:
-*----------------------------------------------------------------------------    
+*----------------------------------------------------------------------------
       DO i=1,npix
         mu = theta(i)
         mu0 = theta0(i)
-        
+
 *----------------------------------------------------------------------------
 *       Calculate the locally reflected Stokes vector:
 *----------------------------------------------------------------------------
         DO k=1,nmat
-           SvR(k)= mu0*RM(i,k) 
+           SvR(k)= mu0*RM(i,k)
         ENDDO
 
 *----------------------------------------------------------------------------
 *       Rotate Stokes elements Q and U to the actual reference plane:
 *----------------------------------------------------------------------------
         be= 2.D0*beta(i)
-        SvR2= DCOS(be)*SvR(2) + DSIN(be)*SvR(3) 
-        SvR3=-DSIN(be)*SvR(2) + DCOS(be)*SvR(3) 
+        SvR2= DCOS(be)*SvR(2) + DSIN(be)*SvR(3)
+        SvR3=-DSIN(be)*SvR(2) + DCOS(be)*SvR(3)
         SvR(2)= SvR2
         SvR(3)= SvR3
 
@@ -357,23 +357,23 @@ Cf2py depend(nmugs) rfou, xmu
         DO k=1,nmat
             Sarr(i,k) = SvR(k)*mu * apix(i)
         ENDDO
-        
+
         Sarr(i,nmat+1) = P
 
 *----------------------------------------------------------------------------
 *       Next pixel:
 *----------------------------------------------------------------------------
       ENDDO
-      
-*----------------------------------------------------------------------------  
+
 *----------------------------------------------------------------------------
 *----------------------------------------------------------------------------
-      
+*----------------------------------------------------------------------------
+
 *----------------------------------------------------------------------------
 *     Bilinear interpolation:
 *----------------------------------------------------------------------------
       ELSEIF (method .EQ. 'bilinear') THEN
-      
+
 *----------------------------------------------------------------------------
 *       Find the locations in array xmu where the mu-values are:
 *----------------------------------------------------------------------------
@@ -411,19 +411,19 @@ Cf2py depend(nmugs) rfou, xmu
 *----------------------------------------------------------------------------
 *           Calculate the locally reflected Stokes vector:
 *           apix is the surface area of the pixel (the same for all pixels)
-*           apix is initially assumed to be a piece of the illuminated circle 
+*           apix is initially assumed to be a piece of the illuminated circle
 *           with radius 1
 *----------------------------------------------------------------------------
             DO k=1,nmat
-                SvR(k)= mu0*RMbi(k) 
+                SvR(k)= mu0*RMbi(k)
             ENDDO
 
 *----------------------------------------------------------------------------
 *           Rotate Stokes elements Q and U to the actual reference plane:
 *----------------------------------------------------------------------------
             be= 2.D0*beta(i)
-            SvR2= DCOS(be)*SvR(2) + DSIN(be)*SvR(3) 
-            SvR3=-DSIN(be)*SvR(2) + DCOS(be)*SvR(3) 
+            SvR2= DCOS(be)*SvR(2) + DSIN(be)*SvR(3)
+            SvR3=-DSIN(be)*SvR(2) + DCOS(be)*SvR(3)
             SvR(2)= SvR2
             SvR(3)= SvR3
 
@@ -446,7 +446,7 @@ Cf2py depend(nmugs) rfou, xmu
             DO k=1,nmat
                 Sarr(i,k) = SvR(k)*mu * apix(i)
             ENDDO
-        
+
             Sarr(i,nmat+1) = P
 
 *----------------------------------------------------------------------------
@@ -454,7 +454,7 @@ Cf2py depend(nmugs) rfou, xmu
 *----------------------------------------------------------------------------
         ENDDO
       ENDIF
-      
+
 *-------------------------------------------------------------------------------
       RETURN
       END
@@ -482,7 +482,7 @@ Cf2py depend(nmugs) rfou, xmu
      .                 rfm(nmat),RM(nmat),Bplus(4),
      .                 r1(nmat),r2(nmat),r3(nmat),r4(nmat)
 
-Cf2py intent(in) mu0, mu, phi, xmu, i1, j1 
+Cf2py intent(in) mu0, mu, phi, xmu, i1, j1
 Cf2py intent(in) nmugs, nmat, nfou, rfour
 Cf2py intent(out) RM
 Cf2py depend(nmat) rfour, RM
@@ -490,13 +490,13 @@ Cf2py depend(nmugs) rfour, xmu
 Cf2py depend(nfou) rfour
 
 *----------------------------------------------------------------------------
-*     Initialize the 1st column of the reflection matrix and the 
+*     Initialize the 1st column of the reflection matrix and the
 *     Stokes vector of the reflected light:
 *----------------------------------------------------------------------------
       DO k=1,nmat
          RM(k)= 0.D0
       ENDDO
-      
+
 *----------------------------------------------------------------------------
 *     Loop over the Fourier coefficients:
 *----------------------------------------------------------------------------
@@ -508,7 +508,7 @@ Cf2py depend(nfou) rfour
          IF (j1.NE.nmugs) THEN
             x1= xmu(j1)
             x2= xmu(j1+1)
-               
+
             jbase= (j1-1)*nmat
 
             IF (i1.NE.nmugs) THEN
@@ -571,7 +571,7 @@ Cf2py depend(nfou) rfour
          ENDDO
 
 *--------------------------------------------------------------------
-*        Calculate the 1st column of the reflection matrix: 
+*        Calculate the 1st column of the reflection matrix:
 *--------------------------------------------------------------------
          Bplus(1)= COS(m*phi)
          Bplus(2)= COS(m*phi)
@@ -590,11 +590,11 @@ Cf2py depend(nfou) rfour
 *----------------------------------------------------------------------------
       RETURN
       END
-      
+
 *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
+
       SUBROUTINE rdfous_planet(foufile,nfou,
      .                         nmat,nmugs,xmu,rfou)
 
@@ -609,7 +609,7 @@ Cf2py depend(nfou) rfour
       DOUBLE PRECISION pi,radfac
       PARAMETER (pi=3.141592653589793D0,radfac=pi/180.D0)
 
-      INTEGER iunf 
+      INTEGER iunf
       PARAMETER (iunf=23)
 
       INTEGER m,i1,i2,i,j,ki,ibase,nfou,nmat,nmugs,ifou
@@ -617,8 +617,8 @@ Cf2py depend(nfou) rfour
       DOUBLE PRECISION xmu(nmugs),
      .                 rfou(nmat*nmugs,nmugs,0:nfou)
 
-      CHARACTER ch*1,foufile*100      
-      
+      CHARACTER ch*1,foufile*100
+
 Cf2py intent(in) foufile, trans, nfou, nmat, nmugs
 Cf2py intent(out) xmu, rfou
 Cf2py depend(nmat) rfou
@@ -648,7 +648,7 @@ Cf2py depend(nmugs) rfou, xmu
       BACKSPACE(iunf)
 
 *----------------------------------------------------------------------------
-*     Read the accuracy, the matrix size, the number of Gauss points and the 
+*     Read the accuracy, the matrix size, the number of Gauss points and the
 *     Gaussian integration points:
 *----------------------------------------------------------------------------
       READ(iunf,*) nmat
@@ -661,7 +661,7 @@ Cf2py depend(nmugs) rfou, xmu
 20    DO i=1,nmugs
          ibase= (i-1)*nmat
          DO j=1,nmugs
-            READ(iunf,*,END=21) m,i1,i2, 
+            READ(iunf,*,END=21) m,i1,i2,
      .                         (rfou(ibase+ki,j,ifou),ki=1,nmat)
 
          ENDDO
@@ -688,7 +688,7 @@ Cf2py depend(nmugs) rfou, xmu
 *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
+
       SUBROUTINE rdfous_ring(foufile,trans,nfou,
      .                       nmat,nmugs,xmu,rfou)
 
@@ -703,7 +703,7 @@ Cf2py depend(nmugs) rfou, xmu
       DOUBLE PRECISION pi,radfac
       PARAMETER (pi=3.141592653589793D0,radfac=pi/180.D0)
 
-      INTEGER iunf 
+      INTEGER iunf
       PARAMETER (iunf=23)
 
       INTEGER m,i1,i2,i,j,ki,ibase,nfou,nmat,nmugs,ifou
@@ -713,9 +713,9 @@ Cf2py depend(nmugs) rfou, xmu
      .                 dummy(nmat)
 
       CHARACTER ch*1,foufile*100
-      
+
       LOGICAL trans
-      
+
 Cf2py intent(in) foufile, trans, nfou, nmat, nmugs
 Cf2py intent(out) xmu, rfou
 Cf2py depend(nmat) rfou
@@ -731,7 +731,7 @@ Cf2py depend(nmugs) rfou, xmu
             ENDDO
          ENDDO
       ENDDO
-      
+
       DO i=1,nmat
          dummy(i) = 0.D0
       ENDDO
@@ -749,7 +749,7 @@ Cf2py depend(nmugs) rfou, xmu
       BACKSPACE(iunf)
 
 *----------------------------------------------------------------------------
-*     Read the accuracy, the matrix size, the number of Gauss points and the 
+*     Read the accuracy, the matrix size, the number of Gauss points and the
 *     Gaussian integration points:
 *----------------------------------------------------------------------------
       READ(iunf,*) nmat
@@ -763,11 +763,11 @@ Cf2py depend(nmugs) rfou, xmu
          ibase= (i-1)*nmat
          DO j=1,nmugs
             IF ( trans ) THEN
-                READ(iunf,*,END=21) m,i1,i2, (dummy(ki),ki=1,nmat), 
+                READ(iunf,*,END=21) m,i1,i2, (dummy(ki),ki=1,nmat),
      .                          (rfou(ibase+ki,j,ifou),ki=1,nmat)
             ELSE
-                READ(iunf,*,END=21) m,i1,i2, 
-     .                              (rfou(ibase+ki,j,ifou),ki=1,nmat), 
+                READ(iunf,*,END=21) m,i1,i2,
+     .                              (rfou(ibase+ki,j,ifou),ki=1,nmat),
      .                              (dummy(ki),ki=1,nmat)
             ENDIF
          ENDDO
