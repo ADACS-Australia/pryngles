@@ -107,7 +107,7 @@ def test_star_spangle():
     S.spangle_body()
     assert S.sg is not None
     assert len(S.sg.data) == 100
-    assert (S.sg.data["source"] is True).all()
+    assert S.sg.data["source"].all()
     assert (S.sg.data["name"] == S.name).all()
 
 
