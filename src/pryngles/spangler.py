@@ -22,7 +22,7 @@ import pandas as pd
 import spiceypy as spy
 
 # Specialized plotting methods
-from pryngles import science, Plane
+from pryngles import science
 from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     SAMPLER_GEOMETRY_CIRCLE,
@@ -1231,7 +1231,7 @@ class Spangler(PrynglesCommon):
                 hidden = self.data[cond_hidden][["x_int", "y_int", "z_int"]].values
                 nhidden = len(hidden)
                 p1, p2, p3 = hidden[0], hidden[int(nhidden / 3)], hidden[2 * int(nhidden / 3)]
-                plane = Plane(p1, p2, p3)
+                plane = science.Plane(p1, p2, p3)
 
                 # Convex hull of hidden points (the hole)
                 cond_hull = (cond_obj) & (self.data[cond_obj].hidden)
