@@ -117,7 +117,6 @@ class Consts:
         import pryngles as pr
 
         all_constants = []
-        print(pr.__dict__.keys())
         for key in pr.__dict__.keys():
             patterns = "^[A-Z_]+$"
             if re.search(patterns, key):
