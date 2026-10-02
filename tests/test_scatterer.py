@@ -122,7 +122,7 @@ def test_lambertian_atmosphere_decreasing():
     s = pr.LambertianGrayAtmosphere(AS=0.5)
     etas = np.linspace(0.1, 1.0, 10)
     albedos = [s.get_albedo(eta, 0.5, 0.0, 0.0) for eta in etas]
-    assert all(b <= a for a, b in zip(albedos, albedos[1:], strict=True))
+    assert all(b <= a for a, b in zip(albedos, albedos[1:], strict=False))
 
 
 def test_lambertian_atmosphere_as_controls_max():
