@@ -35,8 +35,8 @@ from scipy.spatial.transform import Rotation
 from tqdm import tqdm
 
 from pryngles.common import VERB_NONE, Verbose
-from pryngles.consts import DEG, days
-from pryngles.legacy import RingedPlanet
+from pryngles.consts import DEG
+from pryngles.legacy import RingedPlanet, Const
 from pryngles.science import Science
 from pryngles.version import version
 
@@ -212,7 +212,7 @@ class Plot:
         ts = np.array(ts)
         Rps = np.array(Rps)
         Rrs = np.array(Rrs)
-        ts = ts / days
+        ts = ts / Const.days
 
         ############################################################
         # Plot
