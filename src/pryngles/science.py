@@ -25,9 +25,8 @@ import spiceypy as spy
 from scipy.integrate import quad
 from scipy.spatial import ConvexHull
 
-from pryngles import *
-from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY
-from pryngles.consts import Consts, SCIENCE_LIMB_NORMALIZATIONS
+from pryngles.common import VERB_VERIFY, PrynglesCommon, verbose
+from pryngles.consts import SCIENCE_LIMB_NORMALIZATIONS, Consts
 
 
 # --------------------------------------------------
