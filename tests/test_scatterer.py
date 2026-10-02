@@ -103,7 +103,7 @@ def test_lambertian_atmosphere_reference_values():
         0.453186,
         0.437472,
     ]
-    for eta, ref in zip(etas, expected):
+    for eta, ref in zip(etas, expected, strict=True):
         np.testing.assert_allclose(s.get_albedo(eta, 0.5, 0.0, 0.0), ref, atol=1e-3)
 
 
@@ -122,7 +122,7 @@ def test_lambertian_atmosphere_decreasing():
     s = pr.LambertianGrayAtmosphere(AS=0.5)
     etas = np.linspace(0.1, 1.0, 10)
     albedos = [s.get_albedo(eta, 0.5, 0.0, 0.0) for eta in etas]
-    assert all(b <= a for a, b in zip(albedos, albedos[1:]))
+    assert all(b <= a for a, b in zip(albedos, albedos[1:], strict=True))
 
 
 def test_lambertian_atmosphere_as_controls_max():

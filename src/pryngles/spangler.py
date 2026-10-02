@@ -402,7 +402,7 @@ class Spangler(PrynglesCommon):
         if t is not None:
             verbose(VERB_VERIFY, f"Updating rotations at t = {t}")
 
-            self.data["q_equ"] = [q + q0 + w * t for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0)]
+            self.data["q_equ"] = [q + q0 + w * t for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0, strict=True)]
             self.data[["x_equ", "y_equ", "z_equ"]] = [
                 Science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])
             ]
@@ -1611,7 +1611,7 @@ class Spangler(PrynglesCommon):
                 to_hex=True,
             )
             for stype, cos_luz, cos_obs in zip(
-                data[cond].spangle_type, abs(data[cond].cos_luz), abs(data[cond].cos_obs)
+                data[cond].spangle_type, abs(data[cond].cos_luz), abs(data[cond].cos_obs), strict=True
             )
         ]  # Object color
         sizes[cond] = size_points(data.dsp[cond], data.cos_obs[cond])
@@ -1647,7 +1647,7 @@ class Spangler(PrynglesCommon):
                 to_hex=True,
             )
             for stype, cos_luz, cos_obs in zip(
-                data[cond].spangle_type, abs(data[cond].cos_luz), abs(data[cond].cos_obs)
+                data[cond].spangle_type, abs(data[cond].cos_luz), abs(data[cond].cos_obs), strict=True
             )
         ]  # Object color
         sizes[cond] = size_points(data.dsp[cond], data.cos_obs[cond])

@@ -86,7 +86,7 @@ def test_orbit_hierarchical():
         {"m": 1.0, "x": 3.0, "y": -4.0, "z": 0.0, "vx": 0.1, "vy": 1.1543203766865053, "vz": 0.0},
         {"m": 1.0, "x": 0.0, "y": 16.0, "z": 0.0, "vx": -0.4, "vy": 2.449293598294706e-17, "vz": 0.0},
     ]
-    for state, exp in zip(states, expected):
+    for state, exp in zip(states, expected, strict=True):
         assert state["m"] == exp["m"]
         for key in ("x", "y", "z", "vx", "vy", "vz"):
             np.testing.assert_allclose(state[key], exp[key], rtol=1e-6, atol=1e-12)
@@ -121,7 +121,7 @@ def test_build_system():
         {"m": 3.0, "x": -0.2, "y": 0.0, "z": 0.0, "vx": 0.0, "vy": -3.8475768228866953, "vz": 0.0},
         {"m": 1.0, "x": 0.6, "y": 0.0, "z": 0.0, "vx": 0.0, "vy": 11.542730468660086, "vz": 0.0},
     ]
-    for state, exp in zip(states, expected):
+    for state, exp in zip(states, expected, strict=True):
         assert state["m"] == exp["m"]
         for key in ("x", "y", "z", "vx", "vy", "vz"):
             np.testing.assert_allclose(state[key], exp[key], rtol=1e-6, atol=1e-12)
