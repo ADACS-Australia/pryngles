@@ -23,20 +23,23 @@ import numpy as np
 from anytree import RenderTree
 from scipy.interpolate import interp1d
 
-from pryngles import *
-from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY
+from pryngles.common import VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
-    Consts,
-    SCIENCE_LIMB_NORMALIZATIONS,
-    REBOUND_ORBITAL_PROPERTIES,
-    STAR_DEFAULTS,
-    PLANET_DEFAULTS,
-    RING_DEFAULTS,
-    OBSERVER_DEFAULTS,
     DETECTOR_PROPERTIES,
+    OBSERVER_DEFAULTS,
+    PLANET_DEFAULTS,
+    REBOUND_ORBITAL_PROPERTIES,
+    RING_DEFAULTS,
+    SCIENCE_LIMB_NORMALIZATIONS,
+    STAR_DEFAULTS,
     T_MODEL_DEFAULTS,
+    Consts,
 )
+from pryngles.extensions import StokesScatterer
 from pryngles.misc import get_data
+from pryngles.orbit import Orbody
+from pryngles.science import Science
+from pryngles.spangler import Spangler
 
 # --------------------------------------------------
 # Class Body
