@@ -24,18 +24,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle
 
-from pryngles import *
-from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY, VERB_SYSTEM
+from pryngles import consts
+from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
-    SAMPLER_PRESETS,
-    SAMPLER_SPHERE_PRESETS,
-    SAMPLER_CIRCLE_PRESETS,
-    SAMPLER_MIN_RING,
     SAMPLER_GEOMETRY_CIRCLE,
     SAMPLER_GEOMETRY_SPHERE,
+    SAMPLER_MIN_RING,
+    SAMPLER_PRESETS,
 )
-from pryngles import consts
 from pryngles.misc import get_data
+from pryngles.plot import Plot
 
 
 # --------------------------------------------------
