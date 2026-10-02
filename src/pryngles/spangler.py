@@ -403,8 +403,7 @@ class Spangler(PrynglesCommon):
             verbose(VERB_VERIFY, f"Updating rotations at t = {t}")
 
             self.data["q_equ"] = [
-                q + q0 + w * t
-                for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0, strict=True)
+                q + q0 + w * t for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0, strict=True)
             ]
             self.data[["x_equ", "y_equ", "z_equ"]] = [
                 Science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])

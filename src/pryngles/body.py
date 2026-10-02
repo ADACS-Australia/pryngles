@@ -462,13 +462,13 @@ class Planet(Body):
 
         if self.sg is None:
             raise RuntimeError(
-                "Spangler not defined. Please spangle the body before applying a temperature model: " \
+                "Spangler not defined. Please spangle the body before applying a temperature model: "
                 "Planet.spangle_body() or System.spangle_system()"
             )
 
         if not hasattr(self, "T_model"):
             raise RuntimeError(
-                "Temperature model not defined. Please set a temperature model before applying it: " \
+                "Temperature model not defined. Please set a temperature model before applying it: "
                 "Planet.set_temperature_model()"
             )
 

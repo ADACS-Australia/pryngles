@@ -1,6 +1,5 @@
 """Tests for the functions in the ``consts`` module."""
 
-
 import pryngles as pr
 
 

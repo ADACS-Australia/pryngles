@@ -84,8 +84,8 @@ class Scatterer(PrynglesCommon, ABC):
         if scatterer.hash in SCATTERERS_CATALOGUE:
             verbose(
                 VERB_SIMPLE,
-                f"Scatterer with name {scatterer.params['name']} and hash {scatterer.hash} " +
-                f"already exist at {id(SCATTERERS_CATALOGUE)}",
+                f"Scatterer with name {scatterer.params['name']} and hash {scatterer.hash} "
+                + f"already exist at {id(SCATTERERS_CATALOGUE)}",
             )
             scatterer.__dict__ = deepcopy(SCATTERERS_CATALOGUE[scatterer.hash].__dict__)
             return False

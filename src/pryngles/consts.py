@@ -33,7 +33,6 @@ try:
     FILE = __file__
     ROOTDIR = os.path.abspath(os.path.dirname(FILE))
 except Exception:
-
     FILE = ""
     ROOTDIR = os.path.abspath("")
 
