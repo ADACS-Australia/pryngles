@@ -155,7 +155,7 @@ select = [
     "B",   # flake8-bugbear
     "I",   # isort
 ]
-ignore = ["UP028"]
+ignore = ["UP028", "E731"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
