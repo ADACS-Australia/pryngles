@@ -295,13 +295,13 @@ class Plot:
         latp = lat * np.ones_like(lonp)
 
         # Rotation matrices
-        M, I = Science.rotation_matrix(normal, 0)
+        _, Muni2sys = Science.rotation_matrix(normal, 0)
 
         # Compute directions
         nvecs = np.zeros((num, 3))
         for i in range(num):
             rp = Science.direction(lonp[i], latp[i])
-            nvecs[i] = spy.mxv(I, rp)
+            nvecs[i] = spy.mxv(Muni2sys, rp)
 
         return nvecs
 
