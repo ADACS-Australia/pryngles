@@ -31,12 +31,12 @@ def test_orbody_invalid_element():
 
 def test_orbit_construction():
     """An ``Orbit`` stores masses and orbital elements."""
-    O = pr.Orbit(m1=1, m2=1, a=1, e=0.7, M=0)
-    assert O.m1 == 1
-    assert O.m2 == 1
-    assert O.Mtot == 2
-    assert O.a == 1
-    assert O.e == 0.7
+    orbit = pr.Orbit(m1=1, m2=1, a=1, e=0.7, M=0)
+    assert orbit.m1 == 1
+    assert orbit.m2 == 1
+    assert orbit.Mtot == 2
+    assert orbit.a == 1
+    assert orbit.e == 0.7
 
 
 def test_orbit_invalid_mass():
@@ -53,9 +53,9 @@ def test_orbit_invalid_element():
 
 def test_orbit_calculate_and_states():
     """``calculate_orbit`` and ``get_states`` produce particle states."""
-    O = pr.Orbit(m1=1, m2=1e-3, a=0.5, e=0.4)
-    O.calculate_orbit()
-    sim, states = O.get_states()
+    orbit = pr.Orbit(m1=1, m2=1e-3, a=0.5, e=0.4)
+    orbit.calculate_orbit()
+    sim, states = orbit.get_states()
     assert len(states) == 2
     # The two bodies have the expected masses.
     assert states[0]["m"] == 1

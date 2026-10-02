@@ -311,18 +311,18 @@ class Util:
         mu = (1 - rho**2 / Rs**2) ** 0.5
         order = len(cs)
         if order == 0:
-            I = np.ones_like(rho)
+            intensity = np.ones_like(rho)
         elif order == 1:
-            I = 1 - cs[0] * (1 - mu)
+            intensity = 1 - cs[0] * (1 - mu)
         elif order == 2:
-            I = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu) ** 2
+            intensity = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu) ** 2
         elif order == 3:
-            I = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu**1.5) - cs[2] * (1 - mu**2)
+            intensity = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu**1.5) - cs[2] * (1 - mu**2)
         elif order == 4:
-            I = 1 - cs[0] * (1 - mu**0.5) - cs[1] * (1 - mu) - cs[2] * (1 - mu**1.5) - cs[3] * (1 - mu**2)
+            intensity = 1 - cs[0] * (1 - mu**0.5) - cs[1] * (1 - mu) - cs[2] * (1 - mu**1.5) - cs[3] * (1 - mu**2)
         else:
             raise ValueError(f"Limb darkening not implemented for order {order}")
-        return I / N
+        return intensity / N
 
     def saveObject(obj, objfile):
         dill.dump(obj, open(objfile, "wb"))
