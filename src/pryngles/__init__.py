@@ -30,7 +30,6 @@ warnings.filterwarnings("ignore")
 
 # JupDev: Jupyter compatibility
 import IPython.core.autocall as autocall
-from IPython import get_ipython
 from IPython.display import Image
 
 # --------------------------------------------------

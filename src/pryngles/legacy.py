@@ -18,35 +18,34 @@
 # --------------------------------------------------
 
 import math
+import os
 import pickle
+from copy import deepcopy
 
+import cmasher as cmr
+import dill
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
 import spiceypy as spy
+import tqdm
+from IPython import get_ipython
+from matplotlib.ticker import LogLocator, MultipleLocator
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.integrate import dblquad, quad
+from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.optimize import least_squares
 
-from pryngles import *
-from pryngles.common import verbose, VERB_DEEP
+from pryngles.common import VERB_DEEP, verbose
+from pryngles.consts import Consts
+from pryngles.extensions import StokesScatterer
 from pryngles.misc import get_data
 
 math.arctan = math.atan
 math.arcsin = math.asin
 math.arccos = math.acos
 math.arctan2 = math.atan2
-import os
-from copy import deepcopy
-
-import cmasher as cmr
-import dill
-
-# Added
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import tqdm
-from matplotlib.ticker import LogLocator
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scipy.integrate import dblquad, quad
-from scipy.interpolate import RectBivariateSpline, interp1d
 
 # Don't force an interactive backend (nbagg) here; it can prevent rendering in some notebook frontends.
 # Let the notebook/environment choose the backend (e.g., inline in Colab/Cursor previews).
