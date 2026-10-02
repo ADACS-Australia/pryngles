@@ -103,6 +103,9 @@ omit = ["src/pryngles/cpixx/*", "src/pryngles/pixx/*", "src/pryngles/version.py"
 skip_empty = true
 
 [tool.ruff]
+# Explicitly tell Ruff to only look at these file extensions
+include = ["src/*.py", "tests/*.py"]
+
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -145,22 +148,14 @@ target-version = "py312"
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
 select = [
-    # pycodestyle
-    "E",
-    # pycodestyle-warnings
-    "W",
-    # Pyflakes
-    "F",
-    # pyupgrade
-    "UP",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # isort
-    "I",
+    "E",   # pycodestyle
+    "W",   # pycodestyle-warnings
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "I",   # isort
 ]
-ignore = []
+ignore = ["UP028", "E731"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -168,6 +163,9 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.isort]
+known-first-party = ["pryngles"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
@@ -180,4 +178,4 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 
 # Like Black, automatically detect the appropriate line ending.
-line-ending = "auto"
+line-ending = "lf"

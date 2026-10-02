@@ -57,18 +57,18 @@ double*** zeros_cube(int n,int m,int p)
 
 /*
 *----------------------------------------------------------------------------
-*     Spline interpolation routine from Press et al. (1986, p.88). 
+*     Spline interpolation routine from Press et al. (1986, p.88).
 *
 *     Given arrays x and y of length n containing a tabulated function,
-*     i.e. y(i)=f(x(i)), with x(1)<x(2)<...<x(n), and given values yp1 
+*     i.e. y(i)=f(x(i)), with x(1)<x(2)<...<x(n), and given values yp1
 *     and ypn for the first derivative of the interpolating function at
-*     points 1 and n respectively, this routine returns an array y2 of  
-*     length n which contains the second derivatives of the interpola- 
-*     ting function at the tabulated points x(i).                     
+*     points 1 and n respectively, this routine returns an array y2 of
+*     length n which contains the second derivatives of the interpola-
+*     ting function at the tabulated points x(i).
 *
-*     If yp1 and/or yp2 are equal to 1x10^30 or larger, the routine is 
-*     signalled to set the corresponding boundary condition for a natu- 
-*     ral spline, with zero second derivative on that boundary.        
+*     If yp1 and/or yp2 are equal to 1x10^30 or larger, the routine is
+*     signalled to set the corresponding boundary condition for a natu-
+*     ral spline, with zero second derivative on that boundary.
 *
 *     n is the number of elements in x and y
 *----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ double spline(double x[],double y[],int n,double y2[])
   int i,k;
   double u[1000];
   double sig,p,qn,un;
-  
+
   y2[0] = 0;
   u[0] =  0;
 
@@ -116,7 +116,7 @@ int bisect(double xa[], int n, double x)
   int k;
   int klo=0;
   int khi=n-1;
-  
+
   while((khi-klo)>1){
     k=(klo+khi)/2;    // No need to floor() here, since it's integer division
     if(xa[k]>x)
@@ -152,14 +152,14 @@ void spline_coefficients(double xa[], int n, double x, int* klo_out, int* khi_ou
 
 /*
 *----------------------------------------------------------------------------
-*     Spline interpolation routine from Press et al. (1986, p.88).   
-*                                                                 
-*     Given the arrays xa and ya of length n, which tabulate a function
-*     (with the xa(i)'s in order), and given the array y2a, which is  
-*     the output from SPLINE above, and given a value of x, this     
-*     routine returns a cubic-spline interpolated value y.       
+*     Spline interpolation routine from Press et al. (1986, p.88).
 *
-*     NOTE: for computational efficiency, we pre-compute lower and upper 
+*     Given the arrays xa and ya of length n, which tabulate a function
+*     (with the xa(i)'s in order), and given the array y2a, which is
+*     the output from SPLINE above, and given a value of x, this
+*     routine returns a cubic-spline interpolated value y.
+*
+*     NOTE: for computational efficiency, we pre-compute lower and upper
 *     indices as well as the spline coefficients (above), since they don't
 *     change for an individual pixel/spangle.
 *----------------------------------------------------------------------------
@@ -175,7 +175,7 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b, d
 * PURPOSE:
 * Find a bracket around "el" in the first "n" elements of
 * "array".
-* 
+*
 * INPUT:
 * 	el	: element to be bracketed
 * 	array   : array in which bracket must be found
@@ -188,12 +188,12 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b, d
 *
 *
 * COMMENTS:
-* If "el" is outside the range of "array", "i1" and "i2" are 
-* set to the appropriate extreme index value.    
+* If "el" is outside the range of "array", "i1" and "i2" are
+* set to the appropriate extreme index value.
 * If "el" is equal to one of the elements of "array", "i2" is
 * set to the appropriate index value.
 *-------------------------------------------------------------------------------
-*/  
+*/
 /*
       SUBROUTINE bracks(theta,npix,xmu,nmugs,j1)
 
@@ -210,7 +210,7 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b, d
       INTEGER j1(npix)
 
       DOUBLE PRECISION mu,xmu(nmugs),theta(npix)
-      
+
 Cf2py intent(in) theta, npix, xmu, nmugs
 Cf2py intent(out) j1
 Cf2py depend(npix) theta, j1
@@ -220,11 +220,11 @@ Cf2py depend(nmugs) xmu
       DO ni=1,npix
         i1= -1
         j1(ni)= i1
-        
+
         mu= theta(ni)
-        
+
         IF (DACOS(mu)*radfac.LT.(0.D0)) GOTO 33
-        
+
         IF (mu.LE.(xmu(1)+eps)) THEN
            i1= 0
         ELSEIF (mu.GT.(xmu(nmugs)-eps)) THEN
@@ -277,7 +277,7 @@ Cf2py depend(nmugs) xmu
      .                 rfm(nmat),RM(nmat),Bplus(4),
      .                 r1(nmat),r2(nmat),r3(nmat),r4(nmat)
 
-Cf2py intent(in) mu0, mu, phi, xmu, i1, j1 
+Cf2py intent(in) mu0, mu, phi, xmu, i1, j1
 Cf2py intent(in) nmugs, nmat, nfou, rfour
 Cf2py intent(out) RM
 Cf2py depend(nmat) rfour, RM
@@ -285,13 +285,13 @@ Cf2py depend(nmugs) rfour, xmu
 Cf2py depend(nfou) rfour
 
 *----------------------------------------------------------------------------
-*     Initialize the 1st column of the reflection matrix and the 
+*     Initialize the 1st column of the reflection matrix and the
 *     Stokes vector of the reflected light:
 *----------------------------------------------------------------------------
       DO k=1,nmat
          RM(k)= 0.D0
       ENDDO
-      
+
 *----------------------------------------------------------------------------
 *     Loop over the Fourier coefficients:
 *----------------------------------------------------------------------------
@@ -303,7 +303,7 @@ Cf2py depend(nfou) rfour
          IF (j1.NE.nmugs) THEN
             x1= xmu(j1)
             x2= xmu(j1+1)
-               
+
             jbase= (j1-1)*nmat
 
             IF (i1.NE.nmugs) THEN
@@ -366,7 +366,7 @@ Cf2py depend(nfou) rfour
          ENDDO
 
 *--------------------------------------------------------------------
-*        Calculate the 1st column of the reflection matrix: 
+*        Calculate the 1st column of the reflection matrix:
 *--------------------------------------------------------------------
          Bplus(1)= COS(m*phi)
          Bplus(2)= COS(m*phi)
@@ -396,10 +396,10 @@ Cf2py depend(nfou) rfour
 *     Read a Fourier coefficients file and calculate the Stokes vector
 *     for a given geometry.
 *
-*     It is assumed that the Stokes vector of the incoming sunlight 
+*     It is assumed that the Stokes vector of the incoming sunlight
 *     is [1,0,0,0], with the flux measured perpendicular to the direction
 *     of incidence equal to pi.
-*     
+*
 *     phi and beta are assumed to be in radian
 *     theta0 and theta are given as cos(theta0) and cos(theta) respectively
 *
@@ -418,7 +418,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
   double mu,mu0,muold=1,mu0old=1;
   int ki;
   double fac;
-  
+
   //Read sizes
   int nmat=F.nmat;
   int nmugs=F.nmugs;
@@ -429,7 +429,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
   double *rfsecmu0;
   double *SvR,*rf3save;
   double Bplus[4];
-  
+
   //Allocate dynamically temporal matrices
   //Cubes
   rf=zeros_cube(nmat,nmugs,nmugs);
@@ -454,7 +454,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
 
       for(k=0;k<nmat;k++){
 	ki=j*nmat+k;
-	
+
 	for(n=0;n<nmugs;n++){
 	  rf[k][j][n]=qreflection?F.rfou[ki][n][m]:F.rtra[ki][n][m];
 	}
@@ -465,7 +465,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
       }//End k
 
     }//End j
-    
+
     /*
      *----------------------------------------------------------------------------
      *     Loop over the pixels:
@@ -515,7 +515,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
 	  RM[i][k] = RM[i][k] + 2*Bplus[k]*fac*rf3save[k];
 	}
       }//End else
-    }//End i (pix)	
+    }//End i (pix)
   }//End loop fourier coefficients
 
   //Loop again over the pixels to rotate Stokes vector:
@@ -526,14 +526,14 @@ int reflection(struct FourierCoefficients F,int qreflection,
     //Calculate the locally reflected Stokes vector:
     for(k=0;k<nmat;k++)
       SvR[k]= mu0*RM[i][k];
-    
+
     //Rotate Stokes elements Q and U to the actual reference plane:
     be= 2*beta[i];
     SvR2= cos(be)*SvR[1] + sin(be)*SvR[2];
     SvR3=-sin(be)*SvR[1] + cos(be)*SvR[2];
     SvR[1]= SvR2;
     SvR[2]= SvR3;
-    
+
     //Compute the local degree of polarisation P:
     if(fabs(SvR[0])<1e-6)
       P=0;
@@ -542,7 +542,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
     else
       P= sqrt(SvR[1]*SvR[1]+SvR[2]*SvR[2])/SvR[0];
     if(fabs(P)<1e-6) P=0;
-    
+
     /*
      *----------------------------------------------------------------------------
      *       Add the Stokes elements of the pixel to an array:
@@ -568,7 +568,7 @@ int reflection(struct FourierCoefficients F,int qreflection,
   //Vectos nmats
   free(rf3save);
   free(SvR);
-  
+
   return 0;
 }
 
@@ -591,7 +591,7 @@ double read_fourier(char filename[],struct FourierCoefficients* F)
 
   //Open file
   FILE *f=fopen(filename,"r");
-  
+
   //Read first part of the file
   i=0;
 
@@ -619,11 +619,11 @@ double read_fourier(char filename[],struct FourierCoefficients* F)
     if(i==nmugs)
       break;
   }
-  
+
   //Initialize the fourier cube
   double*** rfou_read=zeros_cube(F->nmat*F->nmugs,F->nmugs,MAX_FOU);
   double*** rtra_read=zeros_cube(F->nmat*F->nmugs,F->nmugs,MAX_FOU);
-  
+
   //Read fourier coefficients
   ifou=0;
   while(1){
@@ -661,13 +661,13 @@ double read_fourier(char filename[],struct FourierCoefficients* F)
     ifou++;
   }
   F->nfou=ifou-1;
-  
+
   //Save properties of matrix
   printf("Read fourier: nmat = %d, numgs = %d, nfou = %d\n",F->nmat,F->nmugs,F->nfou);
 
   F->rfou=zeros_cube(F->nmugs*F->nmat,F->nmugs,F->nfou);
   F->rtra=zeros_cube(F->nmugs*F->nmat,F->nmugs,F->nfou);
-  
+
   //Checksum
   checksum=0;
   for(i=0;i<F->nmugs*F->nmat;i++){
@@ -682,6 +682,6 @@ double read_fourier(char filename[],struct FourierCoefficients* F)
 
   free(rfou_read);
   free(rtra_read);
-  
+
   return checksum;
 }

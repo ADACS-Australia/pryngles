@@ -18,10 +18,15 @@ def test_flatten():
     """``flatten`` recursively flattens nested iterables but keeps strings atomic."""
     assert list(pr.Misc.flatten(["hola"])) == ["hola"]
     assert list(pr.Misc.flatten(["hola", ["perro", "gato"]])) == [
-        "hola", "perro", "gato",
+        "hola",
+        "perro",
+        "gato",
     ]
     assert list(pr.Misc.flatten([[1, "perro"], object, 2.5])) == [
-        1, "perro", object, 2.5,
+        1,
+        "perro",
+        object,
+        2.5,
     ]
 
 
@@ -71,9 +76,7 @@ def test_retrieve_data(mock_read, mock_download, tmp_path):
         index=["star.dat", "planet.dat"],
     )
 
-    files = pr.Misc.retrieve_data(
-        ["star.dat", "planet.dat"], path=str(tmp_path), quiet=True
-    )
+    files = pr.Misc.retrieve_data(["star.dat", "planet.dat"], path=str(tmp_path), quiet=True)
 
     # The index file is downloaded once, plus one download per requested file.
     assert mock_read.call_count == 1
