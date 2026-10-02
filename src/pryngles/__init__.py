@@ -13,121 +13,66 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-
-# --------------------------------------------------
-# External required packages
-# --------------------------------------------------
-
-import sys
-import unittest
 import warnings
-from collections import OrderedDict as odict
-from copy import deepcopy
 
-import sigfig
+from pryngles.body import Body, Detector, Observer, Planet, Ring, Star
+from pryngles.common import PrynglesCommon, Verbose
+from pryngles.consts import Consts
+from pryngles.extensions import ExtensionUtil, FourierCoefficients, StokesScatterer
+from pryngles.legacy import CanonicalUnits, Conf, Const, Extra, RingedPlanet, Sample, Util
+from pryngles.orbit import Orbit, OrbitUtil, Orbody
+from pryngles.plot import Plot
+from pryngles.sampler import Sampler
+from pryngles.scatterer import (
+    BlackBodySurface,
+    LambertianGrayAtmosphere,
+    LambertianGraySurface,
+    NeutralSurface,
+    Scatterer,
+)
+from pryngles.science import Plane
+from pryngles.spangler import Spangler
+from pryngles.system import System
+from pryngles.version import version
+
+__all__ = [
+    "Body",
+    "Star",
+    "Planet",
+    "Ring",
+    "Observer",
+    "Detector",
+    "Verbose",
+    "PrynglesCommon",
+    "Consts",
+    "ExtensionUtil",
+    "FourierCoefficients",
+    "StokesScatterer",
+    "Const",
+    "CanonicalUnits",
+    "Util",
+    "Conf",
+    "Sample",
+    "RingedPlanet",
+    "Extra",
+    "Orbody",
+    "Orbit",
+    "OrbitUtil",
+    "Plot",
+    "Sampler",
+    "Scatterer",
+    "NeutralSurface",
+    "BlackBodySurface",
+    "LambertianGraySurface",
+    "LambertianGrayAtmosphere",
+    "Plane",
+    "Spangler",
+    "System",
+    "version",
+]
+
 
 warnings.filterwarnings("ignore")
 
-# JupDev: Jupyter compatibility
-import IPython.core.autocall as autocall
-from IPython.display import Image
-
-from pryngles.body import *
-
-# Utility modules
-from pryngles.common import (
-    VERB_ALL,
-    VERB_DEEP,
-    VERB_NONE,
-    VERB_SIMPLE,
-    VERB_SYSTEM,
-    VERB_VERIFY,
-    PrynglesCommon,
-    Verbose,
-)
-
-# Constants
-from pryngles.consts import (
-    BODY_DEFAULTS,
-    BODY_KINDS,
-    DEG,
-    DETECTOR_PROPERTIES,
-    GSI,
-    IN_JUPYTER,
-    LEGACY_PHYSICAL_PROPERTIES,
-    OBSERVER_DEFAULTS,
-    PLANET_DEFAULTS,
-    RAD,
-    REBOUND_CARTESIAN_PROPERTIES,
-    REBOUND_ORBITAL_PROPERTIES,
-    RING_DEFAULTS,
-    ROOTDIR,
-    SAMPLE_SHAPES,
-    SAMPLER_CIRCLE_PRESETS,
-    SAMPLER_GEOMETRY_CIRCLE,
-    SAMPLER_GEOMETRY_SPHERE,
-    SAMPLER_MIN_RING,
-    SAMPLER_PRESETS,
-    SAMPLER_SPHERE_PRESETS,
-    SCATTERERS_CATALOGUE,
-    SCIENCE_LIMB_NORMALIZATIONS,
-    SHADOW_COLOR_LUZ,
-    SHADOW_COLOR_OBS,
-    SPANGLE_ATMOSPHERIC,
-    SPANGLE_COLORS,
-    SPANGLE_GASEOUS,
-    SPANGLE_GRANULAR,
-    SPANGLE_LIQUID,
-    SPANGLE_SOLID_ICE,
-    SPANGLE_SOLID_ROCK,
-    SPANGLE_STELLAR,
-    SPANGLER_AREAS,
-    SPANGLER_COL_COPY,
-    SPANGLER_COL_INT,
-    SPANGLER_COL_LUZ,
-    SPANGLER_COL_OBS,
-    SPANGLER_COLUMNS,
-    SPANGLER_COLUMNS_DOC,
-    SPANGLER_DEBUG_FIELDS,
-    SPANGLER_EPS_BORDER,
-    SPANGLER_EQUIV_COL,
-    SPANGLER_FLUX,
-    SPANGLER_KEY_ORDERING,
-    SPANGLER_KEY_SUMMARY,
-    SPANGLER_LENGTHS,
-    SPANGLER_SOURCE_STATES,
-    SPANGLER_VECTORS,
-    SPANGLER_VISIBILITY_STATES,
-    SPANGLES_DARKNESS_COLOR,
-    SPANGLES_SEMITRANSPARENT,
-    STAR_DEFAULTS,
-    T_MODEL_DEFAULTS,
-)
-
-# Utility modules
-from pryngles.extensions import DOUBLE, PDOUBLE, PPDOUBLE, PPPDOUBLE
-
-# Legacy module
-from pryngles.legacy import *
-from pryngles.misc import DATA_INDEX, print_df
-from pryngles.orbit import *
-from pryngles.plot import *
-
-# Core modules
-from pryngles.sampler import *
-from pryngles.scatterer import *
-from pryngles.science import *
-from pryngles.system import *
-
-# --------------------------------------------------
-# Stand alone code of the module
-# --------------------------------------------------
-from pryngles.version import *
-
-
-def _welcome():
-    """Show a welcome message when importing the package."""
-    print(f"Welcome to pryngles v{version}!")
-
-
-_welcome()
+"""Show a welcome message when importing the package."""
+print(f"Welcome to pryngles v{version}!")

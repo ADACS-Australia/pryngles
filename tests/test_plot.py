@@ -7,6 +7,7 @@ matplotlib.use("Agg")  # headless backend so tests don't need a display
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+import rebound as rb
 from mpl_toolkits.mplot3d import art3d
 
 import pryngles as pr
@@ -148,7 +149,7 @@ def test_rgb_sample_runs():
 @pytest.mark.filterwarnings("ignore:Animation was deleted without rendering")
 def test_animate_rebound_returns_animation():
     """``animate_rebound`` returns a matplotlib animation for a rebound sim."""
-    sim = pr.rb.Simulation()
+    sim = rb.Simulation()
     ms = 1
     sim.add(m=ms)
     mp = 1e-3
