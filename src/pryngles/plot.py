@@ -113,7 +113,6 @@ class Plot:
 
         # Choose the according to the fact it is a 2d or 3d plot
         try:
-            ax.add_collection3d
             plt_text = ax.text2D
         except Exception:
             plt_text = ax.text
