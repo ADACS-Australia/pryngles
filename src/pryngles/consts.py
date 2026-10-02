@@ -1143,7 +1143,4 @@ DETECTOR_PROPERTIES = dict(
 # --------------------------------------------------
 # Constants of module scatterer
 # --------------------------------------------------
-try:
-    SCATTERERS_CATALOGUE
-except Exception:
-    SCATTERERS_CATALOGUE = dict()
+SCATTERERS_CATALOGUE = dict()
