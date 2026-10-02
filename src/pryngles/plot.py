@@ -36,7 +36,7 @@ from tqdm import tqdm
 
 from pryngles.common import VERB_NONE, Verbose
 from pryngles.consts import DEG
-from pryngles.legacy import RingedPlanet, Const
+from pryngles.legacy import Const, RingedPlanet
 from pryngles.science import Science
 from pryngles.version import version
 
