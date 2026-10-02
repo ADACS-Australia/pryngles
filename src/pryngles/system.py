@@ -15,6 +15,7 @@
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY
+from pryngles.misc import get_data, flatten
 
 # --------------------------------------------------
 # External required packages
@@ -329,8 +330,8 @@ class System(PrynglesCommon):
         if self.extension not in ["pixx", "cpixx"]:
             raise ValueError(f"The extension '{self.extension}' is not recognized (available 'pixx', 'cpixx')")
 
-        fname_planet = Misc.get_data("fou_gasplanet_optical_50.dat")
-        fname_ring = Misc.get_data("fou_ring_0_4_0_8.dat")
+        fname_planet = get_data("fou_gasplanet_optical_50.dat")
+        fname_ring = get_data("fou_ring_0_4_0_8.dat")
 
         self.SCp = StokesScatterer(fname_planet)
         self.nmatp = self.SCp.nmat
@@ -582,7 +583,7 @@ class System(PrynglesCommon):
                 body.rbhash = body.name
 
         # Check that all bodies in system is in the orbital tree
-        bodies = list(Misc.flatten(self.orbital_tree))
+        bodies = list(flatten(self.orbital_tree))
         for name, body in self.bodies.items():
             if body.kind == "Ring":
                 continue

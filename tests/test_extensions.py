@@ -52,7 +52,7 @@ def test_ptr2cub_roundtrip():
 
 def test_stokes_planet():
     """``calculate_stokes`` matches the reference planet values."""
-    S = pr.StokesScatterer(pr.Misc.get_data("fou_gasplanet.dat"))
+    S = pr.StokesScatterer(pr.misc.get_data("fou_gasplanet.dat"))
     stokes = S.calculate_stokes(
         np.array([1.0448451569439827]),
         np.array([3.069394277348945]),
@@ -68,7 +68,7 @@ def test_stokes_planet():
 
 def test_stokes_ring_backscattering():
     """``calculate_stokes`` matches the reference ring backscattering values."""
-    S = pr.StokesScatterer(pr.Misc.get_data("fou_ring_0_4_0_8.dat"))
+    S = pr.StokesScatterer(pr.misc.get_data("fou_ring_0_4_0_8.dat"))
     stokes = S.calculate_stokes(
         np.array([1.490116119384765625e-08]),
         np.array([0.0]),
@@ -89,7 +89,7 @@ def test_stokes_ring_backscattering():
 
 def test_stokes_ring_forwardscattering():
     """``calculate_stokes`` matches the reference ring forwardscattering values."""
-    S = pr.StokesScatterer(pr.Misc.get_data("fou_ring_0_4_0_8.dat"))
+    S = pr.StokesScatterer(pr.misc.get_data("fou_ring_0_4_0_8.dat"))
     stokes = S.calculate_stokes(
         np.array([1.601029385538801364e00]),
         np.array([1.601029385538801364e00]),

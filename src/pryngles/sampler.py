@@ -26,6 +26,7 @@ from matplotlib.patches import Circle
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY, VERB_SYSTEM
+from pryngles.misc import get_data
 
 
 # --------------------------------------------------
@@ -160,7 +161,7 @@ class Sampler(PrynglesCommon):
             )
 
             Npreset = self.Npreset
-            filename = Misc.get_data(f"sampler_presets/sample_{geometry}_N_{Npreset}.pkl")
+            filename = get_data(f"sampler_presets/sample_{geometry}_N_{Npreset}.pkl")
             verbose(VERB_SYSTEM, f"Reading preset data from {filename}")
             self.load_from(filename)
             self.Npreset = Npreset

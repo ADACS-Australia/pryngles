@@ -22,9 +22,10 @@ import glob
 
 from pryngles import *
 from pryngles.common import verbose, VERB_SIMPLE
+from pryngles.misc import get_data
 
 # Load library
-libfile = glob.glob(Misc.get_data("../cpixx*.so"))[0]
+libfile = glob.glob(get_data("../cpixx*.so"))[0]
 cpixx_ext = ctypes.CDLL(libfile)
 
 # --------------------------------------------------

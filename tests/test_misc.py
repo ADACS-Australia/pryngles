@@ -6,23 +6,24 @@ import pandas as pd
 import pytest
 
 import pryngles as pr
+from pryngles.misc import get_data, flatten, get_methods, calc_hash, retrieve_data
 
 
 def test_get_data():
     """``get_data`` returns the full path to a packaged data file."""
-    path = pr.Misc.get_data("diffuse_reflection_function.data")
+    path = get_data("diffuse_reflection_function.data")
     assert path == pr.ROOTDIR + "/data/diffuse_reflection_function.data"
 
 
 def test_flatten():
     """``flatten`` recursively flattens nested iterables but keeps strings atomic."""
-    assert list(pr.Misc.flatten(["hola"])) == ["hola"]
-    assert list(pr.Misc.flatten(["hola", ["perro", "gato"]])) == [
+    assert list(flatten(["hola"])) == ["hola"]
+    assert list(flatten(["hola", ["perro", "gato"]])) == [
         "hola",
         "perro",
         "gato",
     ]
-    assert list(pr.Misc.flatten([[1, "perro"], object, 2.5])) == [
+    assert list(flatten([[1, "perro"], object, 2.5])) == [
         1,
         "perro",
         object,
@@ -48,7 +49,7 @@ class _SampleClass:
 
 def test_get_methods():
     """``get_methods`` returns the sorted public methods of a class."""
-    methods = pr.Misc.get_methods(_SampleClass)
+    methods = get_methods(_SampleClass)
     assert methods == sorted(methods)
     assert methods == ["_private_method", "another_public", "public_method"]
 
@@ -56,14 +57,14 @@ def test_get_methods():
 def test_calc_hash_dict():
     """``calc_hash`` is deterministic for a given dict."""
     d = dict(a=1, b=3, c=pd)
-    assert pr.Misc.calc_hash(d) == pr.Misc.calc_hash(d)
+    assert calc_hash(d) == calc_hash(d)
 
 
 def test_calc_hash_object():
     """``calc_hash`` works on arbitrary objects and classes."""
     # Hash is not deterministic on objects, but it should return a string.
-    assert isinstance(pr.Misc.calc_hash(_SampleClass()), str)
-    assert isinstance(pr.Misc.calc_hash(_SampleClass), str)
+    assert isinstance(calc_hash(_SampleClass()), str)
+    assert isinstance(calc_hash(_SampleClass), str)
 
 
 @mock.patch("pryngles.misc.gdown.download")
@@ -76,7 +77,7 @@ def test_retrieve_data(mock_read, mock_download, tmp_path):
         index=["star.dat", "planet.dat"],
     )
 
-    files = pr.Misc.retrieve_data(["star.dat", "planet.dat"], path=str(tmp_path), quiet=True)
+    files = retrieve_data(["star.dat", "planet.dat"], path=str(tmp_path), quiet=True)
 
     # The index file is downloaded once, plus one download per requested file.
     assert mock_read.call_count == 1
@@ -92,4 +93,4 @@ def test_retrieve_data_missing(mock_read, mock_download, tmp_path):
     mock_read.return_value = index
 
     with pytest.raises(ValueError, match="not available"):
-        pr.Misc.retrieve_data("missing.dat", path=str(tmp_path), quiet=True)
+        retrieve_data("missing.dat", path=str(tmp_path), quiet=True)

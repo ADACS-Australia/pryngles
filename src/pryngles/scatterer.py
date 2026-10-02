@@ -25,6 +25,7 @@ from scipy.optimize import bisect
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE
+from pryngles.misc import calc_hash, get_data
 
 # --------------------------------------------------
 # Class Scatterer
@@ -80,7 +81,7 @@ class Scatterer(PrynglesCommon, ABC):
         """Method to register a particular scatterer"""
         scatterer.params = params
         scatterer.params["name"] = scatterer.__class__.__name__
-        scatterer.hash = Misc.calc_hash(params)
+        scatterer.hash = calc_hash(params)
         if scatterer.hash in SCATTERERS_CATALOGUE:
             verbose(
                 VERB_SIMPLE,
@@ -405,7 +406,7 @@ class LambertianGrayAtmosphere(Scatterer):
         Notes:
             Tab. (2.3) in Sobolev (1975).
         """
-        data_ss = np.loadtxt(Misc.get_data("diffuse_reflection_function.data"))
+        data_ss = np.loadtxt(get_data("diffuse_reflection_function.data"))
         eta = data_ss[1:, 0]
         gamma = data_ss[0, 1:]
         f = data_ss[1:, 1:]

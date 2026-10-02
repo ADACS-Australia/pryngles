@@ -31,7 +31,7 @@ warnings.filterwarnings("ignore")
 # JupDev: Jupyter compatibility
 import IPython.core.autocall as autocall
 from IPython import get_ipython
-from IPython.display import HTML, Image, display
+from IPython.display import Image
 
 # --------------------------------------------------
 # Stand alone code of the module
@@ -44,7 +44,7 @@ from pryngles.consts import *
 
 # Utility modules
 from pryngles.common import Verbose, PrynglesCommon, VERB_NONE, VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, VERB_DEEP, VERB_ALL
-from pryngles.misc import *
+from pryngles.misc import print_df, DATA_INDEX
 from pryngles.extensions import *
 from pryngles.science import *
 from pryngles.plot import *
@@ -69,5 +69,4 @@ def _welcome():
 _welcome()
 
 # This aliases does not work in modules
-print_df = Misc.print_df
 sci = Science

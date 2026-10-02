@@ -25,6 +25,7 @@ from scipy.interpolate import interp1d
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY
+from pryngles.misc import get_data
 
 # --------------------------------------------------
 # Class Body
@@ -385,7 +386,7 @@ class Planet(Body):
         self.update_planet(**props)
 
         # Initialize Stokes Scatterer
-        self.Stokes = StokesScatterer(Misc.get_data(self.physics["fourier_file"]))
+        self.Stokes = StokesScatterer(get_data(self.physics["fourier_file"]))
 
     def _update_planet_properties(self):
         verbose(VERB_VERIFY, "Updating Planet properties")
@@ -615,7 +616,7 @@ class Ring(Body):
         self.update_ring(**props)
 
         # Initialize Stokes Scatterer
-        self.Stokes = StokesScatterer(Misc.get_data(self.physics["fourier_file"]))
+        self.Stokes = StokesScatterer(get_data(self.physics["fourier_file"]))
 
     def _update_ring_properties(self):
         verbose(VERB_VERIFY, "Updating Ring properties")

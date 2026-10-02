@@ -66,8 +66,6 @@ def test_get_all():
         "DOUBLE",
         "FILE",
         "GSI",
-        "HASH_MAXSIZE",
-        "HTML",
         "IN_JUPYTER",
         "LEGACY_PHYSICAL_PROPERTIES",
         "NORMFACTOR",

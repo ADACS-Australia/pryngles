@@ -25,6 +25,7 @@ import pandas as pd
 # Specialized plotting methods
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY, VERB_SIMPLE, VERB_SYSTEM
+from pryngles.misc import flatten
 
 
 # --------------------------------------------------
@@ -1177,7 +1178,7 @@ class Spangler(PrynglesCommon):
         """
 
         # Convex hulls
-        for name in Misc.flatten([self.name]):
+        for name in flatten([self.name]):
             self.qhulls[name] = []
             cond_obj = self.data.name == name
             center = list(self.data[cond_obj].center_int.iloc[0])
@@ -1864,7 +1865,7 @@ class Spangler(PrynglesCommon):
             raise AssertionError("You must set an intersection vantage point.")
 
         # List of objects in spangler
-        names = list(Misc.flatten([self.name]))
+        names = list(flatten([self.name]))
 
         if len(included):
             excluded = [n for n in names if n not in included]

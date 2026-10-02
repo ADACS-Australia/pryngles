@@ -27,6 +27,7 @@ from scipy.optimize import least_squares
 
 from pryngles import *
 from pryngles.common import verbose, VERB_DEEP
+from pryngles.misc import get_data
 
 math.arctan = math.atan
 math.arcsin = math.asin
@@ -1193,8 +1194,8 @@ class RingedPlanet:
         # Scatterer extension
         extension="cpixx",
         # Fourier coefficient files
-        fname_planet=Misc.get_data("fou_gasplanet_optical_50.dat"),
-        fname_ring=Misc.get_data("fou_ring_0_4_0_8.dat"),
+        fname_planet=get_data("fou_gasplanet_optical_50.dat"),
+        fname_ring=get_data("fou_ring_0_4_0_8.dat"),
         # Maximum angular seperation between center and
         # edge of body before unidirectial assumption is broken, in degrees
         limit_angle_non_uni=0.05,
@@ -2858,7 +2859,7 @@ class RingedPlanet:
         Notes:
             Tab. (2.3) in Sobolev (1975).
         """
-        data_ss = np.loadtxt(Misc.get_data("diffuse_reflection_function.data"))
+        data_ss = np.loadtxt(get_data("diffuse_reflection_function.data"))
         eta = data_ss[1:, 0]
         gamma = data_ss[0, 1:]
         f = data_ss[1:, 1:]
