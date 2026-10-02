@@ -530,7 +530,7 @@ class Spangler(PrynglesCommon):
         else:
             verbose(VERB_VERIFY, "Generating spangler from scratch")
             self.sample = Sampler(N=self.nspangles, seed=seed)
-            exec(f"self.sample.gen_{shape}(**shape_args)")
+            gen = getattr(self.sample, f"gen_{shape}")(**shape_args)
 
         self.shape = shape
         self.data["geometry"] = self.sample.geometry

@@ -125,9 +125,8 @@ class Consts:
 # Physical constants
 GSI = units.convert_G(["m", "s", "kg"])  # G constant in SI units
 for const in "times", "lengths", "masses":
-    values = eval(f"units.{const}_SI.copy()")
-    for key in values:
-        exec(f"Consts.{key}=values[key]")
+    for key, value in getattr(units, f"{const}_SI").items():
+        setattr(Consts, key, value)
 
 # For compatibility purposes with legacy
 RAD = Consts.rad

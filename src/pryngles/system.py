@@ -885,8 +885,7 @@ class System(PrynglesCommon):
             body.update_body(**props)
         elif body in self.bodies:
             body = self.bodies[body]
-            lkind = body.kind.lower()
-            exec(f"body.update_{lkind}()")
+            getattr(body, f"update_{body.kind.lower()}")()
         else:
             raise AssertionError("You are trying to update a body ({body}) which is not in the system")
 
