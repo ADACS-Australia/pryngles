@@ -20,8 +20,10 @@
 import ctypes
 import glob
 
-from pryngles import *
-from pryngles.common import verbose, VERB_SIMPLE
+import numpy as np
+
+from pryngles.common import VERB_SIMPLE, verbose
+from pryngles.consts import DOUBLE, PDOUBLE, PPDOUBLE, PPPDOUBLE
 from pryngles.misc import get_data
 
 # Load library
