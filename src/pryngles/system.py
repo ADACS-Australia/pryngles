@@ -17,6 +17,7 @@
 # External required packages
 # --------------------------------------------------
 from collections import OrderedDict
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -24,8 +25,8 @@ import rebound as rb
 import spiceypy as spy
 from tqdm import tqdm
 
-from pryngles import *
 from pryngles import science
+from pryngles.body import Body, Detector
 from pryngles.common import VERB_SIMPLE, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     BODY_KINDS,
@@ -41,7 +42,12 @@ from pryngles.consts import (
     SPANGLE_STELLAR,
     Consts,
 )
+from pryngles.extensions import StokesScatterer
+from pryngles.legacy import CanonicalUnits, RingedPlanet
 from pryngles.misc import flatten, get_data
+from pryngles.orbit import OrbitUtil
+from pryngles.scatterer import BlackBodySurface, LambertianGrayAtmosphere, LambertianGraySurface
+from pryngles.spangler import Spangler
 
 
 # --------------------------------------------------
