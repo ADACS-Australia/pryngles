@@ -28,528 +28,536 @@ from scipy.spatial import ConvexHull
 from pryngles.common import VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import SCIENCE_LIMB_NORMALIZATIONS, Consts
 
+# --------------------------------------------------
+# Science methods
+# --------------------------------------------------
+"""
+The Science module contains utility methods useful for geometric and scientific calculations.
+"""
 
 # --------------------------------------------------
-# Class Science
+# Tested methods from module file science
 # --------------------------------------------------
-class Science(PrynglesCommon):
-    """
-    The Science utility Class defines all the methods to geometric and scientific useful calculations.
-    It is a static Class, i.e., that cannot be instantiated and their methods work as regular functions.
-    """
 
-    # --------------------------------------------------
-    # Tested methods from module file science
-    # --------------------------------------------------
 
-    def spherical(xyz):
-        r"""
-        Transform cartesian coordinates into spherical coordinates
+def spherical(xyz):
+    r"""
+    Transform cartesian coordinates into spherical coordinates
 
-        Parameters
-        ----------
-        xyz : `np.array(N = 3)`
-            Array with components of Cartesian Coordinates
+    Parameters
+    ----------
+    xyz : `np.array(N = 3)`
+        Array with components of Cartesian Coordinates
 
-        Returns
-        -------
-        :
-            rqf : `np.array(N = 3)`
-                Spherical coordinates :math:`(r, θ, \phi)` where :math:`θ` is azimutal angle and :math:`\phi` is
-                elevation (complement of polar angle).
-
-        Examples
-        ------------
-        >>> xyz = [1, 1, 1]
-        >>>
-        >>> # To Spherical
-        >>> pr.Science.spherical(xyz)
-        array([1.73205081, 0.78539816, 0.61547971])
-        """
-        r, theta, phi = spy.reclat(np.array(xyz))
-        theta = 2 * mh.pi + theta if theta < 0 else theta
-
-        return np.array([r, theta, phi])
-
-    def cospherical(xyz):
-        r"""Transform cartesian coordinates into cosine/sine of spherical angles
-
-        Parameters
-        ----------
-        xyz : `np.array(N = 3)`
-            Array with components of Cartesian Coordinates
-
-        Returns
-        -------
-        :
-            cqsqcf : `np.array (N = 3)`
-                Cosine/Sine of spherical angles (:math:`\cos θ`, :math:`\sin θ`, :math:`\sin\phi`) where :math:`θ` is
-                azimutal angle and :math:`\phi` is elevation (complement of polar angle).
-
-        Examples
-        ------------
-        >>> xyz = [1, 1, 1]
-        >>>
-        >>> # To Cospherical
-        >>> pr.Science.cospherical(xyz)
-        array([0.70710678, 0.70710678, 0.57735027])
-        """
-        rho = (xyz[0] ** 2 + xyz[1] ** 2) ** 0.5
-        sf = xyz[2] / (rho**2 + xyz[2] ** 2) ** 0.5
-        cq = xyz[0] / rho if not mh.isclose(rho, 0) else 1
-        sq = xyz[1] / rho if not mh.isclose(rho, 0) else 0
-        return np.array([cq, sq, sf])
-
-    def pcylindrical(xyz):
-        """Transform cartesian coordinates into pseudo cylindrical coordinates
-
-        Parameters
-        ----------
-        xyz : `np.array`
-            Array with components of Cartesian Coordinates
-
-        Returns
-        ------------
-        :
-            rhoazcf : `np.array`
-                Cylindrical coordinates expresed as :math:`\\rho, \\phi` (azimutal angle)
-                and :math:`\\cos\\theta` (cosine of polar angle).
-
-        Examples
-        ------------
-        >>> xyz = [1, 1, 1]
-        >>>
-        >>> # To pseudoCylindrical
-        >>> pr.Science.pcylindricak(xyz)
-        array([1.41421356, 0.78539816, 0.57735027])
-        """
-        xyz = np.asarray(xyz)
-
-        # Check if single input or multiple inputs
-        single_input = xyz.ndim == 1
-        if single_input:
-            xyz = xyz[np.newaxis, :]  # convertir a (1, 3)
-
-        # Cartesian components
-        x, y, z = xyz[:, 0], xyz[:, 1], xyz[:, 2]
-
-        rho = np.sqrt(x**2 + y**2)
-        r = np.sqrt(rho**2 + z**2)
-        phi = np.arctan2(y, x)
-        phi = np.where(phi >= 0, phi, 2 * np.pi + phi)
-        cost = np.where(np.isclose(r, 0), np.copysign(1, z), z / r)
-
-        result = np.column_stack((rho, phi, cost))
-
-        return result[0] if single_input else result
-
-    def cartesian(rqf):
-        r"""
-        Transform spherical coordinates into cartesian coordinates
-
-        Parameters
-        ----------
+    Returns
+    -------
+    :
         rqf : `np.array(N = 3)`
             Spherical coordinates :math:`(r, θ, \phi)` where :math:`θ` is azimutal angle and :math:`\phi` is
             elevation (complement of polar angle).
 
-        Returns
-        ------------
-        :
-            xyz : `np.array(N = 3)`
-                Array with components of Cartesian Coordinates
+    Examples
+    ------------
+    >>> xyz = [1, 1, 1]
+    >>>
+    >>> # To Spherical
+    >>> pr.spherical(xyz)
+    array([1.73205081, 0.78539816, 0.61547971])
+    """
+    r, theta, phi = spy.reclat(np.array(xyz))
+    theta = 2 * mh.pi + theta if theta < 0 else theta
 
-        Examples
-        ------------
-        >>> xyz = [1, 1, 1]
-        >>>
-        >>> # From Spherical to Cartesian
-        >>> pr.Science.cartesian([1, 30*pr.consts.Consts.deg, 60*pr.consts.Consts.deg])
-        array([0.4330127, 0.25     , 0.8660254])
-        """
-        return spy.latrec(rqf[0], rqf[1], rqf[2])
+    return np.array([r, theta, phi])
 
-    def direction(*args):
-        """Calculate the direction on which a vector is pointing
 
-        Parameters
-        --------------
-            args : `np.array`
-                If ``len(args) == 2``, components are longitude and latitude (:math:`\\lambda,\\beta`)
-                of the direction (in degrees).
-                If ``len(args) == 3``, components are cartisian coordinates of the vector :math:`\\hat{n}`.
+def cospherical(xyz):
+    r"""Transform cartesian coordinates into cosine/sine of spherical angles
 
-        Returns
-        ------------
-        :
-            nx, ny, nz: `float`
-                Cartesian components (if ``len(args) == 2``) of the unitary direction vector :math:`\\hat{n}`.
+    Parameters
+    ----------
+    xyz : `np.array(N = 3)`
+        Array with components of Cartesian Coordinates
 
-            lamb, beta: `float` [deg]
-                If ``len(args) == 3``, Longitude and Latitude (angle with respect to x-axis
-                & elevation angle with respect to xy-plane)
+    Returns
+    -------
+    :
+        cqsqcf : `np.array (N = 3)`
+            Cosine/Sine of spherical angles (:math:`\cos θ`, :math:`\sin θ`, :math:`\sin\phi`) where :math:`θ` is
+            azimutal angle and :math:`\phi` is elevation (complement of polar angle).
 
-        Raises
-        ----------
-        ValueError
-            In case you provided a wrong number of arguments ``{args}``. It should be 2 or 3 arguments
-        ValueError
-            If Latitude valur for elevation angle should be is not in the interval [-90, 90]
+    Examples
+    ------------
+    >>> xyz = [1, 1, 1]
+    >>>
+    >>> # To Cospherical
+    >>> pr.cospherical(xyz)
+    array([0.70710678, 0.70710678, 0.57735027])
+    """
+    rho = (xyz[0] ** 2 + xyz[1] ** 2) ** 0.5
+    sf = xyz[2] / (rho**2 + xyz[2] ** 2) ** 0.5
+    cq = xyz[0] / rho if not mh.isclose(rho, 0) else 1
+    sq = xyz[1] / rho if not mh.isclose(rho, 0) else 0
+    return np.array([cq, sq, sf])
 
-        Examples
-        -----------
-        >>> # Get the Unitary Vector in the direction long = 30, lat = 60
-        >>> Science.direction(30,60)
-        array([0.4330127, 0.25, 0.8660254])
 
-        >>> # Get the Long, Lat values for a direction vector
-        >>> Science.direction(1, 1, 0)
-        (45.0, 0.0)
-        """
-        if len(args) == 3:
-            rqf = Science.spherical(list(args))
-            return rqf[1] * Consts.rad, rqf[2] * Consts.rad
-        elif len(args) == 2:
-            if abs(args[1]) > 90:
-                raise ValueError("Elevation angle should be in the interval [-90,90]")
-            nvec = Science.cartesian([1, args[0] * Consts.deg, args[1] * Consts.deg])
-            return nvec
+def pcylindrical(xyz):
+    """Transform cartesian coordinates into pseudo cylindrical coordinates
+
+    Parameters
+    ----------
+    xyz : `np.array`
+        Array with components of Cartesian Coordinates
+
+    Returns
+    ------------
+    :
+        rhoazcf : `np.array`
+            Cylindrical coordinates expresed as :math:`\\rho, \\phi` (azimutal angle)
+            and :math:`\\cos\\theta` (cosine of polar angle).
+
+    Examples
+    ------------
+    >>> xyz = [1, 1, 1]
+    >>>
+    >>> # To pseudoCylindrical
+    >>> pr.pcylindricak(xyz)
+    array([1.41421356, 0.78539816, 0.57735027])
+    """
+    xyz = np.asarray(xyz)
+
+    # Check if single input or multiple inputs
+    single_input = xyz.ndim == 1
+    if single_input:
+        xyz = xyz[np.newaxis, :]  # convertir a (1, 3)
+
+    # Cartesian components
+    x, y, z = xyz[:, 0], xyz[:, 1], xyz[:, 2]
+
+    rho = np.sqrt(x**2 + y**2)
+    r = np.sqrt(rho**2 + z**2)
+    phi = np.arctan2(y, x)
+    phi = np.where(phi >= 0, phi, 2 * np.pi + phi)
+    cost = np.where(np.isclose(r, 0), np.copysign(1, z), z / r)
+
+    result = np.column_stack((rho, phi, cost))
+
+    return result[0] if single_input else result
+
+
+def cartesian(rqf):
+    r"""
+    Transform spherical coordinates into cartesian coordinates
+
+    Parameters
+    ----------
+    rqf : `np.array(N = 3)`
+        Spherical coordinates :math:`(r, θ, \phi)` where :math:`θ` is azimutal angle and :math:`\phi` is
+        elevation (complement of polar angle).
+
+    Returns
+    ------------
+    :
+        xyz : `np.array(N = 3)`
+            Array with components of Cartesian Coordinates
+
+    Examples
+    ------------
+    >>> xyz = [1, 1, 1]
+    >>>
+    >>> # From Spherical to Cartesian
+    >>> pr.cartesian([1, 30*pr.consts.Consts.deg, 60*pr.consts.Consts.deg])
+    array([0.4330127, 0.25     , 0.8660254])
+    """
+    return spy.latrec(rqf[0], rqf[1], rqf[2])
+
+
+def direction(*args):
+    """Calculate the direction on which a vector is pointing
+
+    Parameters
+    --------------
+        args : `np.array`
+            If ``len(args) == 2``, components are longitude and latitude (:math:`\\lambda,\\beta`)
+            of the direction (in degrees).
+            If ``len(args) == 3``, components are cartisian coordinates of the vector :math:`\\hat{n}`.
+
+    Returns
+    ------------
+    :
+        nx, ny, nz: `float`
+            Cartesian components (if ``len(args) == 2``) of the unitary direction vector :math:`\\hat{n}`.
+
+        lamb, beta: `float` [deg]
+            If ``len(args) == 3``, Longitude and Latitude (angle with respect to x-axis
+            & elevation angle with respect to xy-plane)
+
+    Raises
+    ----------
+    ValueError
+        In case you provided a wrong number of arguments ``{args}``. It should be 2 or 3 arguments
+    ValueError
+        If Latitude valur for elevation angle should be is not in the interval [-90, 90]
+
+    Examples
+    -----------
+    >>> # Get the Unitary Vector in the direction long = 30, lat = 60
+    >>> direction(30,60)
+    array([0.4330127, 0.25, 0.8660254])
+
+    >>> # Get the Long, Lat values for a direction vector
+    >>> direction(1, 1, 0)
+    (45.0, 0.0)
+    """
+    if len(args) == 3:
+        rqf = spherical(list(args))
+        return rqf[1] * Consts.rad, rqf[2] * Consts.rad
+    elif len(args) == 2:
+        if abs(args[1]) > 90:
+            raise ValueError("Elevation angle should be in the interval [-90,90]")
+        nvec = cartesian([1, args[0] * Consts.deg, args[1] * Consts.deg])
+        return nvec
+    else:
+        raise ValueError("You provided a wrong number of arguments '{args}'.  It should be 2 or 3'")
+
+
+def rotation_matrix(ez, alpha):
+    """
+    Set a rotation matrix from the direction of the :math:`\\hat{e_z}` vector and a rotation angle :math:`\\alpha`
+
+    Parameters
+    -----------------------
+    ez : `np.array(N = 3)`
+        Vector in the direction of the z-axis.
+
+    alpha : `float` [rad]
+        Rotation angle of the x-axis around z-axis (clockwise)
+
+    Returns
+    ---------------
+    :
+        Msys2uni : `np.array(3x3)`
+            Rotation matrix from the system defined by :math:`\\hat{e_z}` and the universal system.
+
+        Muni2sys : `np.array(3x3)`
+            Rotation matrix from the universal system to the system defined by :math:`\\hat{e_z}`
+
+    Note
+    ----------------
+    Universal System refers to the euclidean base :math:`\\{\\hat{e_i}\\}`
+
+    Examples
+    -----------
+    >>> # Rotation matrices from the direction of the z-axis and a roll in the x-y plane
+    >>> Msys2uni, Muni2sys = rotation_matrix([0, 0, 1], 0)
+    >>> print(Msys2uni)
+    [[1. 0. 0.]
+        [0. 1. 0.]
+        [0. 0. 1.]]
+    """
+    ez, one = spy.unorm(ez)
+    ex = spy.ucrss([0, 0, 1], ez)  # Spice is 5 faster for vcrss
+    if spy.vnorm(ex) == 0:
+        ex = np.array([1, 0, 0]) if np.sum(ez) > 0 else np.array([-1, 0, 0])
+    ey = spy.ucrss(ez, ex)
+    Msys2uni = np.array(list(np.vstack((ex, ey, ez)).transpose())).reshape((3, 3))
+    Muni2sys = spy.invert(Msys2uni)
+    verbose(VERB_VERIFY, "Rotation axis:", ex, ey, ez)
+    return Msys2uni, Muni2sys
+
+
+def limb_darkening(rho, cs=None, N=None):
+    """
+    Non-Linear model for Limb-Darkening computation
+
+    Parameters
+    -----------------
+    rho : `float`
+        Distance to center of the star in units of stellar radius.
+
+    cs : `list`
+        List of limb darkening coefficients. Its length determines the model to use between Linear,
+        Quadratic and 3/4 Parameter Non-Linear | **Default** = `[0.6562]`
+
+    N : `float`
+        Normalization constant | **Default** = `None`
+
+    Returns
+    -------------
+    :
+        I : `float`
+        Normalized intensity of the star at projected distance :math:`\\rho`.
+
+    Warnings
+    -------------
+    This method will replace :any:`legacy.Util.limbDarkening` for versions > 0.10.x
+
+    Raises
+    ------------------
+    ValueError
+        If `len(cs) > 4`. Limb darkening model not implemented for order greater than 4
+
+    Note
+    -------------
+    This method implements the non-linear limb-darkening model described in **[1]**
+    and implements limb darkening coefficients from **[2]**.
+
+    .. math::
+
+        \\mu = (1-\\rho^2)^{1/2}
+
+    .. math::
+
+        \\frac{I(\\mu)}{I(0)} = 1-\\sum_n c_n(1-\\mu^{n/2})
+
+    **[1]** Models in: https://pages.jh.edu/~dsing3/David_Sing/Limb_Darkening.html
+
+    **[2]** Coefficients available at: https://pages.jh.edu/~dsing3/LDfiles/LDCs.CoRot.Table1.txt
+
+    Examples
+    -------------
+    >>> # Creating a Figure Plot
+    >>> fig = plt.figure()
+    >>> ax = fig.gca()
+    >>>
+    >>> # Projected distance to Star center
+    >>> rhos = np.linspace(0, 1, 100) # [R_star] units
+    >>>
+    >>> # Linear Model Computation
+    >>> coefs = [0.6550]
+    >>> ax.plot(rhos, limb_darkening(rhos,coefs), label = f"coefs = {coefs}")
+    >>>
+    >>> # Quadratic Model Computation
+    >>> coefs = [0.6022, 0.0654]
+    >>> ax.plot(rhos, limb_darkening(rhos, coefs), label = f"coefs = {coefs}")
+    >>>
+    >>> # 3 Parameter Non-Linear Model Computation
+    >>> coefs=[0.9724, -0.4962, 0.2029]
+    >>> ax.plot(rhos,limb_darkening(rhos,coefs),label=f"coefs = {coefs}")
+    >>>
+    >>> # 4 Parameter Non-Linear Model Computation
+    >>> coefs=[-0.2018, 2.1000, -2.0247, 0.7567]
+    >>> ax.plot(rhos, limb_darkening(rhos, coefs), label = f"coefs = {coefs}")
+    >>>
+    >>> # For decoration purposes
+    >>> ax.legend()
+    >>> ax.set_xlabel(r"$\\rho$")
+    >>> ax.set_ylabel(r"$I(\\rho)/I(0)$")
+
+    .. image:: images/science_limb.png
+        :align: center
+        :width: 600px
+    """
+    if cs is None:
+        cs = [0.6562]
+    mu = (1 - rho**2) ** 0.5
+    order = len(cs)
+
+    # Calculate normalization constant
+    if N is None:
+        chash = hash(tuple(cs))
+        if chash in SCIENCE_LIMB_NORMALIZATIONS:
+            N = SCIENCE_LIMB_NORMALIZATIONS[chash]
         else:
-            raise ValueError("You provided a wrong number of arguments '{args}'.  It should be 2 or 3'")
+            integrand = lambda rho: limb_darkening(rho, cs, N=1) * 2 * np.pi * rho
+            N = quad(integrand, 0.0, 1.0, epsrel=1e-5)[0]
+            verbose(VERB_VERIFY, f"Normalization of limb darkening function for cs = {cs}, N = {N}")
+            SCIENCE_LIMB_NORMALIZATIONS[chash] = N
 
-    def rotation_matrix(ez, alpha):
-        """
-        Set a rotation matrix from the direction of the :math:`\\hat{e_z}` vector and a rotation angle :math:`\\alpha`
+    if order == 0:
+        intensity = np.ones_like(rho)
+    elif order == 1:
+        intensity = 1 - cs[0] * (1 - mu)
+    elif order == 2:
+        intensity = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu) ** 2
+    elif order == 3:
+        intensity = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu**1.5) - cs[2] * (1 - mu**2)
+    elif order == 4:
+        intensity = 1 - cs[0] * (1 - mu**0.5) - cs[1] * (1 - mu) - cs[2] * (1 - mu**1.5) - cs[3] * (1 - mu**2)
+    else:
+        raise ValueError(f"Limb darkening not implemented for order {order}")
+    return intensity / N
 
-        Parameters
-        -----------------------
-        ez : `np.array(N = 3)`
-            Vector in the direction of the z-axis.
 
-        alpha : `float` [rad]
-            Rotation angle of the x-axis around z-axis (clockwise)
+def blackbody_intensity(wavelength, temperature):
+    """
+    Planck's Blackbody distribution function for Intensity :math:`B_λ`
 
-        Returns
-        ---------------
-        :
-            Msys2uni : `np.array(3x3)`
-                Rotation matrix from the system defined by :math:`\\hat{e_z}` and the universal system.
+    :math:`B_λ(λ, T) = (2hc²/λ⁵) * 1/(e^(hc/λk_BT) - 1)`
 
-            Muni2sys : `np.array(3x3)`
-                Rotation matrix from the universal system to the system defined by :math:`\\hat{e_z}`
+    Parameters
+    ----------
+    wavelength : float or ndarray
+        Longitud de onda [m]
+    temperature : float or ndarray
+        Temperatura [K]
 
-        Note
-        ----------------
-        Universal System refers to the euclidean base :math:`\\{\\hat{e_i}\\}`
+    Returns
+    -------
+    B_lambda : float or ndarray
+        Specific Intensity for Blackbody Radiation [W·sr⁻¹·m⁻³]
+    """
 
-        Examples
-        -----------
-        >>> # Rotation matrices from the direction of the z-axis and a roll in the x-y plane
-        >>> Msys2uni, Muni2sys = Science.rotation_matrix([0, 0, 1], 0)
-        >>> print(Msys2uni)
-        [[1. 0. 0.]
-         [0. 1. 0.]
-         [0. 0. 1.]]
-        """
-        ez, one = spy.unorm(ez)
-        ex = spy.ucrss([0, 0, 1], ez)  # Spice is 5 faster for vcrss
-        if spy.vnorm(ex) == 0:
-            ex = np.array([1, 0, 0]) if np.sum(ez) > 0 else np.array([-1, 0, 0])
-        ey = spy.ucrss(ez, ex)
-        Msys2uni = np.array(list(np.vstack((ex, ey, ez)).transpose())).reshape((3, 3))
-        Muni2sys = spy.invert(Msys2uni)
-        verbose(VERB_VERIFY, "Rotation axis:", ex, ey, ez)
-        return Msys2uni, Muni2sys
+    # Constantes físicas (SI)
+    h = 6.62607015e-34  # Constante de Planck [J·s]
+    c = 299792458  # Velocidad de la luz [m/s]
+    k_B = 1.380649e-23  # Constante de Boltzmann [J/K]
 
-    def limb_darkening(rho, cs=None, N=None):
-        """
-        Non-Linear model for Limb-Darkening computation
+    # Exponente
+    exp_factor = np.exp((h * c) / (wavelength * k_B * temperature)) - 1.0
 
-        Parameters
-        -----------------
-        rho : `float`
-            Distance to center of the star in units of stellar radius.
+    # Función de Planck
+    B_lambda = (2.0 * h * c**2) / (wavelength**5) * (1.0 / exp_factor)
 
-        cs : `list`
-            List of limb darkening coefficients. Its length determines the model to use between Linear,
-            Quadratic and 3/4 Parameter Non-Linear | **Default** = `[0.6562]`
+    return B_lambda
 
-        N : `float`
-            Normalization constant | **Default** = `None`
 
-        Returns
-        -------------
-        :
-            I : `float`
-            Normalized intensity of the star at projected distance :math:`\\rho`.
+def blackbody_photons(wavelength, temperature):
+    """
+    Planck's Blackbody distribution function for Photon Flux :math:`J_λ`
 
-        Warnings
-        -------------
-        This method will replace :any:`legacy.Util.limbDarkening` for versions > 0.10.x
+    :math:`J_λ(λ, T) = πB_λ(λ, T) / (hc/λ)`
 
-        Raises
-        ------------------
-        ValueError
-            If `len(cs) > 4`. Limb darkening model not implemented for order greater than 4
+    Parameters
+    ----------
+    wavelength : float or ndarray
+        Wavelenght [m]
+    temperature : float or ndarray
+        Temperature [K]
 
-        Note
-        -------------
-        This method implements the non-linear limb-darkening model described in **[1]**
-        and implements limb darkening coefficients from **[2]**.
+    Returns
+    -------
+    J_lambda : float or ndarray
+        Specific Photon Flux for Blackbody Radiation [photons·sr⁻¹·m⁻²·s⁻¹·m⁻¹]
+    """
 
-        .. math::
+    # Constantes físicas (SI)
+    h = 6.62607015e-34  # Constante de Planck [J·s]
+    c = 299792458  # Velocidad de la luz [m/s]
 
-            \\mu = (1-\\rho^2)^{1/2}
+    # BlackBody Distribution
+    B_lambda = blackbody_intensity(wavelength, temperature)
 
-        .. math::
+    # BlackBody Photons Distribution
+    J_lambda = mh.pi * B_lambda / (h * c / wavelength)
 
-            \\frac{I(\\mu)}{I(0)} = 1-\\sum_n c_n(1-\\mu^{n/2})
+    return J_lambda
 
-        **[1]** Models in: https://pages.jh.edu/~dsing3/David_Sing/Limb_Darkening.html
 
-        **[2]** Coefficients available at: https://pages.jh.edu/~dsing3/LDfiles/LDCs.CoRot.Table1.txt
+def integrate_planck_flux(T, lambda_min, lambda_max):
+    r"""
+    Integrate Planck's blackbody distribution function over a wavelength range.
 
-        Examples
-        -------------
-        >>> # Creating a Figure Plot
-        >>> fig = plt.figure()
-        >>> ax = fig.gca()
-        >>>
-        >>> # Projected distance to Star center
-        >>> rhos = np.linspace(0, 1, 100) # [R_star] units
-        >>>
-        >>> # Linear Model Computation
-        >>> coefs = [0.6550]
-        >>> ax.plot(rhos, Science.limb_darkening(rhos,coefs), label = f"coefs = {coefs}")
-        >>>
-        >>> # Quadratic Model Computation
-        >>> coefs = [0.6022, 0.0654]
-        >>> ax.plot(rhos, Science.limb_darkening(rhos, coefs), label = f"coefs = {coefs}")
-        >>>
-        >>> # 3 Parameter Non-Linear Model Computation
-        >>> coefs=[0.9724, -0.4962, 0.2029]
-        >>> ax.plot(rhos,Science.limb_darkening(rhos,coefs),label=f"coefs = {coefs}")
-        >>>
-        >>> # 4 Parameter Non-Linear Model Computation
-        >>> coefs=[-0.2018, 2.1000, -2.0247, 0.7567]
-        >>> ax.plot(rhos, Science.limb_darkening(rhos, coefs), label = f"coefs = {coefs}")
-        >>>
-        >>> # For decoration purposes
-        >>> ax.legend()
-        >>> ax.set_xlabel(r"$\\rho$")
-        >>> ax.set_ylabel(r"$I(\\rho)/I(0)$")
+    :math:`\int_{\lambda_{min}}^{\lambda_{max}} B_λ(λ, T) dλ`
 
-        .. image:: images/science_limb.png
-            :align: center
-            :width: 600px
-        """
-        if cs is None:
-            cs = [0.6562]
-        mu = (1 - rho**2) ** 0.5
-        order = len(cs)
+    Parameters
+    ----------
+    T : float
+        Temperature of the blackbody [K]
+    lambda_min : float
+        Lower limit of wavelength integration [m]
+    lambda_max : float
+        Upper limit of wavelength integration [m]
 
-        # Calculate normalization constant
-        if N is None:
-            chash = hash(tuple(cs))
-            if chash in SCIENCE_LIMB_NORMALIZATIONS:
-                N = SCIENCE_LIMB_NORMALIZATIONS[chash]
-            else:
-                integrand = lambda rho: Science.limb_darkening(rho, cs, N=1) * 2 * np.pi * rho
-                N = quad(integrand, 0.0, 1.0, epsrel=1e-5)[0]
-                verbose(VERB_VERIFY, f"Normalization of limb darkening function for cs = {cs}, N = {N}")
-                SCIENCE_LIMB_NORMALIZATIONS[chash] = N
+    Returns
+    -------
+    result : float
+        Integrated spectral radiance over the wavelength interval [W·sr⁻¹·m⁻²]
+    """
 
-        if order == 0:
-            intensity = np.ones_like(rho)
-        elif order == 1:
-            intensity = 1 - cs[0] * (1 - mu)
-        elif order == 2:
-            intensity = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu) ** 2
-        elif order == 3:
-            intensity = 1 - cs[0] * (1 - mu) - cs[1] * (1 - mu**1.5) - cs[2] * (1 - mu**2)
-        elif order == 4:
-            intensity = 1 - cs[0] * (1 - mu**0.5) - cs[1] * (1 - mu) - cs[2] * (1 - mu**1.5) - cs[3] * (1 - mu**2)
-        else:
-            raise ValueError(f"Limb darkening not implemented for order {order}")
-        return intensity / N
+    result, error = quad(blackbody_intensity, lambda_min, lambda_max, args=(T,))
 
-    def blackbody_intensity(wavelength, temperature):
-        """
-        Planck's Blackbody distribution function for Intensity :math:`B_λ`
+    return result
 
-        :math:`B_λ(λ, T) = (2hc²/λ⁵) * 1/(e^(hc/λk_BT) - 1)`
 
-        Parameters
-        ----------
-        wavelength : float or ndarray
-            Longitud de onda [m]
-        temperature : float or ndarray
-            Temperatura [K]
+def integrate_planck_photons(T, lambda_min, lambda_max):
+    r"""
+    Integrate Planck's blackbody photon distribution function over a wavelength range.
 
-        Returns
-        -------
-        B_lambda : float or ndarray
-            Specific Intensity for Blackbody Radiation [W·sr⁻¹·m⁻³]
-        """
+    :math:`\int_{\lambda_{min}}^{\lambda_{max}} J_λ(λ, T) dλ`
 
-        # Constantes físicas (SI)
-        h = 6.62607015e-34  # Constante de Planck [J·s]
-        c = 299792458  # Velocidad de la luz [m/s]
-        k_B = 1.380649e-23  # Constante de Boltzmann [J/K]
+    Parameters
+    ----------
+    T : float
+        Temperature of the blackbody [K]
+    lambda_min : float
+        Lower limit of wavelength integration [m]
+    lambda_max : float
+        Upper limit of wavelength integration [m]
 
-        # Exponente
-        exp_factor = np.exp((h * c) / (wavelength * k_B * temperature)) - 1.0
+    Returns
+    -------
+    result : float
+        Integrated photon flux over the wavelength interval [photons·sr⁻¹·m⁻²·s⁻¹]
+    """
 
-        # Función de Planck
-        B_lambda = (2.0 * h * c**2) / (wavelength**5) * (1.0 / exp_factor)
+    result, error = quad(blackbody_photons, lambda_min, lambda_max, args=(T,))
 
-        return B_lambda
+    return result
 
-    def blackbody_photons(wavelength, temperature):
-        """
-        Planck's Blackbody distribution function for Photon Flux :math:`J_λ`
 
-        :math:`J_λ(λ, T) = πB_λ(λ, T) / (hc/λ)`
-
-        Parameters
-        ----------
-        wavelength : float or ndarray
-            Wavelenght [m]
-        temperature : float or ndarray
-            Temperature [K]
-
-        Returns
-        -------
-        J_lambda : float or ndarray
-            Specific Photon Flux for Blackbody Radiation [photons·sr⁻¹·m⁻²·s⁻¹·m⁻¹]
-        """
-
-        # Constantes físicas (SI)
-        h = 6.62607015e-34  # Constante de Planck [J·s]
-        c = 299792458  # Velocidad de la luz [m/s]
-
-        # BlackBody Distribution
-        B_lambda = Science.blackbody_intensity(wavelength, temperature)
-
-        # BlackBody Photons Distribution
-        J_lambda = mh.pi * B_lambda / (h * c / wavelength)
-
-        return J_lambda
-
-    def integrate_planck_flux(T, lambda_min, lambda_max):
-        r"""
-        Integrate Planck's blackbody distribution function over a wavelength range.
-
-        :math:`\int_{\lambda_{min}}^{\lambda_{max}} B_λ(λ, T) dλ`
-
-        Parameters
-        ----------
-        T : float
-            Temperature of the blackbody [K]
-        lambda_min : float
-            Lower limit of wavelength integration [m]
-        lambda_max : float
-            Upper limit of wavelength integration [m]
-
-        Returns
-        -------
-        result : float
-            Integrated spectral radiance over the wavelength interval [W·sr⁻¹·m⁻²]
-        """
-
-        result, error = quad(Science.blackbody_intensity, lambda_min, lambda_max, args=(T,))
-
-        return result
-
-    def integrate_planck_photons(T, lambda_min, lambda_max):
-        r"""
-        Integrate Planck's blackbody photon distribution function over a wavelength range.
-
-        :math:`\int_{\lambda_{min}}^{\lambda_{max}} J_λ(λ, T) dλ`
-
-        Parameters
-        ----------
-        T : float
-            Temperature of the blackbody [K]
-        lambda_min : float
-            Lower limit of wavelength integration [m]
-        lambda_max : float
-            Upper limit of wavelength integration [m]
-
-        Returns
-        -------
-        result : float
-            Integrated photon flux over the wavelength interval [photons·sr⁻¹·m⁻²·s⁻¹]
-        """
-
-        result, error = quad(Science.blackbody_photons, lambda_min, lambda_max, args=(T,))
-
-        return result
-
-    def get_convexhull(data):
-        if len(data) > 0:
-            try:
-                qhull = ConvexHull(data)
-            except Exception:
-                qhull = None
-        else:
+def get_convexhull(data):
+    if len(data) > 0:
+        try:
+            qhull = ConvexHull(data)
+        except Exception:
             qhull = None
-        return qhull
+    else:
+        qhull = None
+    return qhull
 
-    def points_in_hull(p, hull, tol=1e-12):
-        """
-        Determine if a set of points are inside a convex hull.
 
-        Parameters
-        ---------------
-        p : `np.array(Nx2)`
-            Set of coordinates for points to evaluate.
+def points_in_hull(p, hull, tol=1e-12):
+    """
+    Determine if a set of points are inside a convex hull.
 
-        hull : `scipy.spatial.ConvexHull`
-            Convex hull to evaluate.
+    Parameters
+    ---------------
+    p : `np.array(Nx2)`
+        Set of coordinates for points to evaluate.
 
-        Returns
-        ------------
-        :
-            inside : `np.array(N)`
-                Boolean array telling if points are inside the convex hull.
+    hull : `scipy.spatial.ConvexHull`
+        Convex hull to evaluate.
 
-        References
-        ---------------
-        Method taken from https://stackoverflow.com/a/72483841
+    Returns
+    ------------
+    :
+        inside : `np.array(N)`
+            Boolean array telling if points are inside the convex hull.
 
-        Examples
-        -------------
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>>
-        >>> # Random sampling points to define a ConvexHull
-        >>> rng = np.random.default_rng()
-        >>> points = rng.random((30, 2))
-        >>> hull = ConvexHull(points)
-        >>>
-        >>> # Determine which points are inside the ConvexHull
-        >>> ps = rng.random((30, 2))-0.5
-        >>> cond = points_in_hull(ps,hull)
-        >>>
-        >>> # Plotting the Hull and points in/out it
-        >>> plt.figure()
-        >>> for simplex in hull.simplices:
-        >>>    plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
-        >>>
-        >>> for p in ps[cond]:
-        >>>    plt.plot(p[0],p[1],'r*')
-        >>>
-        >>> for p in ps[~cond]:
-        >>>    plt.plot(p[0],p[1],'co')
+    References
+    ---------------
+    Method taken from https://stackoverflow.com/a/72483841
 
-        .. image:: images/science_convexhull.png
-            :align: center
-            :width: 600px
-        """
-        return np.all(
-            hull.equations[:, :-1] @ p.T + np.repeat(hull.equations[:, -1][None, :], len(p), axis=0).T <= tol, 0
-        )
+    Examples
+    -------------
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>>
+    >>> # Random sampling points to define a ConvexHull
+    >>> rng = np.random.default_rng()
+    >>> points = rng.random((30, 2))
+    >>> hull = ConvexHull(points)
+    >>>
+    >>> # Determine which points are inside the ConvexHull
+    >>> ps = rng.random((30, 2))-0.5
+    >>> cond = points_in_hull(ps,hull)
+    >>>
+    >>> # Plotting the Hull and points in/out it
+    >>> plt.figure()
+    >>> for simplex in hull.simplices:
+    >>>    plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
+    >>>
+    >>> for p in ps[cond]:
+    >>>    plt.plot(p[0],p[1],'r*')
+    >>>
+    >>> for p in ps[~cond]:
+    >>>    plt.plot(p[0],p[1],'co')
+
+    .. image:: images/science_convexhull.png
+        :align: center
+        :width: 600px
+    """
+    return np.all(hull.equations[:, :-1] @ p.T + np.repeat(hull.equations[:, -1][None, :], len(p), axis=0).T <= tol, 0)
 
 
 # --------------------------------------------------

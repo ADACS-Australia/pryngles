@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 import spiceypy as spy
 
+# Specialized plotting methods
+from pryngles import science, Plane
 from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     SAMPLER_GEOMETRY_CIRCLE,
@@ -48,7 +50,6 @@ from pryngles.consts import (
 from pryngles.misc import flatten
 from pryngles.plot import Plot
 from pryngles.sampler import Sampler
-from pryngles.science import Plane, Science
 
 
 class Spangler(PrynglesCommon):
@@ -176,8 +177,8 @@ class Spangler(PrynglesCommon):
         self.geometry = -1
 
         # Direction of vantages point in spherical coordinates
-        self.rqf_obs = Science.spherical(self.n_obs)
-        self.rqf_luz = Science.spherical(self.n_luz)
+        self.rqf_obs = science.spherical(self.n_obs)
+        self.rqf_luz = science.spherical(self.n_luz)
         self.center_luz = None
         self.center_obs = None
 
@@ -229,7 +230,7 @@ class Spangler(PrynglesCommon):
                     [list(self._defaults.values())] * self.nspangles, columns=self._defaults.keys()
                 )
 
-                self.M_equ2ecl[self.name], _ = Science.rotation_matrix(n_equ, alpha_equ)
+                self.M_equ2ecl[self.name], _ = science.rotation_matrix(n_equ, alpha_equ)
 
             else:
                 verbose(VERB_SIMPLE, "Creating a blank Spangler")
@@ -428,7 +429,7 @@ class Spangler(PrynglesCommon):
                 q + q0 + w * t for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0, strict=True)
             ]
             self.data[["x_equ", "y_equ", "z_equ"]] = [
-                Science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])
+                science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])
             ]
 
             qupdate = True
@@ -879,7 +880,7 @@ class Spangler(PrynglesCommon):
             )
             ax.view_init(30, 60)
         else:
-            r_obs, t_obs, f_obs = Science.spherical(self.n_obs)
+            r_obs, t_obs, f_obs = science.spherical(self.n_obs)
             ax.view_init(f_obs * Consts.rad, t_obs * Consts.rad)
 
         # Show vectors
@@ -998,7 +999,7 @@ class Spangler(PrynglesCommon):
         alpha_int = alpha
 
         # Store n_int and d_int for update state purposes
-        self.rqf_int = Science.spherical(n_int)
+        self.rqf_int = science.spherical(n_int)
         self.n_int = n_int
 
         # Distance to center of intersection
@@ -1013,7 +1014,7 @@ class Spangler(PrynglesCommon):
         self.d_int = d_int
 
         # Transformation matrices
-        M_int2ecl, self.M_ecl2int = Science.rotation_matrix(n_int, alpha_int)
+        M_int2ecl, self.M_ecl2int = science.rotation_matrix(n_int, alpha_int)
         self.M_int2ecl = M_int2ecl
 
         # Depending on body
@@ -1055,7 +1056,7 @@ class Spangler(PrynglesCommon):
                     self.data[col] = np.nan
                 if not pd.api.types.is_float_dtype(self.data[col].dtype):
                     self.data[col] = self.data[col].astype(float)
-            self.data.loc[group.index, ["rho_int", "az_int", "cosf_int"]] = Science.pcylindrical(r_int - c_int)
+            self.data.loc[group.index, ["rho_int", "az_int", "cosf_int"]] = science.pcylindrical(r_int - c_int)
 
         # According to distance to intersetcion point generate z_cen_int
         if self.infinite:
@@ -1208,7 +1209,7 @@ class Spangler(PrynglesCommon):
                 # Convex hull of whole objects
                 cond_hull = (cond_obj) & (~self.data[cond_obj].hidden)
                 verbose(VERB_SIMPLE, "Hull points (whole object):", sum(cond_hull))
-                qhull = Science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1235,7 +1236,7 @@ class Spangler(PrynglesCommon):
                 # Convex hull of hidden points (the hole)
                 cond_hull = (cond_obj) & (self.data[cond_obj].hidden)
                 verbose(VERB_SIMPLE, "Hull points (hidden):", sum(cond_hull))
-                qhull = Science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1245,7 +1246,7 @@ class Spangler(PrynglesCommon):
                 # Convex hull of no hidden points
                 cond_hull = (cond_obj) & (~self.data[cond_obj].hidden)
                 verbose(VERB_SIMPLE, "Hull points (visible ring):", sum(cond_hull))
-                qhull = Science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1284,7 +1285,7 @@ class Spangler(PrynglesCommon):
 
         # Set properties
         self.alpha_obs = alpha
-        self.rqf_obs = Science.spherical(self.n_obs)
+        self.rqf_obs = science.spherical(self.n_obs)
         self.center_obs = center.copy() if center else center
 
         self.data.loc[cond, "visible"] = False
@@ -1396,7 +1397,7 @@ class Spangler(PrynglesCommon):
             cond = self.data.name == name
 
         # Set the light source direction in spherical coordinates
-        self.rqf_luz = Science.spherical(self.n_luz)
+        self.rqf_luz = science.spherical(self.n_luz)
 
         # Set the default value of the states to change in False
         self.data.loc[cond, "illuminated"] = False
@@ -1948,7 +1949,7 @@ class Spangler(PrynglesCommon):
                 verbose(VERB_SIMPLE, f"Hull {i + 1} for '{name}' of type '{htype}'")
 
                 # Evaluate conditions
-                inhull = np.asarray(Science.points_in_hull(self.data[["x_int", "y_int"]], qhull), dtype=bool)
+                inhull = np.asarray(science.points_in_hull(self.data[["x_int", "y_int"]], qhull), dtype=bool)
                 inhull = inhull & np.asarray((~cond) & (cond_included), dtype=bool)
                 below = np.array([False] * self.nspangles)
                 above = np.array([False] * self.nspangles)

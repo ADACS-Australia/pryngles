@@ -74,7 +74,7 @@ def test_calc_flyby_latitude():
     num_points = 10
     nvecs = pr.Plot.calc_flyby(normal=[0, 0, 1], lat=lat, num=num_points, start=0, stop=360)
 
-    # ``Science.direction`` uses ``spy.latrec``, so the x/y components are
+    # ``science.direction`` uses ``spy.latrec``, so the x/y components are
     # scaled by ``cos(lat)`` while the z component is ``sin(lat)``.
     for i, vec in enumerate(nvecs):
         lon = i * (360 / (num_points - 1))  # evenly spaced intervals

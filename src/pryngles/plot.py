@@ -37,7 +37,7 @@ from tqdm import tqdm
 from pryngles.common import VERB_NONE, Verbose
 from pryngles.consts import DEG
 from pryngles.legacy import Const, RingedPlanet
-from pryngles.science import Science
+from pryngles import science
 from pryngles.version import version
 
 
@@ -301,12 +301,12 @@ class Plot:
         latp = lat * np.ones_like(lonp)
 
         # Rotation matrices
-        _, Muni2sys = Science.rotation_matrix(normal, 0)
+        _, Muni2sys = science.rotation_matrix(normal, 0)
 
         # Compute directions
         nvecs = np.zeros((num, 3))
         for i in range(num):
-            rp = Science.direction(lonp[i], latp[i])
+            rp = science.direction(lonp[i], latp[i])
             nvecs[i] = spy.mxv(Muni2sys, rp)
 
         return nvecs

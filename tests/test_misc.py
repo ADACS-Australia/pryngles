@@ -5,9 +5,8 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-import pryngles as pr
 from pryngles.consts import ROOTDIR
-from pryngles.misc import get_data, flatten, get_methods, calc_hash, retrieve_data
+from pryngles.misc import calc_hash, flatten, get_data, get_methods, retrieve_data
 
 
 def test_get_data():

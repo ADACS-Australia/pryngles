@@ -13,32 +13,32 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-from pryngles import *
-from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY
-from pryngles.consts import (
-    Consts,
-    GSI,
-    REBOUND_ORBITAL_PROPERTIES,
-    SPANGLE_SOLID_ROCK,
-    SPANGLE_SOLID_ICE,
-    SPANGLE_ATMOSPHERIC,
-    SPANGLE_LIQUID,
-    SPANGLE_GRANULAR,
-    SPANGLE_GASEOUS,
-    SPANGLE_STELLAR,
-    BODY_KINDS,
-    LEGACY_PHYSICAL_PROPERTIES,
-)
-from pryngles.misc import get_data, flatten
-
 # --------------------------------------------------
 # External required packages
 # --------------------------------------------------
-
 import numpy as np
 import rebound as rb
 import spiceypy as spy
 from tqdm import tqdm
+
+from pryngles import *
+from pryngles import science
+from pryngles.common import VERB_SIMPLE, VERB_VERIFY, PrynglesCommon, verbose
+from pryngles.consts import (
+    BODY_KINDS,
+    GSI,
+    LEGACY_PHYSICAL_PROPERTIES,
+    REBOUND_ORBITAL_PROPERTIES,
+    SPANGLE_ATMOSPHERIC,
+    SPANGLE_GASEOUS,
+    SPANGLE_GRANULAR,
+    SPANGLE_LIQUID,
+    SPANGLE_SOLID_ICE,
+    SPANGLE_SOLID_ROCK,
+    SPANGLE_STELLAR,
+    Consts,
+)
+from pryngles.misc import flatten, get_data
 
 
 # --------------------------------------------------
@@ -1176,7 +1176,7 @@ class System(PrynglesCommon):
         .. math::
             \\beta_i(Z_i) = 1 - \\frac{\\tau}{2\\cos Z_i}e^{-\\frac{\\tau}{\\cos Z_i}}
         - :math:`I(\\mu)/I_0` is the intensity of the light at projected distance over stellar disk
-          (see :any:`science.Science.limb_darkening` for details).
+          (see :any:`science.limb_darkening` for details).
 
         **[1]**  French, R.G., Nicholson, P.D., 2000. Icarus 145, 502–523. doi:10. 1006/icar.2000.6357.
 
@@ -1204,7 +1204,7 @@ class System(PrynglesCommon):
                 star_scale = self.bodies[star].radius
 
                 # limb_darkening = Util.limbDarkening(rhos, 1, limb_coeff, norm_limb_coeff)
-                limb_darkening = Science.limb_darkening(rhos, cs=limb_coeffs, N=norm_limb_coeff)
+                limb_darkening = science.limb_darkening(rhos, cs=limb_coeffs, N=norm_limb_coeff)
 
                 # Computing Stellar Flux Drop
                 flux_drop = (beta_values * cos_obs * limb_darkening * (asp / star_scale**2)).to_numpy(dtype=float)
@@ -1298,13 +1298,13 @@ class System(PrynglesCommon):
 
         # Star Flux for Normalization
         lambda_min, lambda_max = bandwidth
-        flux_star = Science.integrate_planck_flux(T_star, lambda_min, lambda_max) * np.pi * R_star**2
+        flux_star = science.integrate_planck_flux(T_star, lambda_min, lambda_max) * np.pi * R_star**2
 
         # Computing Thermal Emission Flux per Spangle
         flux_thermal = np.zeros_like(T_emission)
 
         for i, T in enumerate(T_emission):
-            flux_thermal[i] = Science.integrate_planck_flux(T, lambda_min, lambda_max)
+            flux_thermal[i] = science.integrate_planck_flux(T, lambda_min, lambda_max)
 
         self.data.loc[cond, "thermal_flux"] = epsilon * asp * cos_obs * flux_thermal / flux_star
 
@@ -1604,7 +1604,7 @@ class System(PrynglesCommon):
 
         if observer is not None:
             lambda_ecl, beta_ecl = observer
-            n_obs = Science.direction(lambda_ecl, beta_ecl)
+            n_obs = science.direction(lambda_ecl, beta_ecl)
             self.update_perspective(n_obs=n_obs)
 
         effects_registry = {

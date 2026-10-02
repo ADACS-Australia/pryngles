@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import pryngles as pr
+from pryngles import science
 
 
 def test_const():
@@ -138,7 +139,7 @@ def test_set_observer():
     sg.set_positions()
     sg.set_observer(nvec=[0, 0, 1])
     np.testing.assert_allclose(sg.n_obs, [0, 0, 1])
-    np.testing.assert_allclose(sg.rqf_obs, pr.Science.spherical([0, 0, 1]))
+    np.testing.assert_allclose(sg.rqf_obs, science.spherical([0, 0, 1]))
     # For a sphere with no hidden spangles, visible == cos_obs > 0
     assert (sg.data.visible == (sg.data.cos_obs > 0)).all()
     assert sg.data.visible.any()
@@ -158,7 +159,7 @@ def test_set_luz():
     sg.set_observer(nvec=[0, 0, 1])
     sg.set_luz(nvec=[1, 0, 0])
     np.testing.assert_allclose(sg.n_luz, [1, 0, 0])
-    np.testing.assert_allclose(sg.rqf_luz, pr.Science.spherical([1, 0, 0]))
+    np.testing.assert_allclose(sg.rqf_luz, science.spherical([1, 0, 0]))
     # For a sphere with no hidden spangles, illuminated == cos_luz > 0
     assert (sg.data.illuminated == (sg.data.cos_luz > 0)).all()
     assert sg.data.illuminated.any()

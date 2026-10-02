@@ -14,7 +14,7 @@
 ##################################################################
 
 from pryngles import *
-from pryngles.common import Verbose, VERB_ALL, VERB_NONE
+from pryngles.common import VERB_ALL, VERB_NONE, Verbose
 
 
 def test_common():

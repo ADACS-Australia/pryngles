@@ -32,11 +32,19 @@ warnings.filterwarnings("ignore")
 import IPython.core.autocall as autocall
 from IPython.display import Image
 
-# --------------------------------------------------
-# Stand alone code of the module
-# --------------------------------------------------
+from pryngles.body import *
 
-from pryngles.version import *
+# Utility modules
+from pryngles.common import (
+    VERB_ALL,
+    VERB_DEEP,
+    VERB_NONE,
+    VERB_SIMPLE,
+    VERB_SYSTEM,
+    VERB_VERIFY,
+    PrynglesCommon,
+    Verbose,
+)
 
 # Constants
 from pryngles.consts import (
@@ -54,24 +62,32 @@ from pryngles.consts import (
     REBOUND_ORBITAL_PROPERTIES,
     RING_DEFAULTS,
     ROOTDIR,
+    SAMPLE_SHAPES,
     SAMPLER_CIRCLE_PRESETS,
     SAMPLER_GEOMETRY_CIRCLE,
     SAMPLER_GEOMETRY_SPHERE,
     SAMPLER_MIN_RING,
     SAMPLER_PRESETS,
     SAMPLER_SPHERE_PRESETS,
-    SAMPLE_SHAPES,
     SCATTERERS_CATALOGUE,
     SCIENCE_LIMB_NORMALIZATIONS,
     SHADOW_COLOR_LUZ,
     SHADOW_COLOR_OBS,
+    SPANGLE_ATMOSPHERIC,
+    SPANGLE_COLORS,
+    SPANGLE_GASEOUS,
+    SPANGLE_GRANULAR,
+    SPANGLE_LIQUID,
+    SPANGLE_SOLID_ICE,
+    SPANGLE_SOLID_ROCK,
+    SPANGLE_STELLAR,
     SPANGLER_AREAS,
-    SPANGLER_COLUMNS,
-    SPANGLER_COLUMNS_DOC,
     SPANGLER_COL_COPY,
     SPANGLER_COL_INT,
     SPANGLER_COL_LUZ,
     SPANGLER_COL_OBS,
+    SPANGLER_COLUMNS,
+    SPANGLER_COLUMNS_DOC,
     SPANGLER_DEBUG_FIELDS,
     SPANGLER_EPS_BORDER,
     SPANGLER_EQUIV_COL,
@@ -84,14 +100,6 @@ from pryngles.consts import (
     SPANGLER_VISIBILITY_STATES,
     SPANGLES_DARKNESS_COLOR,
     SPANGLES_SEMITRANSPARENT,
-    SPANGLE_ATMOSPHERIC,
-    SPANGLE_COLORS,
-    SPANGLE_GASEOUS,
-    SPANGLE_GRANULAR,
-    SPANGLE_LIQUID,
-    SPANGLE_SOLID_ICE,
-    SPANGLE_SOLID_ROCK,
-    SPANGLE_STELLAR,
     STAR_DEFAULTS,
     T_MODEL_DEFAULTS,
 )
@@ -107,6 +115,7 @@ from pryngles.common import (
     VERB_DEEP,
     VERB_ALL,
 )
+from pryngles.extensions import *
 from pryngles.misc import print_df, DATA_INDEX
 from pryngles.science import *
 from pryngles.plot import *
@@ -118,9 +127,13 @@ from pryngles.legacy import *
 
 # Core modules
 from pryngles.sampler import *
-from pryngles.spangler import *
-from pryngles.body import *
+from pryngles.science import *
 from pryngles.system import *
+
+# --------------------------------------------------
+# Stand alone code of the module
+# --------------------------------------------------
+from pryngles.version import *
 
 
 def _welcome():
@@ -129,6 +142,3 @@ def _welcome():
 
 
 _welcome()
-
-# This aliases does not work in modules
-sci = Science

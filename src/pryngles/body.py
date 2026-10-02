@@ -38,7 +38,7 @@ from pryngles.consts import (
 from pryngles.extensions import StokesScatterer
 from pryngles.misc import get_data
 from pryngles.orbit import Orbody
-from pryngles.science import Science
+from pryngles import science
 from pryngles.spangler import Spangler
 
 # --------------------------------------------------
@@ -206,7 +206,7 @@ class Body(Orbody):
         # Rotational angular velocity
         self.wrot = 2 * np.pi / self.prot
         # Rotation axis
-        self.n_equ = Science.cartesian([1, self.roll, 90 * Consts.deg - self.i])
+        self.n_equ = science.cartesian([1, self.roll, 90 * Consts.deg - self.i])
 
     def show_tree(self):
         print(RenderTree(self))
@@ -325,10 +325,10 @@ class Star(Body):
         verbose(VERB_VERIFY, "Updating properties of Star")
 
         # Compute limbdarkening at r = 0 to initialize normalization constant
-        Science.limb_darkening(0, self.limb_coeffs)
+        science.limb_darkening(0, self.limb_coeffs)
 
         # Store limb darkening normalization
-        self.norm_limb_darkening = SCIENCE_LIMB_NORMALIZATIONS[hash(tuple(self.limb_coeffs))]
+        self.norm_science.limb_darkening = SCIENCE_LIMB_NORMALIZATIONS[hash(tuple(self.limb_coeffs))]
 
     def update_star(self, **props):
         """General and specific update properties of the Star
@@ -344,7 +344,7 @@ class Star(Body):
         limb_coeffs: `list, array`
             Limb darkening coefficients [2]. Its lenght defines the model to implement [1].
 
-        norm_limb_darkening: `float`
+        norm_science.limb_darkening: `float`
             Limb darkening function normalization.
 
         References
@@ -531,7 +531,7 @@ class Planet(Body):
 
         # Light Source Direction
         vec_luz = center_source - center_body
-        d_luz, lamda_luz, phi_luz = Science.spherical(vec_luz)
+        d_luz, lamda_luz, phi_luz = science.spherical(vec_luz)
 
         # Longitude, Latitude
         lamda = self.sg.data["q_equ"].values - lamda_luz + PI / 2  # Long
@@ -799,7 +799,7 @@ class Detector(PrynglesCommon):
             raise ValueError(f"Source must be a Star object. You provided a {source.kind} object.")
 
         # Compute the Source Flux
-        L_star = Science.integrate_planck_photons(source.T_eff, self.wavelength_min, self.wavelength_max)
+        L_star = science.integrate_planck_photons(source.T_eff, self.wavelength_min, self.wavelength_max)
 
         # Compute the observed Flux
         self.normal_flux = (
