@@ -579,7 +579,7 @@ class Spangler(PrynglesCommon):
             if dif > 0:
                 # Add spangles
                 verbose(VERB_SYSTEM, f"Adding {dif} entries to DataFrame")
-                for i in range(dif):
+                for _ in range(dif):
                     df = pd.DataFrame([self.data.iloc[-1]])
                     self.data = pd.concat([self.data, df], ignore_index=True)
             else:
@@ -1286,7 +1286,7 @@ class Spangler(PrynglesCommon):
         # Appendix D arXiv:2404.16606v1
         groups = self.data[cond].groupby("name")
 
-        for group_name, group in groups:
+        for _, group in groups:
             # Normal vector of each spangle
             ns_obs = np.stack(group["ns_obs"].values)
 

@@ -220,7 +220,7 @@ class StokesScatterer:
         # Read header
         nmat = 0
         imu = 0
-        for i, line in enumerate(f):
+        for _i, line in enumerate(f):
             if "#" in line:
                 continue
             data = line.split()
@@ -238,7 +238,7 @@ class StokesScatterer:
                 break
 
         # Get core data
-        data = np.loadtxt(self.filename, skiprows=i)
+        data = np.loadtxt(self.filename, skiprows=_i)
         nfou = int(data[:, 0].max()) + 1
 
         rfou = np.zeros((nmat * nmugs, nmugs, nfou))

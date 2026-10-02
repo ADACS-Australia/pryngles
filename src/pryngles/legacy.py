@@ -2795,7 +2795,7 @@ class RingedPlanet:
 
         # Generate animated gif and mp4
         giflabel = f"i_{self.i * RAD:.1e}-lambobs_{self.eobs_ecl[0] * RAD:.1e}-betaobs_{self.eobs_ecl[0] * RAD:.1e}"
-        for i, imgtype in enumerate(imgtypes):
+        for imgtype in imgtypes:
             filemovie = f"{animpref}{imgtype}-{giflabel}"
             if verbose:
                 print(f"Creating video '{filemovie}'...")

@@ -574,7 +574,7 @@ class System(PrynglesCommon):
             self.orbital_tree = orbital_tree
 
         # Set the rebound hash of all bodies
-        for name, body in self.bodies.items():
+        for body in self.bodies.values():
             if body.kind == "Ring":
                 body.rbhash = body.parent.name
             else:
@@ -1607,8 +1607,8 @@ class System(PrynglesCommon):
 
         df_output = pd.DataFrame(index=pd.Index(times, name="time"), columns=columns, dtype=float)
 
-        iterator = tqdm(enumerate(times), total=len(times), desc="Computing Lightcurve ")
-        for i, t in iterator:
+        iterator = tqdm(times, total=len(times), desc="Computing Lightcurve ")
+        for t in iterator:
             self.integrate_perspective(t)
 
             for effect in effects:
