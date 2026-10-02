@@ -21,7 +21,7 @@ import numpy as np
 import rebound as rb
 from anytree import NodeMixin, RenderTree
 
-from pryngles import *
+from pryngles import PrynglesCommon, REBOUND_ORBITAL_PROPERTIES
 
 
 # --------------------------------------------------
