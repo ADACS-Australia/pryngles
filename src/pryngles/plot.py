@@ -18,6 +18,7 @@
 # --------------------------------------------------
 
 from pryngles import *
+from pryngles.common import Verbose, VERB_NONE
 
 import math
 from colorsys import hls_to_rgb

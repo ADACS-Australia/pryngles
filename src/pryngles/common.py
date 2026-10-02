@@ -51,6 +51,10 @@ class Verbose:
             print("  " * level + f"VERB{level}::{inspect.stack()[1][3]}::", *args)
 
 
+# Alias
+verbose = Verbose.print
+
+
 class PrynglesCommon:
     """Base class of the package.
 

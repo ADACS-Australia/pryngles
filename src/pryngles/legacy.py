@@ -26,6 +26,7 @@ import spiceypy as spy
 from scipy.optimize import least_squares
 
 from pryngles import *
+from pryngles.common import verbose, VERB_DEEP
 
 math.arctan = math.atan
 math.arcsin = math.asin

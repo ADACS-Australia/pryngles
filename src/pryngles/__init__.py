@@ -43,7 +43,7 @@ from pryngles.version import *
 from pryngles.consts import *
 
 # Utility modules
-from pryngles.common import Verbose, PrynglesCommon
+from pryngles.common import Verbose, PrynglesCommon, VERB_NONE, VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, VERB_DEEP, VERB_ALL
 from pryngles.misc import *
 from pryngles.extensions import *
 from pryngles.science import *
@@ -67,12 +67,6 @@ def _welcome():
 
 
 _welcome()
-
-# Reset verbosity
-Verbose.VERBOSITY = VERB_NONE
-
-# Alias
-verbose = Verbose.print
 
 # This aliases does not work in modules
 print_df = Misc.print_df

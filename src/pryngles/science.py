@@ -26,6 +26,7 @@ from scipy.integrate import quad
 from scipy.spatial import ConvexHull
 
 from pryngles import *
+from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY
 
 
 # --------------------------------------------------

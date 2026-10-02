@@ -21,6 +21,7 @@ import ctypes
 import glob
 
 from pryngles import *
+from pryngles.common import verbose, VERB_SIMPLE
 
 # Load library
 libfile = glob.glob(Misc.get_data("../cpixx*.so"))[0]

@@ -24,6 +24,7 @@ import pandas as pd
 
 # Specialized plotting methods
 from pryngles import *
+from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY, VERB_SIMPLE, VERB_SYSTEM
 
 
 # --------------------------------------------------

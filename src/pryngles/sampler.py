@@ -25,6 +25,7 @@ import numpy as np
 from matplotlib.patches import Circle
 
 from pryngles import *
+from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY, VERB_SYSTEM
 
 
 # --------------------------------------------------

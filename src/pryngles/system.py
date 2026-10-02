@@ -14,6 +14,7 @@
 ##################################################################
 
 from pryngles import *
+from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY
 
 # --------------------------------------------------
 # External required packages
