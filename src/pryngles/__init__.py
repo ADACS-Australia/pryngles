@@ -108,7 +108,6 @@ from pryngles.common import (
     VERB_ALL,
 )
 from pryngles.misc import print_df, DATA_INDEX
-from pryngles.extensions import *
 from pryngles.science import *
 from pryngles.plot import *
 from pryngles.orbit import *

@@ -29,7 +29,6 @@ from copy import deepcopy
 import numpy as np
 from rebound import units
 
-from pryngles import *
 
 # Root directory
 try:
