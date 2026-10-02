@@ -483,7 +483,8 @@ class System(PrynglesCommon):
 
         # Create body
         props.update(dict(name_by_kind=True))
-        self.__body = eval(f"{kind}(parent=parent,**props)")
+        __body = globals()[kind]
+        self.__body = __body(parent=parent,**props)
 
         if self.__body.name in self.bodies:
             raise ValueError(f"An object with name '{self.__body.name}' has been already added.")
