@@ -50,6 +50,7 @@ from pryngles.consts import (
 from pryngles.misc import flatten
 from pryngles.plot import Plot
 from pryngles.sampler import Sampler
+from pryngles.science import Plane
 
 
 class Spangler(PrynglesCommon):

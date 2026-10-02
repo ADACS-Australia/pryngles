@@ -16,7 +16,10 @@
 # --------------------------------------------------
 # External required packages
 # --------------------------------------------------
+from collections import OrderedDict
+
 import numpy as np
+import pandas as pd
 import rebound as rb
 import spiceypy as spy
 from tqdm import tqdm
@@ -69,7 +72,7 @@ class System(PrynglesCommon):
         Conversion factors from internal units to SI (meters, kilograms, seconds).
     G : `float`
         Gravitational constant in chosen units.
-    bodies : `odict`
+    bodies : `OrderedDict`
         Ordered dictionary of :any:`body.Body` instances in the system, keyed by name.
     nbodies : `int`
         Number of bodies in `bodies`.
@@ -128,7 +131,7 @@ class System(PrynglesCommon):
         self.extension = "cpixx"
 
         # List of bodies in the system
-        self.bodies = odict()
+        self.bodies = OrderedDict()
 
         # Root of the tree of bodies
         self.root = None

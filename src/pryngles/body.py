@@ -23,6 +23,7 @@ import numpy as np
 from anytree import RenderTree
 from scipy.interpolate import interp1d
 
+from pryngles import science
 from pryngles.common import VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     DETECTOR_PROPERTIES,
@@ -38,7 +39,6 @@ from pryngles.consts import (
 from pryngles.extensions import StokesScatterer
 from pryngles.misc import get_data
 from pryngles.orbit import Orbody
-from pryngles import science
 from pryngles.spangler import Spangler
 
 # --------------------------------------------------
@@ -328,7 +328,7 @@ class Star(Body):
         science.limb_darkening(0, self.limb_coeffs)
 
         # Store limb darkening normalization
-        self.norm_science.limb_darkening = SCIENCE_LIMB_NORMALIZATIONS[hash(tuple(self.limb_coeffs))]
+        self.norm_limb_darkening = SCIENCE_LIMB_NORMALIZATIONS[hash(tuple(self.limb_coeffs))]
 
     def update_star(self, **props):
         """General and specific update properties of the Star
@@ -344,7 +344,7 @@ class Star(Body):
         limb_coeffs: `list, array`
             Limb darkening coefficients [2]. Its lenght defines the model to implement [1].
 
-        norm_science.limb_darkening: `float`
+        norm_limb_darkening: `float`
             Limb darkening function normalization.
 
         References

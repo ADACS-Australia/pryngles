@@ -34,10 +34,10 @@ from mpl_toolkits import mplot3d
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
 
+from pryngles import science
 from pryngles.common import VERB_NONE, Verbose
 from pryngles.consts import DEG
 from pryngles.legacy import Const, RingedPlanet
-from pryngles import science
 from pryngles.version import version
 
 

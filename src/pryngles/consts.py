@@ -29,7 +29,6 @@ from copy import deepcopy
 import numpy as np
 from rebound import units
 
-
 # Root directory
 try:
     ROOTDIR = os.path.abspath(os.path.dirname(__file__))

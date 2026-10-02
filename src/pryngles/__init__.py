@@ -105,28 +105,17 @@ from pryngles.consts import (
 )
 
 # Utility modules
-from pryngles.common import (
-    Verbose,
-    PrynglesCommon,
-    VERB_NONE,
-    VERB_SIMPLE,
-    VERB_SYSTEM,
-    VERB_VERIFY,
-    VERB_DEEP,
-    VERB_ALL,
-)
-from pryngles.extensions import *
-from pryngles.misc import print_df, DATA_INDEX
-from pryngles.science import *
-from pryngles.plot import *
-from pryngles.orbit import *
-from pryngles.scatterer import *
+from pryngles.extensions import DOUBLE, PDOUBLE, PPDOUBLE, PPPDOUBLE
 
 # Legacy module
 from pryngles.legacy import *
+from pryngles.misc import DATA_INDEX, print_df
+from pryngles.orbit import *
+from pryngles.plot import *
 
 # Core modules
 from pryngles.sampler import *
+from pryngles.scatterer import *
 from pryngles.science import *
 from pryngles.system import *
 
