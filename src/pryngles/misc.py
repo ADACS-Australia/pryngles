@@ -22,10 +22,9 @@ import os
 from collections.abc import Iterable
 from sys import maxsize as HASH_MAXSIZE
 
-from IPython.display import HTML, display
-
 import gdown
 import pandas as pd
+from IPython.display import HTML, display
 
 from pryngles.consts import ROOTDIR
 
