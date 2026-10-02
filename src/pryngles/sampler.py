@@ -26,6 +26,15 @@ from matplotlib.patches import Circle
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY, VERB_SYSTEM
+from pryngles.consts import (
+    SAMPLER_PRESETS,
+    SAMPLER_SPHERE_PRESETS,
+    SAMPLER_CIRCLE_PRESETS,
+    SAMPLER_MIN_RING,
+    SAMPLER_GEOMETRY_CIRCLE,
+    SAMPLER_GEOMETRY_SPHERE,
+)
+from pryngles import consts
 from pryngles.misc import get_data
 
 
@@ -156,7 +165,7 @@ class Sampler(PrynglesCommon):
                 qring = True
 
             # Calculate the closest Npreset
-            presets = globals()[f"SAMPLER_{geometry.upper()}_PRESETS"]
+            presets = consts.__dict__.get(f"SAMPLER_{geometry.upper()}_PRESETS")
             self.Npreset = presets[abs(N - presets).argmin()]
 
             Npreset = self.Npreset

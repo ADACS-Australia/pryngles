@@ -6,13 +6,14 @@ import pandas as pd
 import pytest
 
 import pryngles as pr
+from pryngles.consts import ROOTDIR
 from pryngles.misc import get_data, flatten, get_methods, calc_hash, retrieve_data
 
 
 def test_get_data():
     """``get_data`` returns the full path to a packaged data file."""
     path = get_data("diffuse_reflection_function.data")
-    assert path == pr.ROOTDIR + "/data/diffuse_reflection_function.data"
+    assert path == ROOTDIR + "/data/diffuse_reflection_function.data"
 
 
 def test_flatten():

@@ -27,6 +27,7 @@ from scipy.spatial import ConvexHull
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY
+from pryngles.consts import Consts, SCIENCE_LIMB_NORMALIZATIONS
 
 
 # --------------------------------------------------
@@ -164,7 +165,7 @@ class Science(PrynglesCommon):
         >>> xyz = [1, 1, 1]
         >>>
         >>> # From Spherical to Cartesian
-        >>> pr.Science.cartesian([1, 30*pr.Consts.deg, 60*pr.Consts.deg])
+        >>> pr.Science.cartesian([1, 30*pr.consts.Consts.deg, 60*pr.consts.Consts.deg])
         array([0.4330127, 0.25     , 0.8660254])
         """
         return spy.latrec(rqf[0], rqf[1], rqf[2])

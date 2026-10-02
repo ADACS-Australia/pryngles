@@ -25,6 +25,17 @@ from scipy.interpolate import interp1d
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY
+from pryngles.consts import (
+    Consts,
+    SCIENCE_LIMB_NORMALIZATIONS,
+    REBOUND_ORBITAL_PROPERTIES,
+    STAR_DEFAULTS,
+    PLANET_DEFAULTS,
+    RING_DEFAULTS,
+    OBSERVER_DEFAULTS,
+    DETECTOR_PROPERTIES,
+    T_MODEL_DEFAULTS,
+)
 from pryngles.misc import get_data
 
 # --------------------------------------------------
@@ -834,10 +845,10 @@ class Detector(PrynglesCommon):
         --------
         >>> # Assuming  `times` and `fluxes` are defined
         >>>
-        >>> detector = pr.Detector(t_cadence=600, quantum_eff=1, apperture=0.5, distance=1e3*pr.Consts.pc)
+        >>> detector = pr.Detector(t_cadence=600, quantum_eff=1, apperture=0.5, distance=1e3*pr.consts.Consts.pc)
         >>>
         >>> # Set the source star
-        >>> star = pr.Star(T_eff = 5778, radius = 1*pr.Consts.R_sun)
+        >>> star = pr.Star(T_eff = 5778, radius = 1*pr.consts.Consts.R_sun)
         >>> detector.set_source(star)
         >>>
         >>> # Generate the signal

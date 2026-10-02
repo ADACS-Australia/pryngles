@@ -16,6 +16,7 @@
 from pryngles import *
 from pryngles.common import Verbose, VERB_ALL, VERB_NONE
 
+
 def test_common():
     import os
 

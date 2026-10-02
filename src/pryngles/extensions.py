@@ -26,6 +26,15 @@ from pryngles.common import VERB_SIMPLE, verbose
 from pryngles.consts import DOUBLE, PDOUBLE, PPDOUBLE, PPPDOUBLE
 from pryngles.misc import get_data
 
+# --------------------------------------------------
+# Constants of module extensions
+# --------------------------------------------------
+
+DOUBLE = ctypes.c_double
+PDOUBLE = ctypes.POINTER(DOUBLE)
+PPDOUBLE = ctypes.POINTER(PDOUBLE)
+PPPDOUBLE = ctypes.POINTER(PPDOUBLE)
+
 # Load library
 libfile = glob.glob(get_data("../cpixx*.so"))[0]
 cpixx_ext = ctypes.CDLL(libfile)

@@ -25,6 +25,29 @@ import pandas as pd
 # Specialized plotting methods
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_VERIFY, VERB_SIMPLE, VERB_SYSTEM
+from pryngles.consts import (
+    Consts,
+    SAMPLER_GEOMETRY_CIRCLE,
+    SAMPLER_GEOMETRY_SPHERE,
+    SPANGLE_COLORS,
+    SPANGLE_SOLID_ROCK,
+    SPANGLE_STELLAR,
+    SPANGLES_SEMITRANSPARENT,
+    SHADOW_COLOR_LUZ,
+    SHADOW_COLOR_OBS,
+    SPANGLES_DARKNESS_COLOR,
+    SPANGLER_COLUMNS,
+    SPANGLER_VISIBILITY_STATES,
+    SPANGLER_SOURCE_STATES,
+    SPANGLER_KEY_ORDERING,
+    SPANGLER_COL_LUZ,
+    SPANGLER_COL_OBS,
+    SPANGLER_COL_INT,
+    SPANGLER_LENGTHS,
+    SPANGLER_AREAS,
+    SPANGLER_VECTORS,
+    SPANGLER_EPS_BORDER,
+)
 from pryngles.misc import flatten
 
 

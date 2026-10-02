@@ -27,6 +27,7 @@ from scipy.optimize import least_squares
 
 from pryngles import *
 from pryngles.common import verbose, VERB_DEEP
+from pryngles.consts import Consts
 from pryngles.misc import get_data
 
 math.arctan = math.atan

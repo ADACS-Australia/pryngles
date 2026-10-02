@@ -4,11 +4,12 @@ import numpy as np
 import pytest
 
 import pryngles as pr
+from pryngles.consts import BODY_DEFAULTS
 
 
 def test_body_construction():
     """A ``Body`` can be constructed with defaults and updated properties."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, m=2, x=2, a=1, name_by_kind=True)
+    B = pr.Body("Body", BODY_DEFAULTS, None, m=2, x=2, a=1, name_by_kind=True)
     assert B.kind == "Body"
     assert B.name == "Body"
     assert B.m == 2
@@ -22,7 +23,7 @@ def test_body_construction():
 
 def test_body_update():
     """``update_body`` updates properties and rejects unknown ones."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B")
+    B = pr.Body("Body", BODY_DEFAULTS, None, name="B")
     B.update_body(name="B2")
     assert B.name == "B2"
     with pytest.raises(ValueError):
@@ -31,8 +32,8 @@ def test_body_update():
 
 def test_body_parent_child():
     """A child body is registered in the parent's ``childs``."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B")
-    C = pr.Body("Body", pr.BODY_DEFAULTS, B, name="C")
+    B = pr.Body("Body", BODY_DEFAULTS, None, name="B")
+    C = pr.Body("Body", BODY_DEFAULTS, B, name="C")
     assert C.parent is B
     assert B.childs["C"] is C
 
@@ -40,27 +41,27 @@ def test_body_parent_child():
 def test_body_invalid_parent():
     """A non-``Body`` parent raises an ``AssertionError``."""
     with pytest.raises(AssertionError):
-        pr.Body("Body", pr.BODY_DEFAULTS, "Nada")
+        pr.Body("Body", BODY_DEFAULTS, "Nada")
 
 
 def test_body_legacy_primary():
     """The legacy ``primary`` argument is used as the parent."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B")
-    C = pr.Body("Body", pr.BODY_DEFAULTS, None, name="C", primary=B)
+    B = pr.Body("Body", BODY_DEFAULTS, None, name="B")
+    C = pr.Body("Body", BODY_DEFAULTS, None, name="C", primary=B)
     assert C.parent is B
 
 
 def test_body_derived_properties():
     """``wrot`` and ``n_equ`` are derived from the body properties."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B")
-    np.testing.assert_allclose(B.wrot, 2 * np.pi / pr.BODY_DEFAULTS["prot"], rtol=1e-7)
+    B = pr.Body("Body", BODY_DEFAULTS, None, name="B")
+    np.testing.assert_allclose(B.wrot, 2 * np.pi / BODY_DEFAULTS["prot"], rtol=1e-7)
     # Default rotation axis points along +z.
     np.testing.assert_allclose(B.n_equ, [0.0, 0.0, 1.0], atol=1e-12)
 
 
 def test_body_spangle():
     """``spangle_body`` creates a populated ``Spangler``."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B", nspangles=100)
+    B = pr.Body("Body", BODY_DEFAULTS, None, name="B", nspangles=100)
     B.spangle_body()
     assert B.sg is not None
     assert len(B.sg.data) == 100
@@ -78,7 +79,7 @@ def test_star():
 
 def test_star_invalid_parent():
     """A ``Star`` parent must be another ``Star``."""
-    B = pr.Body("Body", pr.BODY_DEFAULTS, None, name="B")
+    B = pr.Body("Body", BODY_DEFAULTS, None, name="B")
 
     with pytest.raises(ValueError):
         pr.Star(parent=B)

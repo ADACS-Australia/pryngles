@@ -54,6 +54,7 @@ Routines included:
     get_data(file)
 """
 
+
 # --------------------------------------------------
 # Data methods
 # --------------------------------------------------
@@ -69,6 +70,7 @@ def get_data(path):
 
     """
     return os.path.join(ROOTDIR, "data", path)
+
 
 def retrieve_data(datafile, path="/tmp/", quiet=False, overwrite=False):
     """Retrieve a data file from public Pryngles repo, https://bit.ly/pryngles-data.
@@ -130,6 +132,7 @@ def retrieve_data(datafile, path="/tmp/", quiet=False, overwrite=False):
 
     return dfiles
 
+
 # --------------------------------------------------
 # Input/output methos
 # --------------------------------------------------
@@ -141,6 +144,7 @@ def print_df(df):
             DataFrame to print.
     """
     display(HTML(df.to_html()))
+
 
 # --------------------------------------------------
 # Array methods
@@ -161,12 +165,14 @@ def flatten(collection):
         else:
             yield i
 
+
 # --------------------------------------------------
 # Programming methods
 # --------------------------------------------------
 def get_methods(my_class):
     """Get a list of the methods for class my_class"""
     return sorted([member[0] for member in inspect.getmembers(my_class) if "__" not in member[0]])
+
 
 def calc_hash(obj):
     if type(obj) is dict:
