@@ -26,7 +26,7 @@ import spiceypy as spy
 from tqdm import tqdm
 
 from pryngles import science
-from pryngles.body import Body, Detector
+from pryngles.body import Body, Detector, Observer, Planet, Ring, Star
 from pryngles.common import VERB_SIMPLE, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     BODY_KINDS,
