@@ -22,6 +22,9 @@
 # --------------------------------------------------
 import os
 import re
+import sys
+from collections import OrderedDict
+from copy import deepcopy
 
 import numpy as np
 from rebound import units
@@ -30,10 +33,8 @@ from pryngles import *
 
 # Root directory
 try:
-    FILE = __file__
-    ROOTDIR = os.path.abspath(os.path.dirname(FILE))
+    ROOTDIR = os.path.abspath(os.path.dirname(__file__))
 except Exception:
-    FILE = ""
     ROOTDIR = os.path.abspath("")
 
 IN_JUPYTER = "ipykernel" in sys.modules
@@ -64,6 +65,7 @@ class Consts:
     rjupiter = 71492e3  # m, equatorial radius, source:
     rsaturn = 60268e3  # m, equatorial radius, source:
 
+    @staticmethod
     def get_physical():
         """
         To get all **physical** constants in ``pryngles``.
@@ -90,6 +92,7 @@ class Consts:
                 all_constants += [key]
         return sorted(all_constants)
 
+    @staticmethod
     def get_all():
         """
         To get all **numerical** constants in ``pryngles``.
@@ -133,16 +136,6 @@ RAD = Consts.rad
 DEG = Consts.deg
 # Remove when legacy is retired
 
-# --------------------------------------------------
-# Constants of module extensions
-# --------------------------------------------------
-
-import ctypes
-
-DOUBLE = ctypes.c_double
-PDOUBLE = ctypes.POINTER(DOUBLE)
-PPDOUBLE = ctypes.POINTER(PDOUBLE)
-PPPDOUBLE = ctypes.POINTER(PPDOUBLE)
 
 # --------------------------------------------------
 # Constants of module science
@@ -220,7 +213,7 @@ SAMPLER_SPHERE_PRESETS = np.array(
 Examples
 -------------
 
->>> pr.SAMPLER_SPHERE_PRESETS
+>>> pr.consts.SAMPLER_SPHERE_PRESETS
 array([ 100,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1200, 1400,
         1600, 1800, 2000, 2300, 2600, 2900, 3000, 3400, 3800, 4000, 4500, 5000])
 """
@@ -230,7 +223,7 @@ SAMPLER_CIRCLE_PRESETS = np.arange(100, 6000, 100)
 Examples
 --------------
 
->>>  pr.SAMPLER_CIRCLE_PRESETS
+>>>  pr.consts.SAMPLER_CIRCLE_PRESETS
 array([ 100,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1100,
         1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200,
         2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100, 3200, 3300,
@@ -313,7 +306,7 @@ SHADOW_COLOR_OBS = [180, 0.2, 0.0]
 SPANGLES_DARKNESS_COLOR = [225, 0.3, 1]
 
 # Columns of spangling
-SPANGLER_COLUMNS = odict(
+SPANGLER_COLUMNS = OrderedDict(
     {
         "name": "",  # Identification of the body having the spangler
         # Type of spangle
@@ -424,7 +417,7 @@ SPANGLER_COLUMNS = odict(
         "source": False,  # The spangle belongs to a light-source (it does not reflect light)
     }
 )  #:
-SPANGLER_VISIBILITY_STATES = odict(
+SPANGLER_VISIBILITY_STATES = OrderedDict(
     {
         # Spangle state
         "visible": False,  # The spangle is visible from observer
@@ -436,7 +429,7 @@ SPANGLER_VISIBILITY_STATES = odict(
     }
 )
 SPANGLER_COLUMNS.update(SPANGLER_VISIBILITY_STATES)
-SPANGLER_SOURCE_STATES = odict(
+SPANGLER_SOURCE_STATES = OrderedDict(
     {
         "illuminated": False,  # The spangle is illuminated by the light-source
         "transmit": False,  # The spangle is illuminated but transmitting light
@@ -446,7 +439,7 @@ SPANGLER_SOURCE_STATES = odict(
 )
 SPANGLER_COLUMNS.update(SPANGLER_SOURCE_STATES)
 
-SPANGLER_FLUX = odict(
+SPANGLER_FLUX = OrderedDict(
     {
         "stellar_flux": 0.0,  # Incident Stellar Flux at the location of the spangle
         "reflected_flux": 0.0,  # Reflected Flux from the spangle towards the observer
@@ -716,7 +709,7 @@ SPANGLER_EPS_BORDER = 0.01
 
 SPANGLER_COLUMNS_DOC = """
 #Columns of spangling
-SPANGLER_COLUMNS=odict({
+SPANGLER_COLUMNS=OrderedDict({
     "name":"", #Identification of the body having the spangler
 
     #Type of spangle
@@ -814,7 +807,7 @@ SPANGLER_COLUMNS=odict({
     "hidden":False, #The spangle is not taken into account for photometry
     "source":False, #The spangle belongs to a light-source (it does not reflect light)
 })
-SPANGLER_VISIBILITY_STATES=odict({
+SPANGLER_VISIBILITY_STATES=OrderedDict({
     #Spangle state
     "visible":False, #The spangle is visible from observer
     "intersect":False, #Intermediate state to calculate intersections
@@ -824,14 +817,14 @@ SPANGLER_VISIBILITY_STATES=odict({
     "above":False, #Intermediate state to calculate above or below state respect to ring
 })
 SPANGLER_COLUMNS.update(SPANGLER_VISIBILITY_STATES)
-SPANGLER_SOURCE_STATES=odict({
+SPANGLER_SOURCE_STATES=OrderedDict({
     "illuminated":False, #The spangle is illuminated by the light-source
     "transmit":False, #The spangle is illuminated but transmitting light
     "transit":False, #The spangle is transiting
     "occult":False, #The spangle is occulted by a light source
 })
 SPANGLER_COLUMNS.update(SPANGLER_SOURCE_STATES)
-SPANGLER_FLUX = odict({
+SPANGLER_FLUX = OrderedDict({
     'stellar_flux':0.0, # Incident Stellar Flux at the location of the spangle
     'reflected_flux':0.0, # Reflected Flux from the spangle towards the observer
     'transit_flux':0.0, # Flux blocked from the star during transit
@@ -887,7 +880,7 @@ BODY_DEFAULTS = dict()
 - **physics** (dict) — Dictionary containing physical properties (legacy). Defaults to an empty dictionary.
 """
 BODY_DEFAULTS.update(
-    odict(
+    OrderedDict(
         name=None,
         name_by_kind=False,
         source=None,
@@ -941,7 +934,7 @@ References
 [2] Coefficients available at: https://pages.jh.edu/~dsing3/LDfiles/LDCs.CoRot.Table1.txt
 """
 STAR_DEFAULTS.update(
-    odict(
+    OrderedDict(
         # Orbit: update
         # Same as body
         radius=0.1,
@@ -970,7 +963,7 @@ You can also define extra Orbital Parameters included in :data:`~ consts.REBOUND
 - **geometry** (str) — The geometry of the planet's surface representation. Defaults to "sphere".
 """
 PLANET_DEFAULTS.update(
-    odict(
+    OrderedDict(
         # Orbit: update
         a=1,
         e=0,
@@ -1033,7 +1026,7 @@ Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
 Note that Rings typically do not utilize orbital properties in the same way as other body kinds
 """
 RING_DEFAULTS.update(
-    odict(
+    OrderedDict(
         # Orbit: update
         # Same as Body altough ring has not orbit properties
         # Physics: update
@@ -1063,7 +1056,7 @@ Inherits and updates defaults from :data:`~ consts.BODY_DEFAULTS`.
 - **beta** (float) — Ecliptic latitude of the observer in radians. Defaults to 0.
 """
 OBSERVER_DEFAULTS.update(
-    odict(
+    OrderedDict(
         lamb=0,
         beta=0,
     )

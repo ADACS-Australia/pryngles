@@ -25,7 +25,9 @@ from scipy.optimize import bisect
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE
+from pryngles.consts import SCATTERERS_CATALOGUE
 from pryngles.misc import calc_hash, get_data
+
 
 # --------------------------------------------------
 # Class Scatterer

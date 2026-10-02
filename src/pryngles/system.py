@@ -15,6 +15,20 @@
 
 from pryngles import *
 from pryngles.common import PrynglesCommon, verbose, VERB_SIMPLE, VERB_VERIFY
+from pryngles.consts import (
+    Consts,
+    GSI,
+    REBOUND_ORBITAL_PROPERTIES,
+    SPANGLE_SOLID_ROCK,
+    SPANGLE_SOLID_ICE,
+    SPANGLE_ATMOSPHERIC,
+    SPANGLE_LIQUID,
+    SPANGLE_GRANULAR,
+    SPANGLE_GASEOUS,
+    SPANGLE_STELLAR,
+    BODY_KINDS,
+    LEGACY_PHYSICAL_PROPERTIES,
+)
 from pryngles.misc import get_data, flatten
 
 # --------------------------------------------------
@@ -484,7 +498,7 @@ class System(PrynglesCommon):
         # Create body
         props.update(dict(name_by_kind=True))
         __body = globals()[kind]
-        self.__body = __body(parent=parent,**props)
+        self.__body = __body(parent=parent, **props)
 
         if self.__body.name in self.bodies:
             raise ValueError(f"An object with name '{self.__body.name}' has been already added.")

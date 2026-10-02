@@ -64,7 +64,6 @@ def test_get_all():
         "DEG",
         "DETECTOR_PROPERTIES",
         "DOUBLE",
-        "FILE",
         "GSI",
         "IN_JUPYTER",
         "LEGACY_PHYSICAL_PROPERTIES",

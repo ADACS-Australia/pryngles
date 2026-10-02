@@ -18,6 +18,7 @@
 # --------------------------------------------------
 
 from pryngles import *
+from pryngles.consts import DEG
 from pryngles.common import Verbose, VERB_NONE
 
 import math
