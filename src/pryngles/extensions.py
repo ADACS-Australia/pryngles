@@ -23,7 +23,6 @@ import glob
 import numpy as np
 
 from pryngles.common import VERB_SIMPLE, verbose
-from pryngles.consts import DOUBLE, PDOUBLE, PPDOUBLE, PPPDOUBLE
 from pryngles.misc import get_data
 
 # --------------------------------------------------
