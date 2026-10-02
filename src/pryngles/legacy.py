@@ -278,12 +278,14 @@ class Util:
         c = 2 * mh.arctan2(a**0.5, (1 - a) ** 0.5)
         return c
 
-    def limbDarkeningNormalization(cs=[0.6562]):
+    def limbDarkeningNormalization(cs=None):
+        if cs is None:
+            cs = [0.6562]
         integrand = lambda rho: Util.limbDarkening(rho, 1, cs) * 2 * mh.pi * rho
         N = quad(integrand, 0.0, 1.0, epsrel=1e-5)[0]
         return N
 
-    def limbDarkening(rho, Rs=1, cs=[0.6562], N=1):
+    def limbDarkening(rho, Rs=1, cs=None, N=1):
         """
         Notes:
             Models in: https://pages.jh.edu/~dsing3/David_Sing/Limb_Darkening.html
@@ -304,6 +306,8 @@ class Util:
             N=Util.limbDarkeningNormalization(coefs)
             ax.plot(rhos,Util.limbDarkening(rhos,Rs,coefs,N))
         """
+        if cs is None:
+            cs = [0.6562]
         mu = (1 - rho**2 / Rs**2) ** 0.5
         order = len(cs)
         if order == 0:
@@ -1235,14 +1239,18 @@ class RingedPlanet:
         Nb=100,
         Ns=30,
         # Behavior
-        behavior=dict(),
+        behavior=None,
         # Physical properties
-        physics=dict(),
+        physics=None,
     ):
         """
         The initialization routine only sets the basic geometric properties of the ring
         """
         # Save values for debugging purposes
+        if physics is None:
+            physics = dict()
+        if behavior is None:
+            behavior = dict()
         self.save_values = []
 
         # Behavior
@@ -1760,7 +1768,7 @@ class RingedPlanet:
         self.tr = sr if ~side else self.tr
         self.cr = sr if side else self.cr
 
-    def _updatePlanetShadow(self, epos=[0, 0], mask=None):
+    def _updatePlanetShadow(self, epos=None, mask=None):
         """
         Compute the points in the planet sampling which are in the shadow cast by rings when
         illumination comes from epos (alpha, delta in {equ}).
@@ -1775,6 +1783,8 @@ class RingedPlanet:
         Requires:
             - updateSampling
         """
+        if epos is None:
+            epos = [0, 0]
         cond = Util.checkAngle(self.eps_equ[:, 0], epos[0], 90 * DEG) * (np.sign(epos[1]) * self.eps_equ[:, 1] <= 0)
         delta = np.abs(self.eps_equ[cond, 1])
         dalpha = np.abs(Util.difAngles(self.eps_equ[cond, 0], epos[0]))
@@ -1791,7 +1801,7 @@ class RingedPlanet:
         fdark = mask.sum() / len(mask)
         return fdark
 
-    def _updateRingsShadow(self, epos=[0, 0], mask=None):
+    def _updateRingsShadow(self, epos=None, mask=None):
         """
         Compute the points in the ring sampling which are in the shadow cast by planet when
         illumination comes from epos (alpha, delta in {equ}).
@@ -1807,6 +1817,8 @@ class RingedPlanet:
             - updateSampling
         """
         # Select points in the ring potentially in shadow
+        if epos is None:
+            epos = [0, 0]
         delta = mh.arcsin(self.Rp / self.Ri)
         cond = Util.checkAngle(self.ers_equ[:, 0], np.mod(epos[0] + np.pi, 2 * np.pi), delta)
         # Difference in right ascension with respect to star
@@ -2734,7 +2746,7 @@ class RingedPlanet:
     def animateRingedPlanet(
         self,
         nframes=1,
-        x_interval=[0.0, 2 * mh.pi],
+        x_interval=None,
         kepler=False,
         animdir=".",
         figdir=".",
@@ -2745,6 +2757,8 @@ class RingedPlanet:
         **plot_args,
     ):
         # Constants
+        if x_interval is None:
+            x_interval = [0.0, 2 * mh.pi]
         imgtypes = ["ecliptic", "observer", "stellar"]
 
         # Variable parameter

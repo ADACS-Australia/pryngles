@@ -40,13 +40,17 @@ from tqdm import tqdm
 class Plot:
     """Plotting util class"""
 
-    def _pathpatch_2d_to_3d(pathpatch, pivot=[0, 0, 0], zDir=[0, 0, 1]):
+    def _pathpatch_2d_to_3d(pathpatch, pivot=None, zDir=None):
         """
         Create a patch in 3d around pivot in the direction of zDir
 
         Source: https://stackoverflow.com/a/69785236
         """
 
+        if zDir is None:
+            zDir = [0, 0, 1]
+        if pivot is None:
+            pivot = [0, 0, 0]
         path = pathpatch.get_path()  # Get the path and the associated transform
         trans = pathpatch.get_patch_transform()
         path = trans.transform_path(path)  # Apply the transform
@@ -264,7 +268,7 @@ class Plot:
     # Tested methods from module file plot
     # --------------------------------------------------
 
-    def calc_flyby(normal=[0, 0, 1], start=0, stop=360, num=10, lat=0):
+    def calc_flyby(normal=None, start=0, stop=360, num=10, lat=0):
         """Calculate a flyby coordinates
 
         Parameters:
@@ -285,6 +289,8 @@ class Plot:
         """
 
         # Range of longitudes and latitudes
+        if normal is None:
+            normal = [0, 0, 1]
         lonp = np.linspace(start, stop, num)
         latp = lat * np.ones_like(lonp)
 

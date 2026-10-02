@@ -260,7 +260,7 @@ class Science(PrynglesCommon):
         verbose(VERB_VERIFY, "Rotation axis:", ex, ey, ez)
         return Msys2uni, Muni2sys
 
-    def limb_darkening(rho, cs=[0.6562], N=None):
+    def limb_darkening(rho, cs=None, N=None):
         """
         Non-Linear model for Limb-Darkening computation
 
@@ -342,6 +342,8 @@ class Science(PrynglesCommon):
             :align: center
             :width: 600px
         """
+        if cs is None:
+            cs = [0.6562]
         mu = (1 - rho**2) ** 0.5
         order = len(cs)
 

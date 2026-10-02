@@ -131,7 +131,7 @@ class Spangler(PrynglesCommon):
         self,
         # Initialization using specific options
         # Initialization with a list of spanglers
-        spanglers=[],
+        spanglers=None,
         # Basic
         nspangles=1,
         name=None,
@@ -145,6 +145,8 @@ class Spangler(PrynglesCommon):
     ):
 
         # Common attributes
+        if spanglers is None:
+            spanglers = []
         self.n_obs = np.array([0, 0, 1])
         self.n_luz = np.array([0, 0, 1])
         self.d_obs = self.d_luz = 1
@@ -346,7 +348,7 @@ class Spangler(PrynglesCommon):
 
         return mem_usage
 
-    def set_positions(self, n_equ=[], alpha_equ=0, center_equ=[], center_ecl=[], t=None):
+    def set_positions(self, n_equ=None, alpha_equ=0, center_equ=None, center_ecl=None, t=None):
         """
         Updates the positions and orientations of spangles across reference systems.
 
@@ -377,6 +379,12 @@ class Spangler(PrynglesCommon):
         "wx_ecl", and "wy_ecl". Transformation matrices in `M_equ2ecl` are updated if `n_equ`
         is provided.
         """
+        if center_ecl is None:
+            center_ecl = []
+        if center_equ is None:
+            center_equ = []
+        if n_equ is None:
+            n_equ = []
         verbose(VERB_VERIFY, "Setting positions")
 
         # Pandas >= 2.2 is strict about assigning floats into int columns.
@@ -630,7 +638,7 @@ class Spangler(PrynglesCommon):
         coords="ecl",
         only=None,
         center_at=None,
-        not_plot=[],
+        not_plot=None,
         fsize=5,
         factor=1.2,
         statemark=0,
@@ -666,6 +674,8 @@ class Spangler(PrynglesCommon):
         -----
         Sets the `fig3d` and `ax3d` attributes. Spangle colors reflect their illumination and visibility states.
         """
+        if not_plot is None:
+            not_plot = []
         bgcolor = "k"
 
         # Plot only a given object
@@ -916,7 +926,7 @@ class Spangler(PrynglesCommon):
 
     def set_intersect(
         self,
-        nvec=[0, 0, 1],
+        nvec=None,
         alpha=0,
         center=None,
         name=None,
@@ -953,6 +963,8 @@ class Spangler(PrynglesCommon):
         like `n_int`, `d_int`, and `M_ecl2int`.
         """
 
+        if nvec is None:
+            nvec = [0, 0, 1]
         verbose(VERB_SIMPLE, f"Setting intersect using nvec = {nvec}, alpha = {alpha} center = {center}, name = {name}")
 
         verbose(VERB_VERIFY, f"Generating intersection matrices from pvec = {nvec}")
@@ -1216,7 +1228,7 @@ class Spangler(PrynglesCommon):
                     dict(name=name, hulltype="plane", center=center, zord=zord, qhull=qhull, vhull=vhull, plane=plane)
                 ]
 
-    def set_observer(self, nvec=[0, 0, 1], alpha=0, center=None):
+    def set_observer(self, nvec=None, alpha=0, center=None):
         """
         Sets the positions and orientations of spangles in the observer reference system.
 
@@ -1239,6 +1251,8 @@ class Spangler(PrynglesCommon):
         Updates the `data` DataFrame with observer coordinates and sets the "visible" state.
         Calls :meth:`set_intersect` internally.
         """
+        if nvec is None:
+            nvec = [0, 0, 1]
         verbose(VERB_SIMPLE, "Setting observer")
 
         # Set observer
@@ -1317,7 +1331,7 @@ class Spangler(PrynglesCommon):
         )
         self.data.loc[cond, "visible"] = True
 
-    def set_luz(self, nvec=[0, 0, 1], alpha=0, center=None, name=None):
+    def set_luz(self, nvec=None, alpha=0, center=None, name=None):
         """
         Sets the positions and orientations of spangles in the light-source reference system.
 
@@ -1344,6 +1358,8 @@ class Spangler(PrynglesCommon):
         "transmit" states. Requires :meth:`set_observer` to be called first for accurate transmission.
         """
 
+        if nvec is None:
+            nvec = [0, 0, 1]
         verbose(VERB_SIMPLE, "Setting light-source")
 
         # Set intersect of all points in order to prepare the update luz
@@ -1430,8 +1446,8 @@ class Spangler(PrynglesCommon):
         self,
         coords="obs",
         center_at=None,
-        include=[],
-        exclude=[],
+        include=None,
+        exclude=None,
         axis=True,
         fsize=5,
         newfig=True,
@@ -1484,6 +1500,10 @@ class Spangler(PrynglesCommon):
         """
 
         # Global properties of the plot
+        if exclude is None:
+            exclude = []
+        if include is None:
+            include = []
         if bgdark:
             bgcolor = "k"
             textcolor = "w"
@@ -1803,7 +1823,7 @@ class Spangler(PrynglesCommon):
 
         return x_cen, y_cen
 
-    def update_intersection_state(self, excluded=[], included=[]):
+    def update_intersection_state(self, excluded=None, included=None):
         """
         Updates the intersection states of spangles.
 
@@ -1830,6 +1850,10 @@ class Spangler(PrynglesCommon):
         Updates the "intersect" state and related fields in the `data` DataFrame based on convex hulls.
         """
         # Update qhulls using the latest intersection state
+        if included is None:
+            included = []
+        if excluded is None:
+            excluded = []
         self._calc_qhulls()
 
         # Check if at least one qhull has been computed
@@ -2005,7 +2029,7 @@ class Spangler(PrynglesCommon):
         self.data.transit_over_obs = self.data.transit_over_obs + self.data.transit_over_int
         self.data.visible = self.data.visible & self.data.intersect
 
-    def update_illumination_state(self, excluded=[], included=[]):
+    def update_illumination_state(self, excluded=None, included=None):
         """
         Updates illumination states and related variables of spangles.
 
@@ -2026,6 +2050,10 @@ class Spangler(PrynglesCommon):
         Calls :meth:`update_intersection_state` and updates "illuminated", "shadow", and related
         fields in the `data` DataFrame.
         """
+        if included is None:
+            included = []
+        if excluded is None:
+            excluded = []
         self.update_intersection_state(excluded, included)
         self.data[SPANGLER_COL_LUZ] = self.data[SPANGLER_COL_INT]
 

@@ -94,8 +94,10 @@ class System(PrynglesCommon):
     # Bassic methods
     # --------------------------------------------------
 
-    def __init__(self, filename=None, units=["au", "msun", "yr2pi"], resetable=False):
+    def __init__(self, filename=None, units=None, resetable=False):
 
+        if units is None:
+            units = ["au", "msun", "yr2pi"]
         if filename:
             self.load_from(filename)
             return
@@ -712,9 +714,11 @@ class System(PrynglesCommon):
         # Update Optical Depths
         self._update_optical_depth()
 
-    def _set_observer(self, nvec=[0, 0, 1], alpha=0, center=None):
+    def _set_observer(self, nvec=None, alpha=0, center=None):
         """Set the position of the observer"""
         # Only set observer if it is spangled
+        if nvec is None:
+            nvec = [0, 0, 1]
         if self._is_spangled():
             # At changing the observer, reset state
             self.sg.reset_state()
@@ -1520,7 +1524,7 @@ class System(PrynglesCommon):
         times,
         bodies=None,
         bandwidth=(500e-9, 600e-9),
-        effects=["transit"],
+        effects=None,
         observer=None,
         signal=None,
     ):
@@ -1558,6 +1562,8 @@ class System(PrynglesCommon):
 
         """
 
+        if effects is None:
+            effects = ["transit"]
         if not self._spangled:
             raise AssertionError(
                 "You must Spangle the system before calling compute_lightcurve(). "

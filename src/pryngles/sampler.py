@@ -240,7 +240,7 @@ class Sampler(PrynglesCommon):
     # Tested methods from module file sampler
     # --------------------------------------------------
 
-    def plot(self, spangled=dict(), **args):
+    def plot(self, spangled=None, **args):
         """
         Method to visualize a plot of the sample generated.
 
@@ -266,6 +266,8 @@ class Sampler(PrynglesCommon):
             :align: center
             :width: 600px
         """
+        if spangled is None:
+            spangled = dict()
         sargs = dict(c="k", s=1.5)
         sargs.update(args)
 
