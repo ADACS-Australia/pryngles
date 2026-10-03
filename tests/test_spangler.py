@@ -10,7 +10,9 @@ def test_const():
     for key in pr.consts.SPANGLER_KEY_ORDERING:
         assert key in pr.consts.SPANGLER_COLUMNS, f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS"
     for key in pr.consts.SPANGLER_COLUMNS:
-        assert key in pr.consts.SPANGLER_KEY_ORDERING, f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
+        assert key in pr.consts.SPANGLER_KEY_ORDERING, (
+            f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
+        )
 
 
 def test_init_basic():
