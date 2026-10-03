@@ -26,7 +26,7 @@ import spiceypy as spy
 from tqdm import tqdm
 
 from pryngles import science
-from pryngles.body import Body, Detector, Observer, Planet, Ring, Star
+from pryngles.body import Body, Detector
 from pryngles.common import VERB_SIMPLE, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     BODY_KINDS,
@@ -506,7 +506,7 @@ class System(PrynglesCommon):
 
         # Create body
         props.update(dict(name_by_kind=True))
-        __body = globals()[kind]
+        __body = Body.get_body_by_kind(kind)
         self.__body = __body(parent=parent, **props)
 
         if self.__body.name in self.bodies:

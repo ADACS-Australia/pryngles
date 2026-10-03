@@ -277,6 +277,31 @@ class Body(Orbody):
         self.sg.set_observer()
         self.sg.set_luz()
 
+    @classmethod
+    def get_body_by_kind(cls, kind):
+        """
+        Get the body class by its kind.
+
+        Parameters
+        ----------
+        kind : str
+            The kind of body to retrieve. Kind must match the name of a subclass of `Body`.
+
+        Returns
+        -------
+        type
+            The class corresponding to the specified kind.
+
+        Raises
+        ------
+        ValueError
+            If the specified kind is not recognized.
+        """
+        for subclass in cls.__subclasses__():
+            if subclass.__name__ == kind:
+                return subclass
+        raise ValueError(f"Unknown body kind: {kind}")
+
 
 # --------------------------------------------------
 # Class Star
