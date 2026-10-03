@@ -10,7 +10,7 @@ import pryngles as pr
 def test_ptr2mat_roundtrip():
     """``mat2ptr``/``ptr2mat`` round-trip a 2D array."""
     arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    ptr = pr.ExtensionUtil.mat2ptr(arr)
+    ptr = pr.extensions.ExtensionUtil.mat2ptr(arr)
 
     # ``ptr`` is a ctypes array of row pointers; each row is a ctypes
     # pointer to double. Verify the types and values are stored correctly
@@ -19,18 +19,18 @@ def test_ptr2mat_roundtrip():
     assert len(ptr) == arr.shape[0]
     for i in range(arr.shape[0]):
         row = ptr[i]
-        assert isinstance(row, pr.PDOUBLE)
+        assert isinstance(row, pr.extensions.PDOUBLE)
         for j in range(arr.shape[1]):
             assert row[j] == arr[i, j]
 
-    out = pr.ExtensionUtil.ptr2mat(ptr, *arr.shape)
+    out = pr.extensions.ExtensionUtil.ptr2mat(ptr, *arr.shape)
     np.testing.assert_allclose(out, arr)
 
 
 def test_ptr2cub_roundtrip():
     """``cub2ptr``/``ptr2cub`` round-trip a 3D array."""
     arr = np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
-    ptr = pr.ExtensionUtil.cub2ptr(arr)
+    ptr = pr.extensions.ExtensionUtil.cub2ptr(arr)
 
     # ``ptr`` is a ctypes array of 2D pointers; each element is a ctypes
     # pointer to a row of doubles. Verify the types and values are stored
@@ -39,20 +39,20 @@ def test_ptr2cub_roundtrip():
     assert len(ptr) == arr.shape[0]
     for i in range(arr.shape[0]):
         mat = ptr[i]
-        assert isinstance(mat, pr.PPDOUBLE)
+        assert isinstance(mat, pr.extensions.PPDOUBLE)
         for j in range(arr.shape[1]):
             row = mat[j]
-            assert isinstance(row, pr.PDOUBLE)
+            assert isinstance(row, pr.extensions.PDOUBLE)
             for k in range(arr.shape[2]):
                 assert row[k] == arr[i, j, k]
 
-    out = pr.ExtensionUtil.ptr2cub(ptr, *arr.shape)
+    out = pr.extensions.ExtensionUtil.ptr2cub(ptr, *arr.shape)
     np.testing.assert_allclose(out, arr)
 
 
 def test_stokes_planet():
     """``calculate_stokes`` matches the reference planet values."""
-    S = pr.StokesScatterer(pr.Misc.get_data("fou_gasplanet.dat"))
+    S = pr.StokesScatterer(pr.misc.get_data("fou_gasplanet.dat"))
     stokes = S.calculate_stokes(
         np.array([1.0448451569439827]),
         np.array([3.069394277348945]),
@@ -68,7 +68,7 @@ def test_stokes_planet():
 
 def test_stokes_ring_backscattering():
     """``calculate_stokes`` matches the reference ring backscattering values."""
-    S = pr.StokesScatterer(pr.Misc.get_data("fou_ring_0_4_0_8.dat"))
+    S = pr.StokesScatterer(pr.misc.get_data("fou_ring_0_4_0_8.dat"))
     stokes = S.calculate_stokes(
         np.array([1.490116119384765625e-08]),
         np.array([0.0]),
@@ -89,7 +89,7 @@ def test_stokes_ring_backscattering():
 
 def test_stokes_ring_forwardscattering():
     """``calculate_stokes`` matches the reference ring forwardscattering values."""
-    S = pr.StokesScatterer(pr.Misc.get_data("fou_ring_0_4_0_8.dat"))
+    S = pr.StokesScatterer(pr.misc.get_data("fou_ring_0_4_0_8.dat"))
     stokes = S.calculate_stokes(
         np.array([1.601029385538801364e00]),
         np.array([1.601029385538801364e00]),

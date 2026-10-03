@@ -18,33 +18,34 @@
 # --------------------------------------------------
 
 import math
+import os
 import pickle
+from copy import deepcopy
 
+import cmasher as cmr
+import dill
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
 import spiceypy as spy
+import tqdm
+from IPython import get_ipython
+from matplotlib.ticker import LogLocator, MultipleLocator
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.integrate import dblquad, quad
+from scipy.interpolate import RectBivariateSpline, interp1d
 from scipy.optimize import least_squares
 
-from pryngles import *
+from pryngles.common import VERB_DEEP, verbose
+from pryngles.consts import Consts
+from pryngles.extensions import StokesScatterer
+from pryngles.misc import get_data
 
 math.arctan = math.atan
 math.arcsin = math.asin
 math.arccos = math.acos
 math.arctan2 = math.atan2
-import os
-from copy import deepcopy
-
-import cmasher as cmr
-import dill
-
-# Added
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import tqdm
-from matplotlib.ticker import LogLocator
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scipy.integrate import dblquad, quad
-from scipy.interpolate import RectBivariateSpline, interp1d
 
 # Don't force an interactive backend (nbagg) here; it can prevent rendering in some notebook frontends.
 # Let the notebook/environment choose the backend (e.g., inline in Colab/Cursor previews).
@@ -1192,8 +1193,8 @@ class RingedPlanet:
         # Scatterer extension
         extension="cpixx",
         # Fourier coefficient files
-        fname_planet=Misc.get_data("fou_gasplanet_optical_50.dat"),
-        fname_ring=Misc.get_data("fou_ring_0_4_0_8.dat"),
+        fname_planet=get_data("fou_gasplanet_optical_50.dat"),
+        fname_ring=get_data("fou_ring_0_4_0_8.dat"),
         # Maximum angular seperation between center and
         # edge of body before unidirectial assumption is broken, in degrees
         limit_angle_non_uni=0.05,
@@ -2857,7 +2858,7 @@ class RingedPlanet:
         Notes:
             Tab. (2.3) in Sobolev (1975).
         """
-        data_ss = np.loadtxt(Misc.get_data("diffuse_reflection_function.data"))
+        data_ss = np.loadtxt(get_data("diffuse_reflection_function.data"))
         eta = data_ss[1:, 0]
         gamma = data_ss[0, 1:]
         f = data_ss[1:, 1:]

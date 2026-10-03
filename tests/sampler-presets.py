@@ -18,11 +18,15 @@
 This code is intended to generate the sampler presets of Pryngles.
 """
 
-from pryngles import *
+from tqdm import tqdm
+
+from pryngles.common import VERB_NONE, Verbose
+from pryngles.consts import SAMPLER_CIRCLE_PRESETS, SAMPLER_SPHERE_PRESETS
+from pryngles.misc import get_data
+from pryngles.sampler import Sampler
 
 Verbose.VERBOSITY = VERB_NONE
 nsearch = 2  # Larger than 1
-from tqdm import tqdm
 
 print("Generating the spherical presets...")
 for N in tqdm(SAMPLER_SPHERE_PRESETS):
@@ -37,10 +41,10 @@ for N in tqdm(SAMPLER_SPHERE_PRESETS):
             sp_min = sp
             dran_min = sp.dran
             # print("Minimum:",dran_min)
-    sp_min.save_to(Misc.get_data(f"sampler_presets/sample_sphere_N_{N}.pkl"))
+    sp_min.save_to(get_data(f"sampler_presets/sample_sphere_N_{N}.pkl"))
 
 print("Generating the circle presets...")
 for N in tqdm(SAMPLER_CIRCLE_PRESETS):
     sp = Sampler(N=N)
     sp.gen_circle()
-    sp.save_to(Misc.get_data(f"sampler_presets/sample_circle_N_{N}.pkl"))
+    sp.save_to(get_data(f"sampler_presets/sample_circle_N_{N}.pkl"))
