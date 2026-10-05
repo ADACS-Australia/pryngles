@@ -13,9 +13,13 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+import spiceypy as spy
 
-from pryngles import *
+from pryngles.legacy import DEG, RAD, CanonicalUnits, Const, RingedPlanet
+from pryngles.system import System
 
 matplotlib.use("Agg")  # Backend for testing (no display needed)
 

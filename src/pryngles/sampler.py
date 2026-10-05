@@ -24,7 +24,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle
 
-from pryngles import *
+from pryngles import consts
+from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
+from pryngles.consts import (
+    SAMPLER_GEOMETRY_CIRCLE,
+    SAMPLER_GEOMETRY_SPHERE,
+    SAMPLER_MIN_RING,
+    SAMPLER_PRESETS,
+)
+from pryngles.misc import get_data
+from pryngles.plot import Plot
 
 
 # --------------------------------------------------
@@ -154,12 +163,11 @@ class Sampler(PrynglesCommon):
                 qring = True
 
             # Calculate the closest Npreset
-            exec(
-                f"self.Npreset=SAMPLER_{geometry.upper()}_PRESETS[abs({N}-SAMPLER_{geometry.upper()}_PRESETS).argmin()]"
-            )
+            presets = consts.__dict__.get(f"SAMPLER_{geometry.upper()}_PRESETS")
+            self.Npreset = presets[abs(N - presets).argmin()]
 
             Npreset = self.Npreset
-            filename = Misc.get_data(f"sampler_presets/sample_{geometry}_N_{Npreset}.pkl")
+            filename = get_data(f"sampler_presets/sample_{geometry}_N_{Npreset}.pkl")
             verbose(VERB_SYSTEM, f"Reading preset data from {filename}")
             self.load_from(filename)
             self.Npreset = Npreset

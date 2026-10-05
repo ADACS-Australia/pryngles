@@ -32,11 +32,11 @@ def test_blackbody_surface_albedo():
 
 def test_register_populates_catalogue():
     """Creating a scatterer registers it in the global catalogue."""
-    assert len(pr.SCATTERERS_CATALOGUE) == 0
+    assert len(pr.consts.SCATTERERS_CATALOGUE) == 0
     pr.NeutralSurface()
-    assert len(pr.SCATTERERS_CATALOGUE) == 1
-    assert any(isinstance(s, pr.NeutralSurface) for s in pr.SCATTERERS_CATALOGUE.values())
-    assert any(s.params["name"] == "NeutralSurface" for s in pr.SCATTERERS_CATALOGUE.values())
+    assert len(pr.consts.SCATTERERS_CATALOGUE) == 1
+    assert any(isinstance(s, pr.NeutralSurface) for s in pr.consts.SCATTERERS_CATALOGUE.values())
+    assert any(s.params["name"] == "NeutralSurface" for s in pr.consts.SCATTERERS_CATALOGUE.values())
 
 
 def test_register_reuses_existing_entry():
@@ -45,7 +45,7 @@ def test_register_reuses_existing_entry():
     s2 = pr.NeutralSurface()
     # Same params -> same hash -> same catalogue key.
     assert s1.hash == s2.hash
-    assert len(pr.SCATTERERS_CATALOGUE) == 1
+    assert len(pr.consts.SCATTERERS_CATALOGUE) == 1
 
 
 def test_register_distinct_params_distinct_entries():
@@ -53,15 +53,15 @@ def test_register_distinct_params_distinct_entries():
     s1 = pr.LambertianGraySurface(AL=0.3)
     s2 = pr.LambertianGraySurface(AL=0.7)
     assert s1.hash != s2.hash
-    assert len(pr.SCATTERERS_CATALOGUE) == 2
+    assert len(pr.consts.SCATTERERS_CATALOGUE) == 2
 
 
 def test_reset_catalogue_clears():
     """``reset_catalogue`` empties the global catalogue."""
     pr.NeutralSurface()
-    assert len(pr.SCATTERERS_CATALOGUE) == 1
+    assert len(pr.consts.SCATTERERS_CATALOGUE) == 1
     pr.Scatterer.reset_catalogue()
-    assert len(pr.SCATTERERS_CATALOGUE) == 0
+    assert len(pr.consts.SCATTERERS_CATALOGUE) == 0
 
 
 def test_lambertian_surface_albedo():
