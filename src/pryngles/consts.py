@@ -756,7 +756,6 @@ SPANGLER_LENGTHS = [
 
 # Spangler columns which correspond to areas
 SPANGLER_AREAS = ["asp", "asp_int", "asp_obs", "asp_luz"]
-
 # Spangler columns which correspond to vectores
 SPANGLER_VECTORS = [
     "center_ecl_x",

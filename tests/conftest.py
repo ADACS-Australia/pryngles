@@ -20,6 +20,7 @@ if _SRC not in sys.path:
 with contextlib.redirect_stdout(io.StringIO()):
     import pryngles  # noqa: F401
 
+
 @pytest.fixture
 def spangler_df():
     """Build a full spangler DataFrame matching the complete spangler schema.

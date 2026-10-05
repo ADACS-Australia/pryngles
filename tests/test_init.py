@@ -1,0 +1,36 @@
+##################################################################
+#                                                                #
+# .#####...#####...##..##..##..##...####...##......######...####..#
+# .##..##..##..##...####...###.##..##......##......##......##.....#
+# .#####...#####.....##....##.###..##.###..##......####.....####..#
+# .##......##..##....##....##..##..##..##..##......##..........##.#
+# .##......##..##....##....##..##...####...######..######...####..#
+# ................................................................#
+#                                                                #
+# PlanetaRY spanGLES                                             #
+#                                                                #
+##################################################################
+# License http://github.com/seap-udea/pryngles-public            #
+##################################################################
+
+from pryngles import *
+
+
+def test_common():
+    import os
+
+    import numpy as np
+    import pandas as pd
+
+    Verbose.VERBOSITY = VERB_ALL
+
+    p = PrynglesCommon()
+    p.casa = dict(perro=0, gato=3)
+    p.data = pd.DataFrame(np.random.rand(4000, 100))
+    p.save_to("/tmp/save.pck")
+    print("File size:", os.path.getsize("/tmp/save.pck") / 1e6, " Mb")
+    g = PrynglesCommon()
+    g.load_from("/tmp/save.pck")
+    print(g.casa, np.array(g.data).shape)
+
+    Verbose.VERBOSITY = VERB_NONE

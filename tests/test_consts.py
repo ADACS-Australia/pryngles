@@ -143,4 +143,4 @@ def test_vectors_accessor_to_numpy(spangler_df):
 def test_vectors_accessor_unknown_group(spangler_df):
     """Accessing an unknown group raises AttributeError listing available groups."""
     with pytest.raises(AttributeError, match="not a known spangler vector group"):
-        spangler_df.vectors.not_a_real_group
+        _ = spangler_df.vectors.not_a_real_group
