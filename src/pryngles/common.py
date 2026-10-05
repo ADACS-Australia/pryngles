@@ -52,6 +52,9 @@ class Verbose:
             print("  " * level + f"VERB{level}::{inspect.stack()[1][3]}::", *args)
 
 
+Verbose.VERBOSITY = VERB_NONE  # Default verbosity level
+
+
 # Alias
 verbose = Verbose.print
 
