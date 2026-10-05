@@ -91,9 +91,9 @@ class TestWasp43bSystem(SystemChecks):
             m=M_planet / system.um,
             radius=R_planet / system.ul,
             a=_A_ABS,
-            inc=pr.DEG * (90 - _INC),
+            inc=pr.consts.DEG * (90 - _INC),
             e=_ECC,
-            omega=pr.DEG * _OMEGA,
+            omega=pr.consts.DEG * _OMEGA,
         )
 
         system.add(
@@ -101,7 +101,7 @@ class TestWasp43bSystem(SystemChecks):
             parent=planet,
             fi=_R_IN,
             fe=_R_OUT,
-            i=pr.DEG * _RING_INC,
+            i=pr.consts.DEG * _RING_INC,
             taur=_RING_TAU,
         )
 

@@ -17,21 +17,28 @@
 # External required packages
 # --------------------------------------------------
 
-from pryngles import *
-
 import math
 from colorsys import hls_to_rgb
 
+import cmasher as cmr
 import matplotlib.pyplot as plt
 
 # Plotting in 3d
 import numpy as np
+import sigfig
+import spiceypy as spy
 from celluloid import Camera  # getting the camera
 from matplotlib import animation
 from matplotlib.patches import Circle
 from mpl_toolkits import mplot3d
 from scipy.spatial.transform import Rotation
 from tqdm import tqdm
+
+from pryngles import science
+from pryngles.common import VERB_NONE, Verbose
+from pryngles.consts import DEG
+from pryngles.legacy import Const, RingedPlanet
+from pryngles.version import version
 
 
 # --------------------------------------------------
@@ -294,12 +301,12 @@ class Plot:
         latp = lat * np.ones_like(lonp)
 
         # Rotation matrices
-        _, Muni2sys = Science.rotation_matrix(normal, 0)
+        _, Muni2sys = science.rotation_matrix(normal, 0)
 
         # Compute directions
         nvecs = np.zeros((num, 3))
         for i in range(num):
-            rp = Science.direction(lonp[i], latp[i])
+            rp = science.direction(lonp[i], latp[i])
             nvecs[i] = spy.mxv(Muni2sys, rp)
 
         return nvecs

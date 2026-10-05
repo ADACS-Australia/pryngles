@@ -1,11 +1,11 @@
 """Tests for the functions in the ``consts`` module."""
 
-import pryngles as pr
+from pryngles.consts import Consts
 
 
 def test_get_physical():
     """``get_physical`` returns the full sorted list of physical constants."""
-    assert pr.Consts.get_physical() == [
+    assert Consts.get_physical() == [
         "au",
         "aus",
         "cm",
@@ -56,26 +56,16 @@ def test_get_physical():
 
 def test_get_all():
     """``get_all`` returns the full sorted list of numerical constants."""
-    assert pr.Consts.get_all() == [
-        "ABC",
+    assert Consts.get_all() == [
         "BODY_DEFAULTS",
         "BODY_KINDS",
-        "DATA_INDEX",
         "DEG",
         "DETECTOR_PROPERTIES",
-        "DOUBLE",
-        "FILE",
         "GSI",
-        "HASH_MAXSIZE",
-        "HTML",
         "IN_JUPYTER",
         "LEGACY_PHYSICAL_PROPERTIES",
-        "NORMFACTOR",
         "OBSERVER_DEFAULTS",
-        "PDOUBLE",
         "PLANET_DEFAULTS",
-        "PPDOUBLE",
-        "PPPDOUBLE",
         "RAD",
         "REBOUND_CARTESIAN_PROPERTIES",
         "REBOUND_ORBITAL_PROPERTIES",
@@ -121,10 +111,4 @@ def test_get_all():
         "SPANGLE_STELLAR",
         "STAR_DEFAULTS",
         "T_MODEL_DEFAULTS",
-        "VERB_ALL",
-        "VERB_DEEP",
-        "VERB_NONE",
-        "VERB_SIMPLE",
-        "VERB_SYSTEM",
-        "VERB_VERIFY",
     ]

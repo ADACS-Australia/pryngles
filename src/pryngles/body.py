@@ -23,7 +23,23 @@ import numpy as np
 from anytree import RenderTree
 from scipy.interpolate import interp1d
 
-from pryngles import *
+from pryngles import science
+from pryngles.common import VERB_VERIFY, PrynglesCommon, verbose
+from pryngles.consts import (
+    DETECTOR_PROPERTIES,
+    OBSERVER_DEFAULTS,
+    PLANET_DEFAULTS,
+    REBOUND_ORBITAL_PROPERTIES,
+    RING_DEFAULTS,
+    SCIENCE_LIMB_NORMALIZATIONS,
+    STAR_DEFAULTS,
+    T_MODEL_DEFAULTS,
+    Consts,
+)
+from pryngles.extensions import StokesScatterer
+from pryngles.misc import get_data
+from pryngles.orbit import Orbody
+from pryngles.spangler import Spangler
 
 # --------------------------------------------------
 # Class Body
@@ -190,7 +206,7 @@ class Body(Orbody):
         # Rotational angular velocity
         self.wrot = 2 * np.pi / self.prot
         # Rotation axis
-        self.n_equ = Science.cartesian([1, self.roll, 90 * Consts.deg - self.i])
+        self.n_equ = science.cartesian([1, self.roll, 90 * Consts.deg - self.i])
 
     def show_tree(self):
         print(RenderTree(self))
@@ -261,6 +277,31 @@ class Body(Orbody):
         self.sg.set_observer()
         self.sg.set_luz()
 
+    @classmethod
+    def get_body_by_kind(cls, kind):
+        """
+        Get the body class by its kind.
+
+        Parameters
+        ----------
+        kind : str
+            The kind of body to retrieve. Kind must match the name of a subclass of `Body`.
+
+        Returns
+        -------
+        type
+            The class corresponding to the specified kind.
+
+        Raises
+        ------
+        ValueError
+            If the specified kind is not recognized.
+        """
+        for subclass in cls.__subclasses__():
+            if subclass.__name__ == kind:
+                return subclass
+        raise ValueError(f"Unknown body kind: {kind}")
+
 
 # --------------------------------------------------
 # Class Star
@@ -309,7 +350,7 @@ class Star(Body):
         verbose(VERB_VERIFY, "Updating properties of Star")
 
         # Compute limbdarkening at r = 0 to initialize normalization constant
-        Science.limb_darkening(0, self.limb_coeffs)
+        science.limb_darkening(0, self.limb_coeffs)
 
         # Store limb darkening normalization
         self.norm_limb_darkening = SCIENCE_LIMB_NORMALIZATIONS[hash(tuple(self.limb_coeffs))]
@@ -384,7 +425,7 @@ class Planet(Body):
         self.update_planet(**props)
 
         # Initialize Stokes Scatterer
-        self.Stokes = StokesScatterer(Misc.get_data(self.physics["fourier_file"]))
+        self.Stokes = StokesScatterer(get_data(self.physics["fourier_file"]))
 
     def _update_planet_properties(self):
         verbose(VERB_VERIFY, "Updating Planet properties")
@@ -515,7 +556,7 @@ class Planet(Body):
 
         # Light Source Direction
         vec_luz = center_source - center_body
-        d_luz, lamda_luz, phi_luz = Science.spherical(vec_luz)
+        d_luz, lamda_luz, phi_luz = science.spherical(vec_luz)
 
         # Longitude, Latitude
         lamda = self.sg.data["q_equ"].values - lamda_luz + PI / 2  # Long
@@ -614,7 +655,7 @@ class Ring(Body):
         self.update_ring(**props)
 
         # Initialize Stokes Scatterer
-        self.Stokes = StokesScatterer(Misc.get_data(self.physics["fourier_file"]))
+        self.Stokes = StokesScatterer(get_data(self.physics["fourier_file"]))
 
     def _update_ring_properties(self):
         verbose(VERB_VERIFY, "Updating Ring properties")
@@ -783,7 +824,7 @@ class Detector(PrynglesCommon):
             raise ValueError(f"Source must be a Star object. You provided a {source.kind} object.")
 
         # Compute the Source Flux
-        L_star = Science.integrate_planck_photons(source.T_eff, self.wavelength_min, self.wavelength_max)
+        L_star = science.integrate_planck_photons(source.T_eff, self.wavelength_min, self.wavelength_max)
 
         # Compute the observed Flux
         self.normal_flux = (
@@ -832,10 +873,10 @@ class Detector(PrynglesCommon):
         --------
         >>> # Assuming  `times` and `fluxes` are defined
         >>>
-        >>> detector = pr.Detector(t_cadence=600, quantum_eff=1, apperture=0.5, distance=1e3*pr.Consts.pc)
+        >>> detector = pr.Detector(t_cadence=600, quantum_eff=1, apperture=0.5, distance=1e3*pr.consts.Consts.pc)
         >>>
         >>> # Set the source star
-        >>> star = pr.Star(T_eff = 5778, radius = 1*pr.Consts.R_sun)
+        >>> star = pr.Star(T_eff = 5778, radius = 1*pr.consts.Consts.R_sun)
         >>> detector.set_source(star)
         >>>
         >>> # Generate the signal

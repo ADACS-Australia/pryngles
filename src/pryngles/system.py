@@ -13,16 +13,41 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-from pryngles import *
-
 # --------------------------------------------------
 # External required packages
 # --------------------------------------------------
+from collections import OrderedDict
+from copy import deepcopy
 
 import numpy as np
+import pandas as pd
 import rebound as rb
 import spiceypy as spy
 from tqdm import tqdm
+
+from pryngles import science
+from pryngles.body import Body, Detector
+from pryngles.common import VERB_SIMPLE, VERB_VERIFY, PrynglesCommon, verbose
+from pryngles.consts import (
+    BODY_KINDS,
+    GSI,
+    LEGACY_PHYSICAL_PROPERTIES,
+    REBOUND_ORBITAL_PROPERTIES,
+    SPANGLE_ATMOSPHERIC,
+    SPANGLE_GASEOUS,
+    SPANGLE_GRANULAR,
+    SPANGLE_LIQUID,
+    SPANGLE_SOLID_ICE,
+    SPANGLE_SOLID_ROCK,
+    SPANGLE_STELLAR,
+    Consts,
+)
+from pryngles.extensions import StokesScatterer
+from pryngles.legacy import CanonicalUnits, RingedPlanet
+from pryngles.misc import flatten, get_data
+from pryngles.orbit import OrbitUtil
+from pryngles.scatterer import BlackBodySurface, LambertianGrayAtmosphere, LambertianGraySurface
+from pryngles.spangler import Spangler
 
 
 # --------------------------------------------------
@@ -53,7 +78,7 @@ class System(PrynglesCommon):
         Conversion factors from internal units to SI (meters, kilograms, seconds).
     G : `float`
         Gravitational constant in chosen units.
-    bodies : `odict`
+    bodies : `OrderedDict`
         Ordered dictionary of :any:`body.Body` instances in the system, keyed by name.
     nbodies : `int`
         Number of bodies in `bodies`.
@@ -112,7 +137,7 @@ class System(PrynglesCommon):
         self.extension = "cpixx"
 
         # List of bodies in the system
-        self.bodies = odict()
+        self.bodies = OrderedDict()
 
         # Root of the tree of bodies
         self.root = None
@@ -328,8 +353,8 @@ class System(PrynglesCommon):
         if self.extension not in ["pixx", "cpixx"]:
             raise ValueError(f"The extension '{self.extension}' is not recognized (available 'pixx', 'cpixx')")
 
-        fname_planet = Misc.get_data("fou_gasplanet_optical_50.dat")
-        fname_ring = Misc.get_data("fou_ring_0_4_0_8.dat")
+        fname_planet = get_data("fou_gasplanet_optical_50.dat")
+        fname_ring = get_data("fou_ring_0_4_0_8.dat")
 
         self.SCp = StokesScatterer(fname_planet)
         self.nmatp = self.SCp.nmat
@@ -481,7 +506,8 @@ class System(PrynglesCommon):
 
         # Create body
         props.update(dict(name_by_kind=True))
-        self.__body = eval(f"{kind}(parent=parent,**props)")
+        __body = Body.get_body_by_kind(kind)
+        self.__body = __body(parent=parent, **props)
 
         if self.__body.name in self.bodies:
             raise ValueError(f"An object with name '{self.__body.name}' has been already added.")
@@ -581,7 +607,7 @@ class System(PrynglesCommon):
                 body.rbhash = body.name
 
         # Check that all bodies in system is in the orbital tree
-        bodies = list(Misc.flatten(self.orbital_tree))
+        bodies = list(flatten(self.orbital_tree))
         for name, body in self.bodies.items():
             if body.kind == "Ring":
                 continue
@@ -883,8 +909,7 @@ class System(PrynglesCommon):
             body.update_body(**props)
         elif body in self.bodies:
             body = self.bodies[body]
-            lkind = body.kind.lower()
-            exec(f"body.update_{lkind}()")
+            getattr(body, f"update_{body.kind.lower()}")()
         else:
             raise AssertionError("You are trying to update a body ({body}) which is not in the system")
 
@@ -1160,7 +1185,7 @@ class System(PrynglesCommon):
         .. math::
             \\beta_i(Z_i) = 1 - \\frac{\\tau}{2\\cos Z_i}e^{-\\frac{\\tau}{\\cos Z_i}}
         - :math:`I(\\mu)/I_0` is the intensity of the light at projected distance over stellar disk
-          (see :any:`science.Science.limb_darkening` for details).
+          (see :any:`science.limb_darkening` for details).
 
         **[1]**  French, R.G., Nicholson, P.D., 2000. Icarus 145, 502–523. doi:10. 1006/icar.2000.6357.
 
@@ -1188,7 +1213,7 @@ class System(PrynglesCommon):
                 star_scale = self.bodies[star].radius
 
                 # limb_darkening = Util.limbDarkening(rhos, 1, limb_coeff, norm_limb_coeff)
-                limb_darkening = Science.limb_darkening(rhos, cs=limb_coeffs, N=norm_limb_coeff)
+                limb_darkening = science.limb_darkening(rhos, cs=limb_coeffs, N=norm_limb_coeff)
 
                 # Computing Stellar Flux Drop
                 flux_drop = (beta_values * cos_obs * limb_darkening * (asp / star_scale**2)).to_numpy(dtype=float)
@@ -1282,13 +1307,13 @@ class System(PrynglesCommon):
 
         # Star Flux for Normalization
         lambda_min, lambda_max = bandwidth
-        flux_star = Science.integrate_planck_flux(T_star, lambda_min, lambda_max) * np.pi * R_star**2
+        flux_star = science.integrate_planck_flux(T_star, lambda_min, lambda_max) * np.pi * R_star**2
 
         # Computing Thermal Emission Flux per Spangle
         flux_thermal = np.zeros_like(T_emission)
 
         for i, T in enumerate(T_emission):
-            flux_thermal[i] = Science.integrate_planck_flux(T, lambda_min, lambda_max)
+            flux_thermal[i] = science.integrate_planck_flux(T, lambda_min, lambda_max)
 
         self.data.loc[cond, "thermal_flux"] = epsilon * asp * cos_obs * flux_thermal / flux_star
 
@@ -1588,7 +1613,7 @@ class System(PrynglesCommon):
 
         if observer is not None:
             lambda_ecl, beta_ecl = observer
-            n_obs = Science.direction(lambda_ecl, beta_ecl)
+            n_obs = science.direction(lambda_ecl, beta_ecl)
             self.update_perspective(n_obs=n_obs)
 
         effects_registry = {

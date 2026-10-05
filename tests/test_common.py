@@ -13,7 +13,7 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-from pryngles import *
+from pryngles.common import VERB_ALL, VERB_NONE, PrynglesCommon, Verbose
 
 
 def test_common():

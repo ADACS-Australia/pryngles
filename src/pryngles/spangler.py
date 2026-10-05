@@ -13,22 +13,45 @@
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
 
-# --------------------------------------------------
-# External required packages
-# --------------------------------------------------
-
 import random
+from copy import deepcopy
 
-# Aliases
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import spiceypy as spy
 
 # Specialized plotting methods
-from pryngles import *
+from pryngles import science
+from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
+from pryngles.consts import (
+    SAMPLER_GEOMETRY_CIRCLE,
+    SAMPLER_GEOMETRY_SPHERE,
+    SHADOW_COLOR_LUZ,
+    SHADOW_COLOR_OBS,
+    SPANGLE_COLORS,
+    SPANGLE_SOLID_ROCK,
+    SPANGLE_STELLAR,
+    SPANGLER_AREAS,
+    SPANGLER_COL_INT,
+    SPANGLER_COL_LUZ,
+    SPANGLER_COL_OBS,
+    SPANGLER_COLUMNS,
+    SPANGLER_EPS_BORDER,
+    SPANGLER_KEY_ORDERING,
+    SPANGLER_LENGTHS,
+    SPANGLER_SOURCE_STATES,
+    SPANGLER_VECTORS,
+    SPANGLER_VISIBILITY_STATES,
+    SPANGLES_DARKNESS_COLOR,
+    SPANGLES_SEMITRANSPARENT,
+    Consts,
+)
+from pryngles.misc import flatten
+from pryngles.plot import Plot
+from pryngles.sampler import Sampler
 
 
-# --------------------------------------------------
-# Class Spangler
-# --------------------------------------------------
 class Spangler(PrynglesCommon):
     """
     Represents a collection of spangles associated with one or more astrophysical objects.
@@ -154,8 +177,8 @@ class Spangler(PrynglesCommon):
         self.geometry = -1
 
         # Direction of vantages point in spherical coordinates
-        self.rqf_obs = Science.spherical(self.n_obs)
-        self.rqf_luz = Science.spherical(self.n_luz)
+        self.rqf_obs = science.spherical(self.n_obs)
+        self.rqf_luz = science.spherical(self.n_luz)
         self.center_luz = None
         self.center_obs = None
 
@@ -207,7 +230,7 @@ class Spangler(PrynglesCommon):
                     [list(self._defaults.values())] * self.nspangles, columns=self._defaults.keys()
                 )
 
-                self.M_equ2ecl[self.name], _ = Science.rotation_matrix(n_equ, alpha_equ)
+                self.M_equ2ecl[self.name], _ = science.rotation_matrix(n_equ, alpha_equ)
 
             else:
                 verbose(VERB_SIMPLE, "Creating a blank Spangler")
@@ -406,7 +429,7 @@ class Spangler(PrynglesCommon):
                 q + q0 + w * t for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0, strict=True)
             ]
             self.data[["x_equ", "y_equ", "z_equ"]] = [
-                Science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])
+                science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])
             ]
 
             qupdate = True
@@ -528,7 +551,7 @@ class Spangler(PrynglesCommon):
         else:
             verbose(VERB_VERIFY, "Generating spangler from scratch")
             self.sample = Sampler(N=self.nspangles, seed=seed)
-            exec(f"self.sample.gen_{shape}(**shape_args)")
+            getattr(self.sample, f"gen_{shape}")(**shape_args)
 
         self.shape = shape
         self.data["geometry"] = self.sample.geometry
@@ -857,7 +880,7 @@ class Spangler(PrynglesCommon):
             )
             ax.view_init(30, 60)
         else:
-            r_obs, t_obs, f_obs = Science.spherical(self.n_obs)
+            r_obs, t_obs, f_obs = science.spherical(self.n_obs)
             ax.view_init(f_obs * Consts.rad, t_obs * Consts.rad)
 
         # Show vectors
@@ -976,7 +999,7 @@ class Spangler(PrynglesCommon):
         alpha_int = alpha
 
         # Store n_int and d_int for update state purposes
-        self.rqf_int = Science.spherical(n_int)
+        self.rqf_int = science.spherical(n_int)
         self.n_int = n_int
 
         # Distance to center of intersection
@@ -991,7 +1014,7 @@ class Spangler(PrynglesCommon):
         self.d_int = d_int
 
         # Transformation matrices
-        M_int2ecl, self.M_ecl2int = Science.rotation_matrix(n_int, alpha_int)
+        M_int2ecl, self.M_ecl2int = science.rotation_matrix(n_int, alpha_int)
         self.M_int2ecl = M_int2ecl
 
         # Depending on body
@@ -1033,7 +1056,7 @@ class Spangler(PrynglesCommon):
                     self.data[col] = np.nan
                 if not pd.api.types.is_float_dtype(self.data[col].dtype):
                     self.data[col] = self.data[col].astype(float)
-            self.data.loc[group.index, ["rho_int", "az_int", "cosf_int"]] = Science.pcylindrical(r_int - c_int)
+            self.data.loc[group.index, ["rho_int", "az_int", "cosf_int"]] = science.pcylindrical(r_int - c_int)
 
         # According to distance to intersetcion point generate z_cen_int
         if self.infinite:
@@ -1176,7 +1199,7 @@ class Spangler(PrynglesCommon):
         """
 
         # Convex hulls
-        for name in Misc.flatten([self.name]):
+        for name in flatten([self.name]):
             self.qhulls[name] = []
             cond_obj = self.data.name == name
             center = list(self.data[cond_obj].center_int.iloc[0])
@@ -1186,7 +1209,7 @@ class Spangler(PrynglesCommon):
                 # Convex hull of whole objects
                 cond_hull = (cond_obj) & (~self.data[cond_obj].hidden)
                 verbose(VERB_SIMPLE, "Hull points (whole object):", sum(cond_hull))
-                qhull = Science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1208,12 +1231,12 @@ class Spangler(PrynglesCommon):
                 hidden = self.data[cond_hidden][["x_int", "y_int", "z_int"]].values
                 nhidden = len(hidden)
                 p1, p2, p3 = hidden[0], hidden[int(nhidden / 3)], hidden[2 * int(nhidden / 3)]
-                plane = Plane(p1, p2, p3)
+                plane = science.Plane(p1, p2, p3)
 
                 # Convex hull of hidden points (the hole)
                 cond_hull = (cond_obj) & (self.data[cond_obj].hidden)
                 verbose(VERB_SIMPLE, "Hull points (hidden):", sum(cond_hull))
-                qhull = Science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1223,7 +1246,7 @@ class Spangler(PrynglesCommon):
                 # Convex hull of no hidden points
                 cond_hull = (cond_obj) & (~self.data[cond_obj].hidden)
                 verbose(VERB_SIMPLE, "Hull points (visible ring):", sum(cond_hull))
-                qhull = Science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
+                qhull = science.get_convexhull(self.data[cond_hull][["x_int", "y_int"]])
                 vhull = qhull.volume if qhull else 0
 
                 self.qhulls[name] += [
@@ -1262,7 +1285,7 @@ class Spangler(PrynglesCommon):
 
         # Set properties
         self.alpha_obs = alpha
-        self.rqf_obs = Science.spherical(self.n_obs)
+        self.rqf_obs = science.spherical(self.n_obs)
         self.center_obs = center.copy() if center else center
 
         self.data.loc[cond, "visible"] = False
@@ -1374,7 +1397,7 @@ class Spangler(PrynglesCommon):
             cond = self.data.name == name
 
         # Set the light source direction in spherical coordinates
-        self.rqf_luz = Science.spherical(self.n_luz)
+        self.rqf_luz = science.spherical(self.n_luz)
 
         # Set the default value of the states to change in False
         self.data.loc[cond, "illuminated"] = False
@@ -1692,8 +1715,8 @@ class Spangler(PrynglesCommon):
             quiver_args = dict(scale=15, scale_units="width", width=0.005, alpha=0.6, zorder=+1000, headwidth=0)
 
             # Quiver plot of azimuth for light
-            azx = [mh.cos(x) for x in self.data[cond].azim_luz]
-            azy = [mh.sin(x) for x in self.data[cond].azim_luz]
+            azx = [np.cos(x) for x in self.data[cond].azim_luz]
+            azy = [np.sin(x) for x in self.data[cond].azim_luz]
 
             self.ax2d.quiver(
                 self.data[cond]["x_" + coords] - x_cen,
@@ -1706,8 +1729,8 @@ class Spangler(PrynglesCommon):
             )
 
             # Quiver plot of azimuth for observer
-            azx = [mh.cos(x) for x in self.data[cond].azim_luz]
-            azy = [mh.sin(x) for x in self.data[cond].azim_luz]
+            azx = [np.cos(x) for x in self.data[cond].azim_luz]
+            azy = [np.sin(x) for x in self.data[cond].azim_luz]
             self.ax2d.quiver(
                 self.data[cond]["x_" + coords] - x_cen,
                 self.data[cond]["y_" + coords] - y_cen,
@@ -1863,7 +1886,7 @@ class Spangler(PrynglesCommon):
             raise AssertionError("You must set an intersection vantage point.")
 
         # List of objects in spangler
-        names = list(Misc.flatten([self.name]))
+        names = list(flatten([self.name]))
 
         if len(included):
             excluded = [n for n in names if n not in included]
@@ -1926,7 +1949,7 @@ class Spangler(PrynglesCommon):
                 verbose(VERB_SIMPLE, f"Hull {i + 1} for '{name}' of type '{htype}'")
 
                 # Evaluate conditions
-                inhull = np.asarray(Science.points_in_hull(self.data[["x_int", "y_int"]], qhull), dtype=bool)
+                inhull = np.asarray(science.points_in_hull(self.data[["x_int", "y_int"]], qhull), dtype=bool)
                 inhull = inhull & np.asarray((~cond) & (cond_included), dtype=bool)
                 below = np.array([False] * self.nspangles)
                 above = np.array([False] * self.nspangles)
