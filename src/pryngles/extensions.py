@@ -18,12 +18,11 @@
 # --------------------------------------------------
 
 import ctypes
-import glob
+from importlib.util import find_spec
 
 import numpy as np
 
 from pryngles.common import VERB_SIMPLE, verbose
-from pryngles.misc import get_data
 
 # --------------------------------------------------
 # Constants of module extensions
@@ -35,25 +34,10 @@ PPDOUBLE = ctypes.POINTER(PDOUBLE)
 PPPDOUBLE = ctypes.POINTER(PPDOUBLE)
 
 # Load library
-libfile = glob.glob(get_data("../cpixx*.so"))[0]
-cpixx_ext = ctypes.CDLL(libfile)
-
-# --------------------------------------------------
-# Stand alone code of the module
-# --------------------------------------------------
-# Calculate reflection
-cpixx_ext.reflection.restype = ctypes.c_int
-cpixx_ext.reflection.argtypes = [
-    ctypes.Structure,
-    ctypes.c_int,
-    ctypes.c_int,
-    PDOUBLE,
-    PDOUBLE,
-    PDOUBLE,
-    PDOUBLE,
-    PDOUBLE,
-    PPDOUBLE,
-]
+_spec = find_spec("pryngles.cpixx")
+if _spec is None or _spec.origin is None:
+    raise ImportError("pryngles.cpixx extension not built; reinstall pryngles")
+cpixx_ext = ctypes.CDLL(_spec.origin)
 
 
 # --------------------------------------------------
@@ -192,6 +176,21 @@ class FourierCoefficients(ctypes.Structure):
         self.rtra = ExtensionUtil.cub2ptr(rtra)
 
 
+# Define the argument and return types for the reflection function
+cpixx_ext.reflection.restype = ctypes.c_int
+cpixx_ext.reflection.argtypes = [
+    FourierCoefficients,
+    ctypes.c_int,
+    ctypes.c_int,
+    PDOUBLE,
+    PDOUBLE,
+    PDOUBLE,
+    PDOUBLE,
+    PDOUBLE,
+    PPDOUBLE,
+]
+
+
 # --------------------------------------------------
 # Class StokesScatterer
 # --------------------------------------------------
@@ -280,7 +279,7 @@ class StokesScatterer:
         npix = len(phi)
         Sarr = np.zeros((npix, self.F.nmat + 1))
         Sarr_ptr = ExtensionUtil.mat2ptr(Sarr)
-        cpixx_ext.reflection(
+        ret = cpixx_ext.reflection(
             self.F,
             qreflection,
             npix,
@@ -291,5 +290,7 @@ class StokesScatterer:
             ExtensionUtil.vec2ptr(apix),
             Sarr_ptr,
         )
+        if ret != 0:
+            raise RuntimeError(f"Error in reflection calculation: {ret}")
         stokes = ExtensionUtil.ptr2mat(Sarr_ptr, *Sarr.shape)
         return stokes
