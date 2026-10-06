@@ -1,11 +1,11 @@
 ##################################################################
 #                                                                #
-#.#####...#####...##..##..##..##...####...##......######...####..#
-#.##..##..##..##...####...###.##..##......##......##......##.....#
-#.#####...#####.....##....##.###..##.###..##......####.....####..#
-#.##......##..##....##....##..##..##..##..##......##..........##.#
-#.##......##..##....##....##..##...####...######..######...####..#
-#................................................................#
+# .#####...#####...##..##..##..##...####...##......######...####..#
+# .##..##..##..##...####...###.##..##......##......##......##.....#
+# .#####...#####.....##....##.###..##.###..##......####.....####..#
+# .##......##..##....##....##..##..##..##..##......##..........##.#
+# .##......##..##....##....##..##...####...######..######...####..#
+# ................................................................#
 #                                                                #
 # PlanetaRY spanGLES                                             #
 #                                                                #
@@ -14,16 +14,18 @@
 ##################################################################
 
 import numpy as np
-from numba import njit, int64, float64, types
-from pryngles import verbose, VERB_SIMPLE
+from numba import float64, int64, njit, types
 
-class StokesScatterer(object):
+from pryngles import VERB_SIMPLE, verbose
+
+
+class StokesScatterer:
     """Stokes scatterer"""
-    
-    def __init__(self,filename):
-        self.filename=filename
+
+    def __init__(self, filename):
+        self.filename = filename
         self.read_fourier()
-        
+
     def read_fourier(self):
         """
         Read a file containing fourier coefficients produced by PyMieDAP
@@ -46,64 +48,73 @@ class StokesScatterer(object):
             rfout: array (nmugs*nmat,nmugs,nfou):
                Matrix for the fourier coefficients for reflection.
 
-            rtra: array (nmugs*nmat,nmugs,nfou): 
+            rtra: array (nmugs*nmat,nmugs,nfou):
                Matrix for the fourier coefficients for transmission
         """
-        f=open(self.filename)
+        f = open(self.filename)
 
-        #Read header
-        nmat=0
-        imu=0
-        for i,line in enumerate(f):
-            if '#' in line:
+        # Read header
+        nmat = 0
+        imu = 0
+        for i, line in enumerate(f):
+            if "#" in line:
                 continue
-            data=line.split()
-            if len(data)<3:
-                if len(data)==1:
+            data = line.split()
+            if len(data) < 3:
+                if len(data) == 1:
                     if not nmat:
-                        nmat=int(data[0])
+                        nmat = int(data[0])
                     else:
-                        nmugs=int(data[0])
-                        xmu=np.zeros(nmugs)
+                        nmugs = int(data[0])
+                        xmu = np.zeros(nmugs)
                 else:
-                    xmu[imu]=float(data[0])
-                    imu+=1
+                    xmu[imu] = float(data[0])
+                    imu += 1
             else:
                 break
 
-        #Get core data
-        data=np.loadtxt(self.filename,skiprows=i)
-        nfou=int(data[:,0].max())+1
+        # Get core data
+        data = np.loadtxt(self.filename, skiprows=i)
+        nfou = int(data[:, 0].max()) + 1
 
-        rfou=np.zeros((nmat*nmugs,nmugs,nfou))
-        rtra=np.zeros((nmat*nmugs,nmugs,nfou))
+        rfou = np.zeros((nmat * nmugs, nmugs, nfou))
+        rtra = np.zeros((nmat * nmugs, nmugs, nfou))
 
-        #Read fourier coefficients
+        # Read fourier coefficients
         for row in data:
-            m,i,j=int(row[0]),int(row[1])-1,int(row[2])-1
-            ibase=i*nmat
-            rfou[ibase:ibase+3,j,m]=row[3:3+nmat]
-            if len(row[3:])>nmat:
-                rtra[ibase:ibase+3,j,m]=row[3+nmat:3+2*nmat]
+            m, i, j = int(row[0]), int(row[1]) - 1, int(row[2]) - 1
+            ibase = i * nmat
+            rfou[ibase : ibase + 3, j, m] = row[3 : 3 + nmat]
+            if len(row[3:]) > nmat:
+                rtra[ibase : ibase + 3, j, m] = row[3 + nmat : 3 + 2 * nmat]
 
-        verbose(VERB_SIMPLE,f"Checksum '{self.filename}': {rfou.sum()+rtra.sum():.16e}")
+        verbose(VERB_SIMPLE, f"Checksum '{self.filename}': {rfou.sum() + rtra.sum():.16e}")
         f.close()
-        
-        self.nmat,self.nmugs,self.nfou=nmat,nmugs,nfou
-        self.xmu,self.rfou,self.rtra=xmu,rfou,rtra
 
-    def calculate_stokes(self,phi,beta,theta0,theta,apix,qreflection=1):
-        return reflection(self.nmat, self.nmugs, self.nfou, # integers
-                            self.rfou, self.rtra,             # 3D arrays
-                            self.xmu,                         # 1D array
-                            qreflection,                      # integers
-                            phi, beta, theta0, theta, apix    # 1D arrays
-                            )
+        self.nmat, self.nmugs, self.nfou = nmat, nmugs, nfou
+        self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
+
+    def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
+        return reflection(
+            self.nmat,
+            self.nmugs,
+            self.nfou,  # integers
+            self.rfou,
+            self.rtra,  # 3D arrays
+            self.xmu,  # 1D array
+            qreflection,  # integers
+            phi,
+            beta,
+            theta0,
+            theta,
+            apix,  # 1D arrays
+        )
 
 
 """
 The following routines implement the spline interpolation routine from Press et al. (1986, p.88).
 """
+
 
 @njit(float64[:](float64[:], float64[:], int64))
 def spline(x, y, n):
@@ -117,34 +128,36 @@ def spline(x, y, n):
     y2 = np.zeros(n)
 
     y2[0] = 0
-    u[0] =  0
+    u[0] = 0
 
-    for i in range(1, n-1):
-        sig = (x[i]-x[i-1])/(x[i+1]-x[i-1])
-        p = sig*y2[i-1]+2
-        y2[i] = (sig-1)/p
-        u[i] = (6*((y[i+1]-y[i])/(x[i+1]-x[i]) - (y[i]-y[i-1])/
-                (x[i]-x[i-1]))/(x[i+1]-x[i-1]) - sig*u[i-1])/p
+    for i in range(1, n - 1):
+        sig = (x[i] - x[i - 1]) / (x[i + 1] - x[i - 1])
+        p = sig * y2[i - 1] + 2
+        y2[i] = (sig - 1) / p
+        u[i] = (
+            6 * ((y[i + 1] - y[i]) / (x[i + 1] - x[i]) - (y[i] - y[i - 1]) / (x[i] - x[i - 1])) / (x[i + 1] - x[i - 1])
+            - sig * u[i - 1]
+        ) / p
 
     qn = 0
     un = 0
-    y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1)
+    y2[n - 1] = (un - qn * u[n - 2]) / (qn * y2[n - 2] + 1)
 
-    for k in range(n-2, -1, -1):
-        y2[k] = y2[k]*y2[k+1]+u[k]
+    for k in range(n - 2, -1, -1):
+        y2[k] = y2[k] * y2[k + 1] + u[k]
 
     return y2
 
 
 @njit(int64(float64[:], int64, float64))
-def bisect(xa, n ,x):
+def bisect(xa, n, x):
     """
     Given a tabulated array xa of length n, find the nearest
     index on the left which is nearest to a target value x.
 
     Assumes xa is sorted/ordered.
     """
-    klo = np.searchsorted(xa, x, side='right') - 1
+    klo = np.searchsorted(xa, x, side="right") - 1
     if klo < 0:
         klo = 0
     elif klo > n - 2:
@@ -164,7 +177,7 @@ def spline_coefficients(xa, n, x):
 
     h = xa[khi] - xa[klo]
 
-    if (np.abs(h) < 1e-10):
+    if np.abs(h) < 1e-10:
         print("ERROR in spline_coefficients: bad xa input.")
         # Should we exit with error here?
 
@@ -175,7 +188,7 @@ def spline_coefficients(xa, n, x):
     return klo, khi, a, b, h
 
 
-@njit(float64( float64[:], float64[:], int64, int64, float64, float64, float64) )
+@njit(float64(float64[:], float64[:], int64, int64, float64, float64, float64))
 def splint(ya, y2a, klo, khi, a, b, h):
     """
     This routine returns a cubic-spline interpolated value y, given the
@@ -186,23 +199,30 @@ def splint(ya, y2a, klo, khi, a, b, h):
     return y
 
 
-@njit(float64[:,:](
-        int64, int64, int64,
-        float64[:,:,:], float64[:,:,:], float64[:],
+@njit(
+    float64[:, :](
         int64,
-        types.Array(dtype=types.float64, ndim=1, layout='C', readonly=True), # phi is readonly, so can't use just float64[:] here
-        float64[:], float64[:], float64[:], float64[:],
-        ))
-def reflection(nmat, nmugs, nfou,
-                rfou, rtra, xmu,
-                qreflection,
-                phi,
-                beta, theta0, theta, apix): 
+        int64,
+        int64,
+        float64[:, :, :],
+        float64[:, :, :],
+        float64[:],
+        int64,
+        types.Array(
+            dtype=types.float64, ndim=1, layout="C", readonly=True
+        ),  # phi is readonly, so can't use just float64[:] here
+        float64[:],
+        float64[:],
+        float64[:],
+        float64[:],
+    )
+)
+def reflection(nmat, nmugs, nfou, rfou, rtra, xmu, qreflection, phi, beta, theta0, theta, apix):
 
     npix = len(phi)
-    
+
     # This function returns the following 2D array
-    Sarr = np.zeros((npix, nmat+1))
+    Sarr = np.zeros((npix, nmat + 1))
 
     # Cubes
     rf = np.zeros((nmat, nmugs, nmugs))
@@ -225,9 +245,8 @@ def reflection(nmat, nmugs, nfou,
 
     # Loop over the Fourier coefficients:
     for m in range(nfou):
-
         fac = 1.0
-        if (m == 0):
+        if m == 0:
             fac = 0.5
 
         # Initialize the interpolation matrix for the current fourier coefficient:
@@ -235,21 +254,20 @@ def reflection(nmat, nmugs, nfou,
             for k in range(nmat):
                 ki = j * nmat + k
                 for n in range(nmugs):
-                    if (qreflection == 1):
-                        rf[k,j,n] = rfou[ki,n,m]
+                    if qreflection == 1:
+                        rf[k, j, n] = rfou[ki, n, m]
                     else:
-                        rf[k,j,n] = rtra[ki,n,m]
-
+                        rf[k, j, n] = rtra[ki, n, m]
 
                 # Use slice rf(k,j,:), write directly into corresponding rfsec row
-                rfsec[k,j,:] = spline(xmu, rf[k,j,:], nmugs)
+                rfsec[k, j, :] = spline(xmu, rf[k, j, :], nmugs)
 
-        #----------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------
         #     Loop over the pixels:
         #       If the input angles are (very) similar to a previously calculated
         #       case use those values. To obtain obtain the fourier coefficient at
         #       (mu,mu0) spline has to be called a second time.
-        #----------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------
         for i in range(npix):
             mu = theta[i]
             mu0 = theta0[i]
@@ -258,12 +276,10 @@ def reflection(nmat, nmugs, nfou,
             Bplus[2] = np.sin(m * phi[i])
             Bplus[3] = np.sin(m * phi[i])
 
-            if ((i > 0) and ((np.abs(mu - muold) < 1e-6)) and (np.abs(mu0 - mu0old) < 1e-6)):
-
-                RM[i,:nmat] = RM[i,:nmat] + 2 * Bplus[:nmat] * fac * rf3save[:nmat]
+            if (i > 0) and (np.abs(mu - muold) < 1e-6) and (np.abs(mu0 - mu0old) < 1e-6):
+                RM[i, :nmat] = RM[i, :nmat] + 2 * Bplus[:nmat] * fac * rf3save[:nmat]
 
             else:
-
                 # Get indices and coefficients to work with (at mu0)
                 klo, khi, a, b, h = spline_coefficients(xmu, nmugs, mu0)
 
@@ -272,18 +288,18 @@ def reflection(nmat, nmugs, nfou,
                         # Use rf(k,j,:) and rfsec(k,j,:) slices directly, and write
                         # straight into rmu0(k,j,:) Do the spline interpolation between klo
                         # and khi, given the coefficients a,b,h
-                        rfmu0[k,j] = splint(rf[k,j,:], rfsec[k,j,:], klo, khi, a, b, h)
+                        rfmu0[k, j] = splint(rf[k, j, :], rfsec[k, j, :], klo, khi, a, b, h)
 
                 # Get indices and coefficients to work with (now at mu)
                 klo, khi, a, b, h = spline_coefficients(xmu, nmugs, mu)
 
                 for k in range(nmat):
-                    rfsecmu0 = spline(xmu, rfmu0[k,:], nmugs)
+                    rfsecmu0 = spline(xmu, rfmu0[k, :], nmugs)
                     # Do the spline interpolation between klo and khi, given the coefficients a,b,h
-                    rf3save[k] = splint(rfmu0[k,:], rfsecmu0, klo, khi, a, b, h)
+                    rf3save[k] = splint(rfmu0[k, :], rfsecmu0, klo, khi, a, b, h)
                     muold = mu
                     mu0old = mu0
-                    RM[i,k] = RM[i,k] + 2 * Bplus[k] * fac * rf3save[k]
+                    RM[i, k] = RM[i, k] + 2 * Bplus[k] * fac * rf3save[k]
 
     # Loop again over the pixels to rotate Stokes vector:
     for i in range(npix):
@@ -291,7 +307,7 @@ def reflection(nmat, nmugs, nfou,
         mu0 = theta0[i]
 
         # Calculate the locally reflected Stokes vector:
-        SvR[:nmat] = mu0 * RM[i,:nmat]
+        SvR[:nmat] = mu0 * RM[i, :nmat]
 
         # Rotate Stokes elements Q and U to the actual reference plane:
         be = 2 * beta[i]
@@ -301,23 +317,23 @@ def reflection(nmat, nmugs, nfou,
         SvR[2] = SvR3
 
         # Compute the local degree of polarisation P:
-        if (np.abs(SvR[0]) < 1e-6):
+        if np.abs(SvR[0]) < 1e-6:
             P = 0
-        elif (np.abs(SvR[2]) < 1e-6):
+        elif np.abs(SvR[2]) < 1e-6:
             P = -SvR[1] / SvR[0]
         else:
             P = np.sqrt(SvR[1] * SvR[1] + SvR[2] * SvR[2]) / SvR[0]
 
-        if (np.abs(P) < 1e-6):
+        if np.abs(P) < 1e-6:
             P = 0
 
-        #----------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------
         # Add the Stokes elements of the pixel to an array:
         #   Multiply with mu and the actual pixel area to obtain stokes elements
-        #----------------------------------------------------------------------------
-        Sarr[i,:nmat] = SvR[:nmat] * mu * apix[i]
+        # ----------------------------------------------------------------------------
+        Sarr[i, :nmat] = SvR[:nmat] * mu * apix[i]
 
         # The value of the degree of polarization
-        Sarr[i,nmat] = P
+        Sarr[i, nmat] = P
 
-    return Sarr # 2D array
+    return Sarr  # 2D array
