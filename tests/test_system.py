@@ -230,7 +230,9 @@ def test_integrate():
     # The body's center and the spangler's center_ecl column are updated
     np.testing.assert_allclose(P.center_ecl, center_after)
     np.testing.assert_allclose(
-        np.array(sys.sg.data.loc[sys.sg.data.name == "Planet", "center_ecl"].iloc[0]),
+        np.array(
+            sys.sg.data.loc[sys.sg.data.name == "Planet", ["center_ecl_x", "center_ecl_y", "center_ecl_z"]].iloc[0]
+        ),
         center_after,
     )
 
