@@ -2,14 +2,17 @@ import numpy as np
 import pytest
 
 import pryngles as pr
+from pryngles import science
 
 
 def test_const():
     """SPANGLER_KEY_ORDERING and SPANGLER_COLUMNS must contain the same keys."""
-    for key in pr.SPANGLER_KEY_ORDERING:
-        assert key in pr.SPANGLER_COLUMNS, f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS"
-    for key in pr.SPANGLER_COLUMNS:
-        assert key in pr.SPANGLER_KEY_ORDERING, f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
+    for key in pr.consts.SPANGLER_KEY_ORDERING:
+        assert key in pr.consts.SPANGLER_COLUMNS, f"Column '{key}' in SPANGLER_KEY_ORDERING not in SPANGLER_COLUMNS"
+    for key in pr.consts.SPANGLER_COLUMNS:
+        assert key in pr.consts.SPANGLER_KEY_ORDERING, (
+            f"Column '{key}' in SPANGLER_COLUMNS not in SPANGLER_KEY_ORDERING"
+        )
 
 
 def test_init_basic():
@@ -19,9 +22,9 @@ def test_init_basic():
     assert len(sg.data) == 3
     assert sg.shape == "vanilla"
     # Default state: unset True, visibility/source states False
-    assert (sg.data.unset == True).all()
-    for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
-        assert (sg.data[col] == False).all()
+    assert sg.data.unset.all()
+    for col in list(pr.consts.SPANGLER_VISIBILITY_STATES) + list(pr.consts.SPANGLER_SOURCE_STATES):
+        assert not sg.data[col].any()
 
 
 def test_init_join():
@@ -48,7 +51,6 @@ def test_join():
     assert set(sgj.data.name.unique()) == {"A", "B"}
 
 
-
 def test_reset_state():
     """reset_state clears all visibility/source states and sets unset."""
     sg = pr.Spangler(nspangles=100)
@@ -61,9 +63,9 @@ def test_reset_state():
     assert sg.data.illuminated.any()
 
     sg.reset_state()
-    assert (sg.data.unset == True).all()
-    for col in list(pr.SPANGLER_VISIBILITY_STATES) + list(pr.SPANGLER_SOURCE_STATES):
-        assert (sg.data[col] == False).all()
+    assert sg.data.unset.all()
+    for col in list(pr.consts.SPANGLER_VISIBILITY_STATES) + list(pr.consts.SPANGLER_SOURCE_STATES):
+        assert not sg.data[col].any()
     for coords in "int", "obs", "luz":
         assert (sg.data["hidden_by_" + coords] == "").all()
         assert (sg.data["transit_over_" + coords] == "").all()
@@ -77,7 +79,7 @@ def test_set_scale():
 
     asp_before = sg.data.asp.iloc[0]
     x_before = sg.data.x_equ.iloc[0]
-    center_before = np.array(sg.data.center_equ.iloc[0])
+    center_before = sg.data.vectors.center_equ.iloc[0].to_numpy()
 
     scale = 3
     sg.set_scale(scale)
@@ -85,7 +87,7 @@ def test_set_scale():
     assert sg.scale == scale
     np.testing.assert_allclose(sg.data.asp.iloc[0], asp_before * scale**2)
     np.testing.assert_allclose(sg.data.x_equ.iloc[0], x_before * scale)
-    np.testing.assert_allclose(np.array(sg.data.center_equ.iloc[0]), center_before * scale)
+    np.testing.assert_allclose(sg.data.vectors.center_equ.iloc[0].to_numpy(), center_before * scale)
 
 
 def test_populate_spangler_sphere():
@@ -96,7 +98,7 @@ def test_populate_spangler_sphere():
     sg.set_positions()
     r = np.linalg.norm(sg.data[["x_equ", "y_equ", "z_equ"]].values, axis=1)
     np.testing.assert_allclose(r, scale, atol=1e-6)
-    ns = np.stack(sg.data.ns_equ.values)
+    ns = sg.data.vectors.ns_equ.to_numpy()
     np.testing.assert_allclose(np.linalg.norm(ns, axis=1), 1, atol=1e-6)
 
 
@@ -139,7 +141,7 @@ def test_set_observer():
     sg.set_positions()
     sg.set_observer(nvec=[0, 0, 1])
     np.testing.assert_allclose(sg.n_obs, [0, 0, 1])
-    np.testing.assert_allclose(sg.rqf_obs, pr.Science.spherical([0, 0, 1]))
+    np.testing.assert_allclose(sg.rqf_obs, science.spherical([0, 0, 1]))
     # For a sphere with no hidden spangles, visible == cos_obs > 0
     assert (sg.data.visible == (sg.data.cos_obs > 0)).all()
     assert sg.data.visible.any()
@@ -159,7 +161,7 @@ def test_set_luz():
     sg.set_observer(nvec=[0, 0, 1])
     sg.set_luz(nvec=[1, 0, 0])
     np.testing.assert_allclose(sg.n_luz, [1, 0, 0])
-    np.testing.assert_allclose(sg.rqf_luz, pr.Science.spherical([1, 0, 0]))
+    np.testing.assert_allclose(sg.rqf_luz, science.spherical([1, 0, 0]))
     # For a sphere with no hidden spangles, illuminated == cos_luz > 0
     assert (sg.data.illuminated == (sg.data.cos_luz > 0)).all()
     assert sg.data.illuminated.any()

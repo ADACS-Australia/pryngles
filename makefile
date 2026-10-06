@@ -79,7 +79,7 @@ commit:
 
 pull:
 	@echo "Pulling new files..."
-	@-git pull 
+	@-git pull
 
 ##################################################################
 #PACKAGE RULES

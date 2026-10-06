@@ -61,7 +61,7 @@ def test_gen_ring_validation():
     # Must have at least 10 points to sample a ring.
     with pytest.raises(ValueError):
         pr.Sampler(N=5, seed=10).gen_ring(0.5)
-    
+
     # Must have inner radius between 0 and 1.
     with pytest.raises(ValueError):
         pr.Sampler(N=500, seed=10).gen_ring(1.5)
@@ -104,9 +104,7 @@ def test_calc_distances_deterministic():
     distances 1, 1, 2, 3, 4, so every derived quantity is known exactly.
     """
     S = pr.Sampler(N=5, seed=10)
-    S.ss = np.array(
-        [[0, 0, 0], [1, 0, 0], [3, 0, 0], [6, 0, 0], [10, 0, 0]], dtype=float
-    )
+    S.ss = np.array([[0, 0, 0], [1, 0, 0], [3, 0, 0], [6, 0, 0], [10, 0, 0]], dtype=float)
     S.N = 5
     S.A = 5.0
     S._calc_distances()
@@ -130,7 +128,7 @@ def test_cut_hole():
     S.gen_circle()
     n_before = S.N
     S._cut_hole(0.5)
-    assert S.N < n_before
+    assert n_before > S.N
     radii = np.linalg.norm(S.ss[:, :2], axis=1)
     assert radii.min() >= 0.5 - 1e-12
     np.testing.assert_allclose(S.A, np.pi * (1 - 0.5**2), atol=1e-12)
@@ -142,7 +140,7 @@ def test_purge_sample_reduces_n():
     S.gen_sphere()
     n_before = S.N
     S.purge_sample()
-    assert S.N <= n_before
+    assert n_before >= S.N
     assert S.purged is True
 
 
@@ -153,7 +151,7 @@ def test_purge_sample_idempotent():
     S.purge_sample()
     n_after_first = S.N
     S.purge_sample()
-    assert S.N == n_after_first
+    assert n_after_first == S.N
 
 
 def test_purge_sample_threshold():
@@ -164,8 +162,7 @@ def test_purge_sample_threshold():
     each cluster.
     """
     points = np.array(
-        [[0, 0, 0], [0.1, 0, 0], [5, 0, 0], [5.1, 0, 0],
-         [10, 0, 0], [20, 0, 0], [30, 0, 0], [40, 0, 0]],
+        [[0, 0, 0], [0.1, 0, 0], [5, 0, 0], [5.1, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [40, 0, 0]],
         dtype=float,
     )
 

@@ -1,29 +1,29 @@
 # For the correct use of this datafile, see Stam and de Haan 2013
 # Please refer to Stam and de Haan 2013 when using this data
 #
-#  INPUT FOR RADIATIVE TRANSFER PROGRAM DAP-DATABASE                               
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~          
-#  GENERAL PARAMETERS                                                              
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~          
-#  3                 :size of Stokes parameters (1, 3, or 4)                       
-#  40                :number of Gauss points                                       
-#  0.00               :surface albedo                                              
-#  0.02             :depolarization factor (air)                                   
-#                                                                                  
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~          
-#  AEROSOL PARAMETERS                                                              
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~          
-#  1                :number of aerosol types (max. 6)                              
-#  Bb.sc.00.550     :file with aerosol scattering coefficients files               
-#                                                                                  
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~          
-#  LAYER PARAMETERS                                                                
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~          
-#  1               :number of layers (from bottom to top)                          
-#                                                                                  
-#  n   alt     pres      bmsca        bmabs       baer    nr                       
-#  -----------------------------------------------------------                     
-#  1    0.0    1.013     50.0        0.000       0.0      1                       
+#  INPUT FOR RADIATIVE TRANSFER PROGRAM DAP-DATABASE
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  GENERAL PARAMETERS
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  3                 :size of Stokes parameters (1, 3, or 4)
+#  40                :number of Gauss points
+#  0.00               :surface albedo
+#  0.02             :depolarization factor (air)
+#
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  AEROSOL PARAMETERS
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  1                :number of aerosol types (max. 6)
+#  Bb.sc.00.550     :file with aerosol scattering coefficients files
+#
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  LAYER PARAMETERS
+#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#  1               :number of layers (from bottom to top)
+#
+#  n   alt     pres      bmsca        bmabs       baer    nr
+#  -----------------------------------------------------------
+#  1    0.0    1.013     50.0        0.000       0.0      1
   3
  41
   0.88114514E-03     0.22606385E-02

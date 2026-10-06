@@ -12,7 +12,7 @@
 ##################################################################
 # License http://github.com/seap-udea/pryngles-public            #
 ##################################################################
-python module pixx ! in 
+python module pixx ! in
     interface  ! in :pixx
         subroutine spline(x,y,n,y2) ! in :pixx:./pixx/pixx.f
             double precision dimension(n),intent(in),depend(n) :: x
@@ -80,5 +80,5 @@ python module pixx ! in
             double precision dimension(nmugs),intent(out),depend(nmugs) :: xmu
             double precision dimension(nmat*nmugs,nmugs,nfou + 1),intent(out),depend(nmugs,nfou,nmat) :: rfou
         end subroutine rdfous_ring
-    end interface 
+    end interface
 end python module pixx

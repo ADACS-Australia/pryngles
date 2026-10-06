@@ -89,8 +89,8 @@ def test_remove():
     sys = pr.System()
     S = sys.add(name="Star", m=8, radius=4)
     P = sys.add("Planet", parent=S, name="Planet", radius=2, a=10)
-    M = sys.add("Planet", parent=P, name="Moon", radius=2, a=1)
-    R = sys.add("Ring", parent=P, name="Ring", fi=1.3, fe=2.3)
+    sys.add("Planet", parent=P, name="Moon", radius=2, a=1)
+    sys.add("Ring", parent=P, name="Ring", fi=1.3, fe=2.3)
     assert sys.nbodies == 4
 
     # Removing the planet also removes its children (Moon, Ring)
@@ -104,7 +104,7 @@ def test_remove():
 def test_remove_missing():
     """Removing a non-existent body raises ValueError."""
     sys = pr.System()
-    S = sys.add(name="Star", m=8, radius=4)
+    sys.add(name="Star", m=8, radius=4)
     with pytest.raises(ValueError):
         sys.remove("Planet")
 
@@ -123,7 +123,7 @@ def test_update_body_after_spangle():
     """update_body raises AssertionError after the system is spangled."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=8, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     with pytest.raises(AssertionError):
@@ -148,7 +148,7 @@ def test_set_observer_before_spangle():
     """_set_observer raises AssertionError before the system is spangled."""
     sys = pr.System()
     S = sys.add(nspangles=100, m=8, radius=1)
-    P = sys.add("Planet", parent=S, nspangles=100, m=1, radius=0.2, a=5)
+    sys.add("Planet", parent=S, nspangles=100, m=1, radius=0.2, a=5)
     with pytest.raises(AssertionError):
         sys._set_observer(nvec=[1, 0, 0])
 
@@ -157,7 +157,7 @@ def test_spangle_before_simulation():
     """spangle_system raises AssertionError before initialize_simulation."""
     sys = pr.System()
     S = sys.add(nspangles=100, m=8, radius=1)
-    P = sys.add("Planet", parent=S, nspangles=100, m=1, radius=0.2, a=5)
+    sys.add("Planet", parent=S, nspangles=100, m=1, radius=0.2, a=5)
     with pytest.raises(AssertionError):
         sys.spangle_system()
 
@@ -166,7 +166,7 @@ def test_integrate_before_spangle():
     """integrate raises AssertionError before the system is spangled."""
     sys = pr.System()
     S = sys.add("Star", name="Star", m=8, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", radius=0.2, a=2)
     with pytest.raises(AssertionError):
         sys.integrate(10)
 
@@ -175,7 +175,7 @@ def test_set_luz_before_observer():
     """_set_luz raises AssertionError if the observer has not been set."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     # spangle_system sets the observer via update_perspective; reset the flag
@@ -188,7 +188,7 @@ def test_set_observer_and_luz():
     """_set_observer then _set_luz sets the observer and light flags."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     sys._set_observer(nvec=[0, 0, 1])
@@ -201,7 +201,7 @@ def test_update_perspective():
     """update_perspective sets the observer direction and flags."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     sys.update_perspective(n_obs=[1, 0, 0])
@@ -230,7 +230,9 @@ def test_integrate():
     # The body's center and the spangler's center_ecl column are updated
     np.testing.assert_allclose(P.center_ecl, center_after)
     np.testing.assert_allclose(
-        np.array(sys.sg.data.loc[sys.sg.data.name == "Planet", "center_ecl"].iloc[0]),
+        np.array(
+            sys.sg.data.loc[sys.sg.data.name == "Planet", ["center_ecl_x", "center_ecl_y", "center_ecl_z"]].iloc[0]
+        ),
         center_after,
     )
 
@@ -239,7 +241,7 @@ def test_integrate_perspective():
     """integrate_perspective advances time and updates the observer."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=1, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, m=1e-3, a=5)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, m=1e-3, a=5)
     sys.initialize_simulation()
     sys.spangle_system()
     t_before = sys.sim.t
@@ -252,7 +254,7 @@ def test_update_scatterers():
     """spangle_system assigns a scatterer to every spangle."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     assert "scatterer" in sys.sg.data.columns
@@ -263,7 +265,7 @@ def test_update_optical_depth():
     """spangle_system sets the tau_gray_optical column."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     assert (sys.sg.data["tau_gray_optical"] == np.inf).all()
@@ -276,7 +278,7 @@ def test_update_albedos():
     """_update_albedos computes directional albedo per spangle."""
     sys = pr.System()
     S = sys.add("Star", name="Star", nspangles=100, m=9, radius=1)
-    P = sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
+    sys.add("Planet", parent=S, name="Planet", nspangles=100, radius=0.2, a=2)
     sys.initialize_simulation()
     sys.spangle_system()
     sys._update_albedos()
