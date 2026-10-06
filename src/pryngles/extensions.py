@@ -18,12 +18,11 @@
 # --------------------------------------------------
 
 import ctypes
-import glob
+from importlib.util import find_spec
 
 import numpy as np
 
 from pryngles.common import VERB_SIMPLE, verbose
-from pryngles.misc import get_data
 
 # --------------------------------------------------
 # Constants of module extensions
@@ -35,25 +34,10 @@ PPDOUBLE = ctypes.POINTER(PDOUBLE)
 PPPDOUBLE = ctypes.POINTER(PPDOUBLE)
 
 # Load library
-libfile = glob.glob(get_data("../cpixx*.so"))[0]
-cpixx_ext = ctypes.CDLL(libfile)
-
-# --------------------------------------------------
-# Stand alone code of the module
-# --------------------------------------------------
-# Calculate reflection
-cpixx_ext.reflection.restype = ctypes.c_int
-cpixx_ext.reflection.argtypes = [
-    ctypes.Structure,
-    ctypes.c_int,
-    ctypes.c_int,
-    PDOUBLE,
-    PDOUBLE,
-    PDOUBLE,
-    PDOUBLE,
-    PDOUBLE,
-    PPDOUBLE,
-]
+_spec = find_spec("pryngles.cpixx")
+if _spec is None or _spec.origin is None:
+    raise ImportError("pryngles.cpixx extension not built; reinstall pryngles")
+cpixx_ext = ctypes.CDLL(_spec.origin)
 
 
 # --------------------------------------------------
@@ -190,6 +174,21 @@ class FourierCoefficients(ctypes.Structure):
         self.xmu = ExtensionUtil.vec2ptr(xmu)
         self.rfou = ExtensionUtil.cub2ptr(rfou)
         self.rtra = ExtensionUtil.cub2ptr(rtra)
+
+
+# Define the argument and return types for the reflection function
+cpixx_ext.reflection.restype = ctypes.c_int
+cpixx_ext.reflection.argtypes = [
+    FourierCoefficients,
+    ctypes.c_int,
+    ctypes.c_int,
+    PDOUBLE,
+    PDOUBLE,
+    PDOUBLE,
+    PDOUBLE,
+    PDOUBLE,
+    PPDOUBLE,
+]
 
 
 # --------------------------------------------------
