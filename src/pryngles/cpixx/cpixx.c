@@ -24,15 +24,37 @@ struct FourierCoefficients {
   double ***rtra;
 };
 
+/*
+ * Checked calloc wrapper for the zeros_* allocators.
+ *
+ * Takes an int count (the dimension type used throughout this file) and
+ * converts it to size_t in one place, which keeps -Wsign-conversion quiet.
+ * Non-positive counts are clamped to 1 so a negative value can never wrap
+ * into a huge allocation request. Aborts on allocation failure rather than
+ * returning NULL, since callers write to the result immediately.
+ *
+ * Memory is zero-initialised by calloc, so callers need no fill loop.
+ */
+static void *xcalloc(int n, size_t size) {
+  if (n <= 0)
+    n = 1; /* avoid calloc(0) ambiguity */
+  void *p = calloc((size_t)n, size);
+  if (!p) {
+    fprintf(stderr, "calloc failed\n");
+    abort();
+  }
+  return p;
+}
+
 double *zeros_vector(int n) {
   double *v;
-  v = (double *)calloc(n, sizeof(double));
+  v = (double *)xcalloc(n, sizeof(double));
   return v;
 }
 
 double **zeros_matrix(int n, int m) {
   double **M;
-  M = (double **)calloc(n, sizeof(double *));
+  M = (double **)xcalloc(n, sizeof(double *));
   for (int i = 0; i < n; i++) {
     M[i] = zeros_vector(m);
   }
@@ -41,7 +63,7 @@ double **zeros_matrix(int n, int m) {
 
 double ***zeros_cube(int n, int m, int p) {
   double ***C;
-  C = (double ***)calloc(n, sizeof(double **));
+  C = (double ***)xcalloc(n, sizeof(double **));
   for (int i = 0; i < n; i++)
     C[i] = zeros_matrix(m, p);
   return C;
