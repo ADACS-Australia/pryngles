@@ -21,7 +21,6 @@ import ctypes
 from importlib.util import find_spec
 
 import numpy as np
-from scipy.interpolate import CubicSpline
 
 from pryngles.common import VERB_SIMPLE, verbose
 
@@ -281,6 +280,37 @@ class StokesScatterer:
         return reflection(self.xmu, table, phi, beta, theta0, theta, apix, nmat=self.nmat, tol=1e-6)
 
 
+def natural_spline_matrix(x):
+    """Matrix S with y2 = S @ y for the natural cubic spline on grid x."""
+    n = len(x)
+    S = np.zeros((n, n))
+    if n < 3:
+        return S
+    h = np.diff(x)
+    r = np.arange(n - 2)
+    # Interior tridiagonal system: A y2[1:-1] = D y
+    A = np.diag((h[:-1] + h[1:]) / 3) + np.diag(h[1:-1] / 6, 1) + np.diag(h[1:-1] / 6, -1)
+    D = np.zeros((n - 2, n))
+    D[r, r] = 1 / h[:-1]
+    D[r, r + 1] = -(1 / h[:-1] + 1 / h[1:])
+    D[r, r + 2] = 1 / h[1:]
+    S[1:-1] = np.linalg.solve(A, D)
+    return S
+
+
+def _bracket(xmu, x):
+    """Bracketing indices and splint coefficients (bisect + spline_coefficients).
+
+    Returns klo, khi and the coefficients multiplying y[klo], y[khi], y2[klo], y2[khi].
+    """
+    klo = np.clip(np.searchsorted(xmu, x, side="right") - 1, 0, len(xmu) - 2)
+    khi = klo + 1
+    h = xmu[khi] - xmu[klo]
+    a = (xmu[khi] - x) / h
+    b = (x - xmu[klo]) / h
+    return klo, khi, a, b, (a**3 - a) * h**2 / 6, (b**3 - b) * h**2 / 6
+
+
 def _reuse_map(mu, mu0, tol):
     """For each pixel, the index of the pixel whose result it reuses.
 
@@ -301,9 +331,16 @@ def _reuse_map(mu, mu0, tol):
     return rep
 
 
+"""NumPy port of the C `reflection()` routine (Stam Fourier-coefficient interpolation).
+
+Key idea: for a fixed abscissa grid `xmu`, a natural cubic spline is linear in y,
+so the second derivatives are y2 = S @ y for a fixed matrix S. That lets us
+  * get the second derivatives of every (k, j) row with one matmul per Fourier term,
+  * turn the per-pixel second spline (along j) into a fixed weight vector W(mu),
+    computed once for all Fourier terms.
 """
-Scipy port of the C code
-"""
+
+
 def reflection(xmu, table, phi, beta, theta0, theta, apix, nmat=4, tol=1e-6):
     """Stokes vector and degree of polarisation per pixel.
 
@@ -323,15 +360,27 @@ def reflection(xmu, table, phi, beta, theta0, theta, apix, nmat=4, tol=1e-6):
     rep = _reuse_map(theta, theta0, tol)
     uniq, inv = np.unique(rep, return_inverse=True)
 
-    # Weights of the second spline (along j at mu): spline through each unit vector
-    W = CubicSpline(xmu, np.eye(nmugs), bc_type="natural")(theta[uniq])  # (uniq, j)
+    S = natural_spline_matrix(xmu)
+    lo0, hi0, a0, b0, ca0, cb0 = _bracket(xmu, theta0[uniq])
+    lo, hi, a, b, ca, cb = _bracket(xmu, theta[uniq])
+
+    # Second spline (along j, evaluated at mu) as fixed weights: value = W @ y
+    W = ca[:, None] * S[lo] + cb[:, None] * S[hi]
+    u = np.arange(len(uniq))
+    W[u, lo] += a
+    W[u, hi] += b
 
     RM = np.zeros((npix, nmat))
     z = np.exp(1j * phi)
     zm = np.ones(npix, complex)  # exp(i*m*phi), built by recurrence
     for m in range(nfou):
-        rfmu0 = CubicSpline(xmu, Rt[m], axis=0, bc_type="natural")(theta0[uniq])  # (uniq, k, j)
-        rf3 = np.einsum("uj,ukj->uk", W, rfmu0)
+        Rm = Rt[m]  # (n, k, j)
+        Q = (S @ Rm.reshape(nmugs, -1)).reshape(Rm.shape)  # y2 along n
+        rf3 = np.zeros((len(uniq), nmat))
+        # splint at mu0 along n, then contract with W over j
+        for idx, coef, src in ((lo0, a0, Rm), (hi0, b0, Rm), (lo0, ca0, Q), (hi0, cb0, Q)):
+            rf3 += coef[:, None] * np.einsum("uj,ukj->uk", W, src[idx])
+
         c, s = zm.real, zm.imag
         B = np.stack([c, c, s, s], axis=1)[:, :nmat]
         RM += (1.0 if m == 0 else 2.0) * B * rf3[inv]  # 2*fac, fac=0.5 for m=0
