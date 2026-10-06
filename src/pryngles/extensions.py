@@ -21,6 +21,7 @@ import ctypes
 from importlib.util import find_spec
 
 import numpy as np
+from scipy.interpolate import CubicSpline
 
 from pryngles.common import VERB_SIMPLE, verbose
 
@@ -270,27 +271,72 @@ class StokesScatterer:
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
         self.F = FourierCoefficients(nmat, nmugs, nfou, xmu, rfou, rtra)
 
-    # --------------------------------------------------
-    # Tested methods from module file extensions
-    # --------------------------------------------------
-
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
-        """ """
-        npix = len(phi)
-        Sarr = np.zeros((npix, self.F.nmat + 1))
-        Sarr_ptr = ExtensionUtil.mat2ptr(Sarr)
-        ret = cpixx_ext.reflection(
-            self.F,
-            qreflection,
-            npix,
-            ExtensionUtil.vec2ptr(phi),
-            ExtensionUtil.vec2ptr(beta),
-            ExtensionUtil.vec2ptr(theta0),
-            ExtensionUtil.vec2ptr(theta),
-            ExtensionUtil.vec2ptr(apix),
-            Sarr_ptr,
-        )
-        if ret != 0:
-            raise RuntimeError(f"Error in reflection calculation: {ret}")
-        stokes = ExtensionUtil.ptr2mat(Sarr_ptr, *Sarr.shape)
-        return stokes
+
+        if qreflection == 1:
+            table = self.rfou
+        else:
+            table = self.rtra
+
+        return reflection(self.xmu, table, phi, beta, theta0, theta, apix, nmat=self.nmat, tol=1e-6)
+
+
+def _reuse_map(mu, mu0, tol):
+    """For each pixel, the index of the pixel whose result it reuses.
+
+    Mirrors the C cache: a pixel reuses the last *computed* pixel if both
+    cos-angles are within tol of it. tol=None disables reuse.
+    """
+    n = len(mu)
+    rep = np.arange(n)
+    if tol is None:
+        return rep
+    m, m0 = mu.tolist(), mu0.tolist()
+    last = 0
+    for i in range(1, n):
+        if abs(m[i] - m[last]) < tol and abs(m0[i] - m0[last]) < tol:
+            rep[i] = last
+        else:
+            last = i
+    return rep
+
+
+"""Scipy port of the C code"""
+
+
+def reflection(xmu, table, phi, beta, theta0, theta, apix, nmat=4, tol=1e-6):
+    xmu = np.asarray(xmu, float)
+    phi, beta, theta0, theta, apix = (np.asarray(v, float) for v in (phi, beta, theta0, theta, apix))
+    nmugs, nfou, npix = len(xmu), table.shape[2], len(theta)
+    Rt = np.ascontiguousarray(table.reshape(nmugs, nmat, nmugs, nfou).transpose(3, 2, 1, 0))  # (m, n, k, j)
+
+    rep = _reuse_map(theta, theta0, tol)
+    uniq, inv = np.unique(rep, return_inverse=True)
+
+    # Weights of the second spline (along j at mu): spline through each unit vector
+    W = CubicSpline(xmu, np.eye(nmugs), bc_type="natural")(theta[uniq])  # (uniq, j)
+
+    RM = np.zeros((npix, nmat))
+    z = np.exp(1j * phi)
+    zm = np.ones(npix, complex)
+    for m in range(nfou):
+        rfmu0 = CubicSpline(xmu, Rt[m], axis=0, bc_type="natural")(theta0[uniq])  # (uniq, k, j)
+        rf3 = np.einsum("uj,ukj->uk", W, rfmu0)
+        c, s = zm.real, zm.imag
+        B = np.stack([c, c, s, s], axis=1)[:, :nmat]
+        RM += (1.0 if m == 0 else 2.0) * B * rf3[inv]
+        zm *= z
+
+    Sv = theta0[:, None] * RM
+    cb2, sb2 = np.cos(2 * beta), np.sin(2 * beta)
+    q, uu = Sv[:, 1].copy(), Sv[:, 2].copy()
+    Sv[:, 1] = cb2 * q + sb2 * uu
+    Sv[:, 2] = -sb2 * q + cb2 * uu
+    I, Q_, U_ = Sv[:, 0], Sv[:, 1], Sv[:, 2]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        P = np.where(np.abs(I) < 1e-6, 0.0, np.where(np.abs(U_) < 1e-6, -Q_ / I, np.hypot(Q_, U_) / I))
+    P[np.abs(P) < 1e-6] = 0.0
+    out = np.empty((npix, nmat + 1))
+    out[:, :nmat] = Sv * (theta * apix)[:, None]
+    out[:, nmat] = P
+    return out
