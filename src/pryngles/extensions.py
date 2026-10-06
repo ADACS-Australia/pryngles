@@ -301,15 +301,25 @@ def _reuse_map(mu, mu0, tol):
     return rep
 
 
-"""Scipy port of the C code"""
-
-
+"""
+Scipy port of the C code
+"""
 def reflection(xmu, table, phi, beta, theta0, theta, apix, nmat=4, tol=1e-6):
+    """Stokes vector and degree of polarisation per pixel.
+
+    xmu    : (nmugs,) ascending grid of cos(angle)
+    table  : (nmugs*nmat, nmugs, nfou) -- F.rfou or F.rtra, indexed [j*nmat+k, n, m]
+    phi, beta, theta0, theta, apix : (npix,) as in the C code (theta/theta0 are cosines)
+    Returns (npix, nmat+1): Stokes elements times mu*apix, then P.
+    """
     xmu = np.asarray(xmu, float)
     phi, beta, theta0, theta, apix = (np.asarray(v, float) for v in (phi, beta, theta0, theta, apix))
     nmugs, nfou, npix = len(xmu), table.shape[2], len(theta)
-    Rt = np.ascontiguousarray(table.reshape(nmugs, nmat, nmugs, nfou).transpose(3, 2, 1, 0))  # (m, n, k, j)
 
+    # table[j*nmat+k, n, m] -> Rt[m, n, k, j]: n leading so gathering rows is contiguous
+    Rt = np.ascontiguousarray(table.reshape(nmugs, nmat, nmugs, nfou).transpose(3, 2, 1, 0))
+
+    # Only compute distinct geometries; the reuse pattern is the same for every m
     rep = _reuse_map(theta, theta0, tol)
     uniq, inv = np.unique(rep, return_inverse=True)
 
@@ -318,24 +328,28 @@ def reflection(xmu, table, phi, beta, theta0, theta, apix, nmat=4, tol=1e-6):
 
     RM = np.zeros((npix, nmat))
     z = np.exp(1j * phi)
-    zm = np.ones(npix, complex)
+    zm = np.ones(npix, complex)  # exp(i*m*phi), built by recurrence
     for m in range(nfou):
         rfmu0 = CubicSpline(xmu, Rt[m], axis=0, bc_type="natural")(theta0[uniq])  # (uniq, k, j)
         rf3 = np.einsum("uj,ukj->uk", W, rfmu0)
         c, s = zm.real, zm.imag
         B = np.stack([c, c, s, s], axis=1)[:, :nmat]
-        RM += (1.0 if m == 0 else 2.0) * B * rf3[inv]
+        RM += (1.0 if m == 0 else 2.0) * B * rf3[inv]  # 2*fac, fac=0.5 for m=0
         zm *= z
 
+    # Rotate Q, U to the reference plane
     Sv = theta0[:, None] * RM
     cb2, sb2 = np.cos(2 * beta), np.sin(2 * beta)
     q, uu = Sv[:, 1].copy(), Sv[:, 2].copy()
     Sv[:, 1] = cb2 * q + sb2 * uu
     Sv[:, 2] = -sb2 * q + cb2 * uu
+
+    # Degree of polarisation
     I, Q_, U_ = Sv[:, 0], Sv[:, 1], Sv[:, 2]
     with np.errstate(divide="ignore", invalid="ignore"):
         P = np.where(np.abs(I) < 1e-6, 0.0, np.where(np.abs(U_) < 1e-6, -Q_ / I, np.hypot(Q_, U_) / I))
     P[np.abs(P) < 1e-6] = 0.0
+
     out = np.empty((npix, nmat + 1))
     out[:, :nmat] = Sv * (theta * apix)[:, None]
     out[:, nmat] = P
