@@ -18,7 +18,7 @@ import warnings
 from pryngles.body import Body, Detector, Observer, Planet, Ring, Star
 from pryngles.common import PrynglesCommon, Verbose
 from pryngles.consts import Consts
-from pryngles.extensions import ExtensionUtil, FourierCoefficients, StokesScatterer
+from pryngles.extensions import StokesScatterer
 from pryngles.legacy import CanonicalUnits, Conf, Const, Extra, RingedPlanet, Sample, Util
 from pryngles.orbit import Orbit, OrbitUtil, Orbody
 from pryngles.plot import Plot
@@ -45,8 +45,6 @@ __all__ = [
     "Verbose",
     "PrynglesCommon",
     "Consts",
-    "ExtensionUtil",
-    "FourierCoefficients",
     "StokesScatterer",
     "Const",
     "CanonicalUnits",
