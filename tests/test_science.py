@@ -304,7 +304,7 @@ def test_plane_projection_vectorized():
             [-1, 2, 1],
             [0, 0, -1],
         ]
-    )
+    ).T
     expected_v = np.array(
         [
             [-1.67741935483871, 1.0099255583126552, 3.727047146401985],
@@ -312,7 +312,7 @@ def test_plane_projection_vectorized():
             [-1.0, 2.0, 1.0],
             [0.19354838709677422, 0.05210918114143921, -0.9330024813895782],
         ]
-    )
+    ).T
     expected_d = np.array(
         [
             4.015478735955178,
@@ -320,14 +320,13 @@ def test_plane_projection_vectorized():
             0.0,
             0.21134098610290408,
         ]
-    )
+    ).T
 
-    for p, exp_v, exp_d in zip(points, expected_v, expected_d, strict=True):
-        v, d = plane.get_projection(p)
-        # Tight relative tolerance (results are exact rationals); small atol
-        # covers the d == 0 case where relative error is undefined.
-        np.testing.assert_allclose(v, exp_v, rtol=1e-12, atol=1e-12)
-        np.testing.assert_allclose(d, exp_d, rtol=1e-12, atol=1e-12)
+    v, d = plane.get_projection(points)
+    # Tight relative tolerance (results are exact rationals); small atol
+    # covers the d == 0 case where relative error is undefined.
+    np.testing.assert_allclose(v, expected_v, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(d, expected_d, rtol=1e-12, atol=1e-12)
 
 
 def test_plane_is_above_below():
