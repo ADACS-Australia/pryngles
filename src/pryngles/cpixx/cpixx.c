@@ -14,6 +14,12 @@
 #define MAX_STRING 1000
 #define VERBOSITY 0
 
+// Maximum number of tabulated points spline() can handle (size of its
+// scratch array), and maximum number of Stokes elements reflection() supports
+// (size of Bplus).
+#define MAX_SPLINE_N 1000
+#define MAX_NMAT 4
+
 //////////////////////////////////////////////////////////////
 // ROUTINES
 //////////////////////////////////////////////////////////////
@@ -64,6 +70,24 @@ double ***zeros_cube(int n, int m, int p) {
   return C;
 }
 
+// Free a matrix allocated with zeros_matrix(n, m)
+void free_matrix(double **M, int n) {
+  if (!M)
+    return;
+  for (int i = 0; i < n; i++)
+    free(M[i]);
+  free(M);
+}
+
+// Free a cube allocated with zeros_cube(n, m, p)
+void free_cube(double ***C, int n, int m) {
+  if (!C)
+    return;
+  for (int i = 0; i < n; i++)
+    free_matrix(C[i], m);
+  free(C);
+}
+
 /*
  *----------------------------------------------------------------------------
  *     Spline interpolation routine from Press et al. (1986, p.88).
@@ -80,12 +104,20 @@ double ***zeros_cube(int n, int m, int p) {
  *     ral spline, with zero second derivative on that boundary.
  *
  *     n is the number of elements in x and y
+ *
+ *     Returns 0 on success, -1 if n < 2 or n > MAX_SPLINE_N.
  *----------------------------------------------------------------------------
  */
-double spline(double x[], double y[], int n, double y2[]) {
+int spline(double x[], double y[], int n, double y2[]) {
   int i, k;
-  double u[1000];
+  double u[MAX_SPLINE_N];
   double sig, p, qn, un;
+
+  if (n < 2 || n > MAX_SPLINE_N) {
+    fprintf(stderr, "Error in spline: n=%d outside [2, %d].\n", n,
+            MAX_SPLINE_N);
+    return -1;
+  }
 
   y2[0] = 0;
   u[0] = 0;
@@ -129,18 +161,31 @@ int bisect(double xa[], int n, double x) {
   return klo;
 }
 
-void spline_coefficients(double xa[], int n, double x, int *klo_out,
-                         int *khi_out, double *a_out, double *b_out,
-                         double *h_out) {
+/*
+ * Find the bracketing indices and interpolation coefficients for x in xa.
+ *
+ * Returns 0 on success, -1 if n < 2 or the bracketing interval is
+ * degenerate (xa not strictly increasing). On failure the outputs are
+ * left untouched.
+ */
+int spline_coefficients(double xa[], int n, double x, int *klo_out,
+                        int *khi_out, double *a_out, double *b_out,
+                        double *h_out) {
+  if (n < 2) {
+    fprintf(stderr, "Error in spline_coefficients: n=%d < 2.\n", n);
+    return -1;
+  }
+
   // Find indices to interpolate between
   int klo = bisect(xa, n, x);
   int khi = klo + 1;
 
   double h = xa[khi] - xa[klo];
 
-  if (fabs(h) < 1e-10)
+  if (fabs(h) < 1e-10) {
     fprintf(stderr, "Error in spline_coefficients: bad xa input.\n");
-  // Should we exit with error here?
+    return -1;
+  }
 
   // Coefficients
   *a_out = (xa[khi] - x) / h;
@@ -150,6 +195,8 @@ void spline_coefficients(double xa[], int n, double x, int *klo_out,
   // Indices
   *klo_out = klo;
   *khi_out = khi;
+
+  return 0;
 }
 
 /*
@@ -189,6 +236,12 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
  *     phi and beta are assumed to be in radian
  *     theta0 and theta are given as cos(theta0) and cos(theta) respectively
  *
+ *     Returns 0 on success, -1 on invalid sizes (nmat outside [1, MAX_NMAT],
+ *     nmugs outside [2, MAX_SPLINE_N]) or a degenerate xmu grid. On failure
+ *     Sarr is not (fully) written.
+ *
+ *     Sarr must have npix rows of at least nmat + 1 elements.
+ *
  *     Author: Daphne M. Stam
  *     Date: September 2022
  *----------------------------------------------------------------------------
@@ -202,17 +255,31 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
   double mu, mu0, muold = 1, mu0old = 1;
   int ki;
   double fac;
+  int ret = 0;
 
   // Read sizes
   int nmat = F.nmat;
   int nmugs = F.nmugs;
   int nfou = F.nfou;
 
+  // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
+  // and spline() has a fixed-size scratch array.
+  if (nmat < 1 || nmat > MAX_NMAT) {
+    fprintf(stderr, "Error in reflection: nmat=%d outside [1, %d].\n", nmat,
+            MAX_NMAT);
+    return -1;
+  }
+  if (nmugs < 2 || nmugs > MAX_SPLINE_N) {
+    fprintf(stderr, "Error in reflection: nmugs=%d outside [2, %d].\n", nmugs,
+            MAX_SPLINE_N);
+    return -1;
+  }
+
   double ***rf, ***rfsec;
   double **RM, **rfmu0;
   double *rfsecmu0;
   double *SvR, *rf3save;
-  double Bplus[4];
+  double Bplus[MAX_NMAT];
 
   // Allocate dynamically temporal matrices
   // Cubes
@@ -244,7 +311,8 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
           rf[k][j][n] = qreflection ? F.rfou[ki][n][m] : F.rtra[ki][n][m];
         }
 
-        // Use slice rf(k,j,:), write directly into corresponding rfsec row
+        // Use slice rf(k,j,:), write directly into corresponding rfsec row.
+        // nmugs was validated above, so spline() cannot fail here.
         spline(F.xmu, rf[k][j], nmugs, rfsec[k][j]);
 
       } // End k
@@ -278,7 +346,10 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
         // Get indices and coefficients to work with (at mu0)
         int klo, khi;
         double a, b, h;
-        spline_coefficients(F.xmu, nmugs, mu0, &klo, &khi, &a, &b, &h);
+        if (spline_coefficients(F.xmu, nmugs, mu0, &klo, &khi, &a, &b, &h)) {
+          ret = -1;
+          goto cleanup;
+        }
 
         for (j = 0; j < nmugs; j++) {
           for (k = 0; k < nmat; k++) {
@@ -290,7 +361,10 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
         }
 
         // Get indices and coefficients to work with (now at mu)
-        spline_coefficients(F.xmu, nmugs, mu, &klo, &khi, &a, &b, &h);
+        if (spline_coefficients(F.xmu, nmugs, mu, &klo, &khi, &a, &b, &h)) {
+          ret = -1;
+          goto cleanup;
+        }
 
         for (k = 0; k < nmat; k++) {
           spline(F.xmu, rfmu0[k], nmugs, rfsecmu0);
@@ -346,17 +420,18 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
     Sarr[i][nmat] = P;
   } // End i (pix)
 
-  // Free temporal arrays
-  free(rf);
-  free(rfsec);
+cleanup:
+  // Free temporal arrays (every level, bottom-up)
+  free_cube(rf, nmat, nmugs);
+  free_cube(rfsec, nmat, nmugs);
   // Matrices
-  free(rfmu0);
-  free(RM);
+  free_matrix(rfmu0, nmat);
+  free_matrix(RM, npix);
   // Vectos nmugs
   free(rfsecmu0);
   // Vectos nmats
   free(rf3save);
   free(SvR);
 
-  return 0;
+  return ret;
 }

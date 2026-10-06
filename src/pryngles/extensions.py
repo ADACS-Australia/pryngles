@@ -280,7 +280,7 @@ class StokesScatterer:
         npix = len(phi)
         Sarr = np.zeros((npix, self.F.nmat + 1))
         Sarr_ptr = ExtensionUtil.mat2ptr(Sarr)
-        cpixx_ext.reflection(
+        ret = cpixx_ext.reflection(
             self.F,
             qreflection,
             npix,
@@ -291,5 +291,7 @@ class StokesScatterer:
             ExtensionUtil.vec2ptr(apix),
             Sarr_ptr,
         )
+        if ret != 0:
+            raise RuntimeError(f"Error in reflection calculation: {ret}")
         stokes = ExtensionUtil.ptr2mat(Sarr_ptr, *Sarr.shape)
         return stokes
