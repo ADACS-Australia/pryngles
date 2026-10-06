@@ -101,16 +101,6 @@ double spline(double x[], double y[], int n, double y2[]) {
   }
 
   return 0;
-
-  // Unused code below(?)
-  double sum = 0.0;
-  for (i = 0; i < n; i++) {
-    sum += y2[i];
-    printf("%lf\n", y2[i]);
-  }
-
-  printf("%lf\n", sum);
-  return sum;
 }
 
 int bisect(double xa[], int n, double x) {
