@@ -47,23 +47,18 @@ static void *xcalloc(int n, size_t size) {
 }
 
 double *zeros_vector(int n) {
-  double *v;
-  v = (double *)xcalloc(n, sizeof(double));
-  return v;
+  return (double *)xcalloc(n, sizeof(double)); /* calloc already zeroes */
 }
 
 double **zeros_matrix(int n, int m) {
-  double **M;
-  M = (double **)xcalloc(n, sizeof(double *));
-  for (int i = 0; i < n; i++) {
+  double **M = (double **)xcalloc(n, sizeof(double *));
+  for (int i = 0; i < n; i++)
     M[i] = zeros_vector(m);
-  }
   return M;
 }
 
 double ***zeros_cube(int n, int m, int p) {
-  double ***C;
-  C = (double ***)xcalloc(n, sizeof(double **));
+  double ***C = (double ***)xcalloc(n, sizeof(double **));
   for (int i = 0; i < n; i++)
     C[i] = zeros_matrix(m, p);
   return C;
