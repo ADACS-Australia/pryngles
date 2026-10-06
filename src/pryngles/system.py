@@ -25,7 +25,7 @@ import rebound as rb
 import spiceypy as spy
 from tqdm import tqdm
 
-from pryngles import science
+from pryngles import misc, science
 from pryngles.body import Body, Detector
 from pryngles.common import VERB_SIMPLE, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
@@ -44,7 +44,6 @@ from pryngles.consts import (
 )
 from pryngles.extensions import StokesScatterer
 from pryngles.legacy import CanonicalUnits, RingedPlanet
-from pryngles.misc import flatten, get_data
 from pryngles.orbit import OrbitUtil
 from pryngles.scatterer import BlackBodySurface, LambertianGrayAtmosphere, LambertianGraySurface
 from pryngles.spangler import Spangler
@@ -353,8 +352,8 @@ class System(PrynglesCommon):
         if self.extension not in ["pixx", "cpixx"]:
             raise ValueError(f"The extension '{self.extension}' is not recognized (available 'pixx', 'cpixx')")
 
-        fname_planet = get_data("fou_gasplanet_optical_50.dat")
-        fname_ring = get_data("fou_ring_0_4_0_8.dat")
+        fname_planet = misc.get_data("fou_gasplanet_optical_50.dat")
+        fname_ring = misc.get_data("fou_ring_0_4_0_8.dat")
 
         self.SCp = StokesScatterer(fname_planet)
         self.nmatp = self.SCp.nmat
@@ -607,7 +606,7 @@ class System(PrynglesCommon):
                 body.rbhash = body.name
 
         # Check that all bodies in system is in the orbital tree
-        bodies = list(flatten(self.orbital_tree))
+        bodies = list(misc.flatten(self.orbital_tree))
         for name, body in self.bodies.items():
             if body.kind == "Ring":
                 continue
@@ -965,9 +964,9 @@ class System(PrynglesCommon):
 
                 verbose(VERB_VERIFY, f"Updating center of body {name} @ {body.center_ecl}")
                 cond = self.sg.data.name == name
-                self.sg.data.loc[cond, "center_ecl"] = pd.Series(
-                    [list(body.center_ecl)] * sum(cond), dtype=object
-                ).values
+                self.sg.data.loc[cond, ["center_ecl_x", "center_ecl_y", "center_ecl_z"]] = np.tile(
+                    body.center_ecl, (sum(cond), 1)
+                )
 
             # Update positions (t = t) for rotation
             self.sg.set_positions()
