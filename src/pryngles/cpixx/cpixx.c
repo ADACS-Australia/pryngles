@@ -24,14 +24,9 @@ struct FourierCoefficients {
   double ***rtra;
 };
 
-//////////////////////////////////////////////////////////////
-// NUMERICAL ROUTINES
-//////////////////////////////////////////////////////////////
 double *zeros_vector(int n) {
   double *v;
   v = (double *)calloc(n, sizeof(double));
-  for (int i = 0; i < n; i++)
-    v[i] = 0.0;
   return v;
 }
 
@@ -40,8 +35,6 @@ double **zeros_matrix(int n, int m) {
   M = (double **)calloc(n, sizeof(double *));
   for (int i = 0; i < n; i++) {
     M[i] = zeros_vector(m);
-    for (int j = 0; j < m; j++)
-      M[i][j] = 0.0;
   }
   return M;
 }
