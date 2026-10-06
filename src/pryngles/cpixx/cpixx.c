@@ -188,7 +188,7 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
                double *apix, double **Sarr) {
   // Declarations
   int i, j, k, m, n;
-  double be, rf3, SvR2, SvR3, P;
+  double be, SvR2, SvR3, P;
   double mu, mu0, muold = 1, mu0old = 1;
   int ki;
   double fac;
