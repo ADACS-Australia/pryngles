@@ -434,3 +434,7 @@ cleanup:
 
   return ret;
 }
+
+size_t fourier_coefficients_size(void) {
+  return sizeof(struct FourierCoefficients);
+}

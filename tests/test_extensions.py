@@ -134,3 +134,10 @@ def test_read_fourier(tmp_path):
     # rtra[0:3, 1, 0] = [10,11,12].
     np.testing.assert_allclose(S.rfou[0:3, 1, 0], [7.0, 8.0, 9.0])
     np.testing.assert_allclose(S.rtra[0:3, 1, 0], [10.0, 11.0, 12.0])
+
+
+def test_struct_layout():
+    """Check that the ctypes struct is the same size as the C struct."""
+    ext = pr.extensions
+    ext.cpixx_ext.fourier_coefficients_size.restype = ctypes.c_size_t
+    assert ctypes.sizeof(ext.FourierCoefficients) == ext.cpixx_ext.fourier_coefficients_size()
