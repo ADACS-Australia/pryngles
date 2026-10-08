@@ -15,6 +15,7 @@
 
 import warnings
 
+import pryngles.accessors
 from pryngles.body import Body, Detector, Observer, Planet, Ring, Star
 from pryngles.common import PrynglesCommon, Verbose
 from pryngles.consts import Consts

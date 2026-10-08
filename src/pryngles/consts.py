@@ -805,23 +805,6 @@ SPANGLER_VEC_GROUPS = {
 }
 
 
-# Custom DataFrame accessor providing ergonomic shorthand for vector groups.
-# Usage:  df.vectors.center_ecl  ->  (N,3) sub-DataFrame
-#        df.vectors.center_ecl.to_numpy()  ->  (N,3) ndarray
-@pd.api.extensions.register_dataframe_accessor("vectors")
-class SpanglerVectorAccessor:
-    def __init__(self, pandas_obj):
-        self._obj = pandas_obj
-
-    def __getattr__(self, name):
-        cols = SPANGLER_VEC_GROUPS.get(name)
-        if cols is None:
-            raise AttributeError(
-                f"'{name}' is not a known spangler vector group. Available groups: {sorted(SPANGLER_VEC_GROUPS)}"
-            )
-        return self._obj[cols]
-
-
 # Debugging purposes
 SPANGLER_DEBUG_FIELDS = (
     [

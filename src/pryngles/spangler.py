@@ -989,6 +989,30 @@ class Spangler(PrynglesCommon):
         self.fig3d = fig
         self.ax3d = ax
 
+    # def _read_masked_data(self, cols=None, cond=None):
+    #     """Return rows/columns from ``self.data``.
+
+    #     - cols=None, cond=None -> all rows, all columns   (self.data)
+    #     - cols=None, cond set  -> masked rows, all cols  (self.data[cond])
+    #     - cols set,  cond=None -> all rows, selected cols (self.data[cols])
+    #     - cols set,  cond set  -> masked rows, selected cols (self.data.loc[cond, cols])
+    #     """
+    #     if cols is None:
+    #         return self.data if cond is None else self.data[cond]
+    #     if cond is None:
+    #         return self.data[cols]
+    #     return self.data.loc[cond, cols]
+
+    # def _write_masked_data(self, cols, values, cond=None):
+    #     """Write ``values`` to ``cols`` in ``self.data``.
+
+    #     ``cond`` is None when all rows are selected (no boolean mask applied).
+    #     """
+    #     if cond is None:
+    #         self.data[cols] = values
+    #     else:
+    #         self.data.loc[cond, cols] = values
+
     def set_intersect(
         self,
         nvec=None,
@@ -1058,9 +1082,7 @@ class Spangler(PrynglesCommon):
         self.M_int2ecl = M_int2ecl
 
         # Depending on body
-        cond = np.full(self.nspangles, True)
-        if name:
-            cond = self.data.name == name
+        cond = self.data.name == name if name else np.ones(self.nspangles, dtype=bool)
 
         # If no point is of type name
         if not cond.any():
@@ -1075,68 +1097,71 @@ class Spangler(PrynglesCommon):
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
 
-        r_ecl = self.data.loc[cond, ["x_ecl", "y_ecl", "z_ecl"]].to_numpy()
-        self.data.loc[cond, ["x_int", "y_int", "z_int"]] = (self.M_ecl2int @ (r_ecl - center).T).T
+        r_ecl = self.data.masked.get(cond, ["x_ecl", "y_ecl", "z_ecl"])
+        self.data.masked.put(cond, ["x_int", "y_int", "z_int"], (self.M_ecl2int @ (r_ecl - center).T).T)
 
         # Center of the object in the observer reference system
+        # groups = self.data.masked.get(cond).groupby("name")
         groups = self.data[cond].groupby("name")
+        names = self.data["name"].to_numpy()
 
         for group_name, group in groups:
+            mask = cond & (names == group_name)
             M_equ2ecl = self.M_equ2ecl[group_name]
             c_ecl = group.vectors.center_ecl.iloc[0].to_numpy()
             c_equ = group.vectors.center_equ.iloc[0].to_numpy()
             c_int = np.matmul(self.M_ecl2int, c_ecl + np.matmul(M_equ2ecl, c_equ) - center)
-            self.data.loc[group.index, SPANGLER_VEC_GROUPS["center_int"]] = np.tile(c_int, (len(group), 1))
+            self.data.masked.put(mask, SPANGLER_VEC_GROUPS["center_int"], np.tile(c_int, (len(group), 1)))
 
-            # #Pseudo-cylindrical coordinates in the observer system
-            r_int = (self.data.loc[group.index, ["x_int", "y_int", "z_int"]]).to_numpy()
+            #Pseudo-cylindrical coordinates in the observer system (vectorized over all cond rows)
+            r_int = self.data.masked.get(mask, ["x_int", "y_int", "z_int"])
             # Ensure continuous coordinates are float columns for pandas strictness.
             for col in ("rho_int", "az_int", "cosf_int"):
                 if col not in self.data.columns:
                     self.data[col] = np.nan
                 if not pd.api.types.is_float_dtype(self.data[col].dtype):
                     self.data[col] = self.data[col].astype(float)
-            self.data.loc[group.index, ["rho_int", "az_int", "cosf_int"]] = science.pcylindrical(r_int - c_int)
+            self.data.masked.put(mask, ["rho_int", "az_int", "cosf_int"], science.pcylindrical(r_int - c_int))
 
-        # According to distance to intersetcion point generate z_cen_int
+        #According to distance to intersetcion point generate z_cen_int
         if self.infinite:
-            self.data.loc[cond, "z_cen_int"] = -np.inf
+            self.data.masked.put(cond, "z_cen_int", -np.inf)
         else:
-            z_cen_int = self.data.loc[cond, "center_int_z"].to_numpy()
-            self.data.loc[cond, "z_cen_int"] = z_cen_int
+            z_cen_int = np.stack(self.data.masked.get(cond, "center_int_z"))
+            self.data.masked.put(cond, "z_cen_int", z_cen_int)
 
         # Compute distance to intersection of each spangle and the
         if self.infinite:
             # Distance to all points is assumed infinite
-            self.data.loc[cond, SPANGLER_VEC_GROUPS["n_int"]] = np.tile([0, 0, 1], (sum(cond), 1))
-            self.data.loc[cond, "d_int"] = np.inf
-            self.data.loc[cond, SPANGLER_VEC_GROUPS["n_int_ecl"]] = np.tile(n_int, (sum(cond), 1))
+            self.data.masked.put(cond, SPANGLER_VEC_GROUPS["n_int"], np.tile([0, 0, 1], (sum(cond), 1)))
+            self.data.masked.put(cond, "d_int", np.inf)
+            self.data.masked.put(cond, SPANGLER_VEC_GROUPS["n_int_ecl"], np.tile(n_int, (sum(cond), 1)))
         else:
             # Distance to origin of coordinates in the int system where the center is located
-            r_int = self.data.loc[cond, ["x_int", "y_int", "z_int"]].to_numpy()
+            r_int = self.data.masked.get(cond, ["x_int", "y_int", "z_int"])
             d_int_arr = np.linalg.norm(-r_int, axis=1)
             n_int_arr = -r_int / d_int_arr[:, None]
-            self.data.loc[cond, SPANGLER_VEC_GROUPS["n_int"]] = n_int_arr
-            self.data.loc[cond, "d_int"] = d_int_arr
+            self.data.masked.put(cond, SPANGLER_VEC_GROUPS["n_int"], n_int_arr)
+            self.data.masked.put(cond, "d_int", d_int_arr)
             n_int_ecl = (M_int2ecl @ n_int_arr.T).T
-            self.data.loc[cond, SPANGLER_VEC_GROUPS["n_int_ecl"]] = n_int_ecl
+            self.data.masked.put(cond, SPANGLER_VEC_GROUPS["n_int_ecl"], n_int_ecl)
 
-        # Azimuth of the direction of the intersection vector in the tangent plane of the spangle
-        wy_ecl = self.data.loc[cond, SPANGLER_VEC_GROUPS["wy_ecl"]].to_numpy()
-        wx_ecl = self.data.loc[cond, SPANGLER_VEC_GROUPS["wx_ecl"]].to_numpy()
-        n_int_ecl = self.data.loc[cond, SPANGLER_VEC_GROUPS["n_int_ecl"]].to_numpy()
+        #Azimuth of the direction of the intersection vector in the tangent plane of the spangle
+        wy_ecl = self.data.masked.get(cond, ["wy_ecl_x","wy_ecl_y","wy_ecl_z"])
+        wx_ecl = self.data.masked.get(cond, ["wx_ecl_x","wx_ecl_y","wx_ecl_z"])
+        n_int_ecl = self.data.masked.get(cond, SPANGLER_VEC_GROUPS["n_int_ecl"])
         dot_wy_n = np.sum(wy_ecl * n_int_ecl, axis=1)
         dot_wx_n = np.sum(wx_ecl * n_int_ecl, axis=1)
         if "azim_int" not in self.data.columns:
             self.data["azim_int"] = np.nan
         if not pd.api.types.is_float_dtype(self.data["azim_int"].dtype):
             self.data["azim_int"] = self.data["azim_int"].astype(float)
-        self.data.loc[cond, "azim_int"] = np.arctan2(dot_wy_n, dot_wx_n)
+        self.data.masked.put(cond, "azim_int", np.arctan2(dot_wy_n, dot_wx_n))
 
-        # Update spangles orientations
-        ns_ecl = self.data.loc[cond, SPANGLER_VEC_GROUPS["ns_ecl"]].to_numpy()
+        #Update spangles orientations
+        ns_ecl = self.data.masked.get(cond, ["ns_ecl_x","ns_ecl_y","ns_ecl_z"])
         ns_int = (self.M_ecl2int @ ns_ecl.T).T
-        self.data.loc[cond, SPANGLER_VEC_GROUPS["ns_int"]] = ns_int
+        self.data.masked.put(cond, SPANGLER_VEC_GROUPS["ns_int"], ns_int)
 
         # Cosine of the direction of the intersection vector and the normal to the spangle
         # Store cosines as float: pandas >=2 raises LossySetitemError when assigning
@@ -1149,15 +1174,15 @@ class Spangler(PrynglesCommon):
         if self.infinite:
             # In this case n_int is a global variable
             cos_int = np.sum(ns_ecl * n_int, axis=1)
-            self.data.loc[cond, "cos_int"] = cos_int
+            self.data.masked.put(cond, "cos_int", cos_int)
         else:
             # In this case n_int is a per-spangle variable
-            n_int_cond = self.data.loc[cond, SPANGLER_VEC_GROUPS["n_int"]].to_numpy()
+            n_int_cond = self.data.masked.get(cond, SPANGLER_VEC_GROUPS["n_int"])
             cos_int = np.sum(ns_int * n_int_cond, axis=1)
-            self.data.loc[cond, "cos_int"] = cos_int
+            self.data.masked.put(cond, "cos_int", cos_int)
 
-        # Set areas
-        self.data.loc[cond, "asp_int"] = self.data.loc[cond, "asp"]
+        #Set areas
+        self.data.masked.put(cond, "asp_int", self.data.masked.get(cond, "asp"))
 
         return cond, n_int, d_int
 
