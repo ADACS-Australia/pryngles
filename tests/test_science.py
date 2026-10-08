@@ -261,11 +261,72 @@ def test_plane_projection():
     p1 = [-1, 2, 1]
     p2 = [0, -3, 2]
     p3 = [1, 1, -4]
-    plane = Plane(p1, p2, p3)
-    p = [2, 2, 5]
-    v, d = plane.get_projection(p)
-    np.testing.assert_allclose(v, [-1.67741935483871, 1.0099255583126552, 3.727047146401985], atol=1e-6)
-    np.testing.assert_allclose(d, 4.015478735955178, atol=1e-6)
+    plane = pr.Plane(p1, p2, p3)
+    # Same points as the is_above/is_below tests.
+    points = [
+        [2, 2, 5],
+        [0, 0, 0],
+        [-1, 2, 1],
+        [0, 0, -1],
+    ]
+    expected_v = [
+        [-1.67741935483871, 1.0099255583126552, 3.727047146401985],
+        [-0.09677419354838711, -0.026054590570719606, -0.03349875930521092],
+        [-1.0, 2.0, 1.0],
+        [0.19354838709677422, 0.05210918114143921, -0.9330024813895782],
+    ]
+    expected_d = [
+        4.015478735955178,
+        0.10567049305145204,
+        0.0,
+        0.21134098610290408,
+    ]
+
+    for p, exp_v, exp_d in zip(points, expected_v, expected_d, strict=True):
+        v, d = plane.get_projection(p)
+        # Tight relative tolerance (results are exact rationals); small atol
+        # covers the d == 0 case where relative error is undefined.
+        np.testing.assert_allclose(v, exp_v, rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(d, exp_d, rtol=1e-12, atol=1e-12)
+
+
+def test_plane_projection_vectorized():
+    """``get_projection`` returns the documented projection and distance."""
+    p1 = [-1, 2, 1]
+    p2 = [0, -3, 2]
+    p3 = [1, 1, -4]
+    plane = pr.Plane(p1, p2, p3)
+    # Same points as the is_above/is_below tests.
+    points = np.array(
+        [
+            [2, 2, 5],
+            [0, 0, 0],
+            [-1, 2, 1],
+            [0, 0, -1],
+        ]
+    ).T
+    expected_v = np.array(
+        [
+            [-1.67741935483871, 1.0099255583126552, 3.727047146401985],
+            [-0.09677419354838711, -0.026054590570719606, -0.03349875930521092],
+            [-1.0, 2.0, 1.0],
+            [0.19354838709677422, 0.05210918114143921, -0.9330024813895782],
+        ]
+    ).T
+    expected_d = np.array(
+        [
+            4.015478735955178,
+            0.10567049305145204,
+            0.0,
+            0.21134098610290408,
+        ]
+    ).T
+
+    v, d = plane.get_projection(points)
+    # Tight relative tolerance (results are exact rationals); small atol
+    # covers the d == 0 case where relative error is undefined.
+    np.testing.assert_allclose(v, expected_v, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(d, expected_d, rtol=1e-12, atol=1e-12)
 
 
 def test_plane_is_above_below():
@@ -273,10 +334,52 @@ def test_plane_is_above_below():
     p1 = [-1, 2, 1]
     p2 = [0, -3, 2]
     p3 = [1, 1, -4]
-    plane = Plane(p1, p2, p3)
-    p = [2, 2, 5]
-    assert plane.is_above(p, [0, 0, -1]) is False
-    assert plane.is_below(p, [0, 0, -1]) is True
+    plane = pr.Plane(p1, p2, p3)
+    points = [
+        [2, 2, 5],
+        [0, 0, 0],
+        [-1, 2, 1],
+        [0, 0, -1],
+    ]
+    expected_above = [False, False, True, True]
+    expected_below = [True, True, False, False]
+
+    for p, exp_above, exp_below in zip(points, expected_above, expected_below, strict=True):
+        assert plane.is_above(p, [0, 0, -1]) is exp_above
+        assert plane.is_below(p, [0, 0, -1]) is exp_below
+
+
+def test_plane_is_above_below_vectorized():
+    """Vectorised ``is_above``/``is_below`` match the manually expected result."""
+    p1 = [-1, 2, 1]
+    p2 = [0, -3, 2]
+    p3 = [1, 1, -4]
+    plane = pr.Plane(p1, p2, p3)
+    # Same points as the scalar test, as a (3, N) array.
+    points = np.array(
+        [
+            [2, 2, 5],
+            [0, 0, 0],
+            [-1, 2, 1],
+            [0, 0, -1],
+        ]
+    ).T
+    vdir = [0, 0, -1]
+
+    vec_above = plane.is_above(points, vdir)
+    vec_below = plane.is_below(points, vdir)
+
+    # Shape: one result per point
+    assert vec_above.shape == (4,)
+    assert vec_below.shape == (4,)
+
+    expected_above = np.array([False, False, True, True])
+    expected_below = np.array([True, True, False, False])
+    np.testing.assert_array_equal(vec_above, expected_above)
+    np.testing.assert_array_equal(vec_below, expected_below)
+
+    # Complementarity
+    np.testing.assert_array_equal(vec_below, ~vec_above)
 
 
 def test_plane_get_z():
