@@ -23,6 +23,7 @@ import spiceypy as spy
 
 # Specialized plotting methods
 from pryngles import misc, science
+from pryngles.accessors import MaskedAccessor
 from pryngles.common import VERB_SIMPLE, VERB_SYSTEM, VERB_VERIFY, PrynglesCommon, verbose
 from pryngles.consts import (
     SAMPLER_GEOMETRY_CIRCLE,
@@ -989,30 +990,6 @@ class Spangler(PrynglesCommon):
         self.fig3d = fig
         self.ax3d = ax
 
-    # def _read_masked_data(self, cols=None, cond=None):
-    #     """Return rows/columns from ``self.data``.
-
-    #     - cols=None, cond=None -> all rows, all columns   (self.data)
-    #     - cols=None, cond set  -> masked rows, all cols  (self.data[cond])
-    #     - cols set,  cond=None -> all rows, selected cols (self.data[cols])
-    #     - cols set,  cond set  -> masked rows, selected cols (self.data.loc[cond, cols])
-    #     """
-    #     if cols is None:
-    #         return self.data if cond is None else self.data[cond]
-    #     if cond is None:
-    #         return self.data[cols]
-    #     return self.data.loc[cond, cols]
-
-    # def _write_masked_data(self, cols, values, cond=None):
-    #     """Write ``values`` to ``cols`` in ``self.data``.
-
-    #     ``cond`` is None when all rows are selected (no boolean mask applied).
-    #     """
-    #     if cond is None:
-    #         self.data[cols] = values
-    #     else:
-    #         self.data.loc[cond, cols] = values
-
     def set_intersect(
         self,
         nvec=None,
@@ -1083,7 +1060,7 @@ class Spangler(PrynglesCommon):
 
         # Depending on body
         cond = self.data.name == name if name else np.ones(self.nspangles, dtype=bool)
-        _cond = pd.DataFrame.masked.norm_mask(cond, len(self.data))
+        _cond = MaskedAccessor.norm_mask(cond, len(self.data))
 
         # If no point is of type name
         if not cond.any():
@@ -1355,20 +1332,21 @@ class Spangler(PrynglesCommon):
 
         # Set observer
         cond, self.n_obs, self.d_obs = self.set_intersect(nvec, alpha, center)
+        _cond = MaskedAccessor.norm_mask(cond)
 
         # Set properties
         self.alpha_obs = alpha
         self.rqf_obs = science.spherical(self.n_obs)
         self.center_obs = center.copy() if center else center
 
-        self.data.masked.put(cond, "visible", False)
+        self.data.masked.put(_cond, "visible", False)
         # Observer-frame coordinates are continuous, so keep them as float dtype.
         for col in SPANGLER_COL_OBS:
             if col not in self.data.columns:
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.masked.put(cond, SPANGLER_COL_OBS, self.data.masked.get(cond, SPANGLER_COL_INT))
+        self.data.masked.put(_cond, SPANGLER_COL_OBS, self.data.masked.get(_cond, SPANGLER_COL_INT))
 
         # Beta angle computation (Reference Plane rotation angle)
         # Appendix D arXiv:2404.16606v1
@@ -1422,7 +1400,7 @@ class Spangler(PrynglesCommon):
             & ((self.data.z_cen_obs + self.data.scale) < 0)
             & ((self.data.cos_obs > 0) | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)))
         )
-        self.data.masked.put(cond, "visible", True)
+        self.data.masked.put(_cond, "visible", True)
 
     def set_luz(self, nvec=None, alpha=0, center=None, name=None):
         """
@@ -1457,17 +1435,19 @@ class Spangler(PrynglesCommon):
 
         # Set intersect of all points in order to prepare the update luz
         cond, self.n_luz, self.d_luz = self.set_intersect(nvec, alpha, center, name=None)
+
         verbose(VERB_SIMPLE, f"Number of points: {sum(cond)}")
 
         # Depending on body choose which spangles to change
         cond = self.data.name == name if name else np.ones(self.nspangles, dtype=bool)
+        _cond = MaskedAccessor.norm_mask(cond, len(self.data))
 
         # Set the light source direction in spherical coordinates
         self.rqf_luz = science.spherical(self.n_luz)
 
         # Set the default value of the states to change in False
-        self.data.masked.put(cond, "illuminated", False)
-        self.data.masked.put(cond, "transmit", False)
+        self.data.masked.put(_cond, "illuminated", False)
+        self.data.masked.put(_cond, "transmit", False)
 
         # Conditions
         # Light-source-frame coordinates are continuous, so keep them as float dtype.
@@ -1476,19 +1456,19 @@ class Spangler(PrynglesCommon):
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.masked.put(cond, SPANGLER_COL_LUZ, self.data.masked.get(cond, SPANGLER_COL_INT))
+        self.data.masked.put(_cond, SPANGLER_COL_LUZ, self.data.masked.get(_cond, SPANGLER_COL_INT))
 
         # Set relative azimuth [-pi,pi]
-        azim_obs_luz = self.data.masked.get(cond, "azim_obs") - self.data.masked.get(cond, "azim_luz")
+        azim_obs_luz = self.data.masked.get(_cond, "azim_obs") - self.data.masked.get(_cond, "azim_luz")
         # pi Shift and domain in [-pi,pi]
         if "azim_obs_luz" not in self.data.columns:
             self.data["azim_obs_luz"] = np.nan
         if not pd.api.types.is_float_dtype(self.data["azim_obs_luz"].dtype):
             self.data["azim_obs_luz"] = self.data["azim_obs_luz"].astype(float)
-        self.data.masked.put(cond, "azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)))
+        self.data.masked.put(_cond, "azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)))
 
         # Update states
-        self.data.masked.put(cond, "unset", False)
+        self.data.masked.put(_cond, "unset", False)
 
         # Condition for illumination
         """
