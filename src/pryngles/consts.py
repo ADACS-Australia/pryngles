@@ -27,7 +27,6 @@ from collections import OrderedDict
 from copy import deepcopy
 
 import numpy as np
-import pandas as pd
 from rebound import units
 
 # Root directory

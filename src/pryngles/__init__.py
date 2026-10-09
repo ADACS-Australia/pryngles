@@ -15,7 +15,7 @@
 
 import warnings
 
-import pryngles.accessors
+from pryngles.accessors import MaskedAccessor, SpanglerVectorAccessor
 from pryngles.body import Body, Detector, Observer, Planet, Ring, Star
 from pryngles.common import PrynglesCommon, Verbose
 from pryngles.consts import Consts
@@ -69,6 +69,8 @@ __all__ = [
     "Plane",
     "Spangler",
     "System",
+    "MaskedAccessor",
+    "SpanglerVectorAccessor",
     "version",
 ]
 

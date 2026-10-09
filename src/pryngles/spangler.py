@@ -1077,7 +1077,7 @@ class Spangler(PrynglesCommon):
 
         r_ecl = self.data.masked.get(_norm_cond, ["x_ecl", "y_ecl", "z_ecl"])
 
-        #Pseudo-cylindrical coordinates in the observer system (vectorized over all cond rows)
+        # Pseudo-cylindrical coordinates in the observer system (vectorized over all cond rows)
         r_int = (self.M_ecl2int @ (r_ecl - center).T).T
         self.data.masked.put(_norm_cond, ["x_int", "y_int", "z_int"], r_int)
 
@@ -1103,7 +1103,7 @@ class Spangler(PrynglesCommon):
                 self.data[col] = self.data[col].astype(float)
         self.data.masked.put(_norm_cond, ["rho_int", "az_int", "cosf_int"], science.pcylindrical(r_int - c_int_all))
 
-        #According to distance to intersection point generate z_cen_int
+        # According to distance to intersection point generate z_cen_int
         if self.infinite:
             self.data.masked.put(_norm_cond, "z_cen_int", -np.inf)
         else:
@@ -1121,9 +1121,9 @@ class Spangler(PrynglesCommon):
             n_int_arr = -r_int / d_int_arr[:, None]
             n_int_ecl = (M_int2ecl @ n_int_arr.T).T
 
-        #Azimuth of the direction of the intersection vector in the tangent plane of the spangle
-        wy_ecl = self.data.masked.get(_norm_cond, ["wy_ecl_x","wy_ecl_y","wy_ecl_z"])
-        wx_ecl = self.data.masked.get(_norm_cond, ["wx_ecl_x","wx_ecl_y","wx_ecl_z"])
+        # Azimuth of the direction of the intersection vector in the tangent plane of the spangle
+        wy_ecl = self.data.masked.get(_norm_cond, ["wy_ecl_x", "wy_ecl_y", "wy_ecl_z"])
+        wx_ecl = self.data.masked.get(_norm_cond, ["wx_ecl_x", "wx_ecl_y", "wx_ecl_z"])
         dot_wy_n = np.sum(wy_ecl * n_int_ecl, axis=1)
         dot_wx_n = np.sum(wx_ecl * n_int_ecl, axis=1)
         if "azim_int" not in self.data.columns:
@@ -1132,8 +1132,8 @@ class Spangler(PrynglesCommon):
             self.data["azim_int"] = self.data["azim_int"].astype(float)
         self.data.masked.put(_norm_cond, "azim_int", np.arctan2(dot_wy_n, dot_wx_n))
 
-        #Update spangles orientations
-        ns_ecl = self.data.masked.get(_norm_cond, ["ns_ecl_x","ns_ecl_y","ns_ecl_z"])
+        # Update spangles orientations
+        ns_ecl = self.data.masked.get(_norm_cond, ["ns_ecl_x", "ns_ecl_y", "ns_ecl_z"])
         ns_int = (self.M_ecl2int @ ns_ecl.T).T
         self.data.masked.put(_norm_cond, SPANGLER_VEC_GROUPS["ns_int"], ns_int)
 
@@ -1159,7 +1159,7 @@ class Spangler(PrynglesCommon):
         self.data.masked.put(_norm_cond, "d_int", d_int_arr)
         self.data.masked.put(_norm_cond, SPANGLER_VEC_GROUPS["n_int_ecl"], n_int_ecl)
 
-        #Set areas
+        # Set areas
         self.data.masked.put(_norm_cond, "asp_int", self.data.masked.get(_norm_cond, "asp"))
 
         return cond, n_int, d_int
@@ -1468,7 +1468,9 @@ class Spangler(PrynglesCommon):
             self.data["azim_obs_luz"] = np.nan
         if not pd.api.types.is_float_dtype(self.data["azim_obs_luz"].dtype):
             self.data["azim_obs_luz"] = self.data["azim_obs_luz"].astype(float)
-        self.data.masked.put(_norm_cond, "azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)))
+        self.data.masked.put(
+            _norm_cond, "azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi))
+        )
 
         # Update states
         self.data.masked.put(_norm_cond, "unset", False)

@@ -22,9 +22,9 @@ class SpanglerVectorAccessor:
 
 
 # ``df.masked.get(cols, mask)`` / ``df.masked.put(cols, values, mask)``: masked numpy reads and writes.
-# 
+#
 # Import this module once (e.g. in your package's __init__) and every DataFrame gets the accessor.
-# 
+#
 # cols:  a column name (-> 1D array), a list of names (-> 2D array), or None for ALL columns, in frame order.
 # mask:  None (all rows) or a boolean array / boolean Series of length len(df).
 #        An all-True mask is detected automatically and takes the fast path (no masking, often a view).
