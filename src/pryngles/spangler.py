@@ -1099,58 +1099,54 @@ class Spangler(PrynglesCommon):
                 self.data[col] = self.data[col].astype(float)
 
         r_ecl = self.data.masked.get(_cond, ["x_ecl", "y_ecl", "z_ecl"])
-        self.data.masked.put(_cond, ["x_int", "y_int", "z_int"], (self.M_ecl2int @ (r_ecl - center).T).T)
+
+        #Pseudo-cylindrical coordinates in the observer system (vectorized over all cond rows)
+        r_int = (self.M_ecl2int @ (r_ecl - center).T).T
+        self.data.masked.put(_cond, ["x_int", "y_int", "z_int"], r_int)
 
         # Center of the object in the observer reference system
         # groups = self.data.masked.get(_cond).groupby("name")
-        groups = self.data[cond].groupby("name")
-        names = self.data["name"].to_numpy()
-
-        for group_name, group in groups:
-            mask = cond & (names == group_name)
+        names_arr = self.data["name"].to_numpy()
+        center_ecl = self.data.masked.get(_cond, SPANGLER_VEC_GROUPS["center_ecl"])
+        center_equ = self.data.masked.get(_cond, SPANGLER_VEC_GROUPS["center_equ"])
+        c_int_all = np.zeros((sum(cond), 3))
+        for group_name in np.unique(names_arr):
+            group_cond = names_arr == group_name
             M_equ2ecl = self.M_equ2ecl[group_name]
-            c_ecl = group.vectors.center_ecl.iloc[0].to_numpy()
-            c_equ = group.vectors.center_equ.iloc[0].to_numpy()
+            c_ecl = center_ecl[group_cond][0]
+            c_equ = center_equ[group_cond][0]
             c_int = np.matmul(self.M_ecl2int, c_ecl + np.matmul(M_equ2ecl, c_equ) - center)
-            self.data.masked.put(mask, SPANGLER_VEC_GROUPS["center_int"], np.tile(c_int, (len(group), 1)))
+            c_int_all[group_cond] = c_int
 
-            #Pseudo-cylindrical coordinates in the observer system (vectorized over all cond rows)
-            r_int = self.data.masked.get(mask, ["x_int", "y_int", "z_int"])
-            # Ensure continuous coordinates are float columns for pandas strictness.
-            for col in ("rho_int", "az_int", "cosf_int"):
-                if col not in self.data.columns:
-                    self.data[col] = np.nan
-                if not pd.api.types.is_float_dtype(self.data[col].dtype):
-                    self.data[col] = self.data[col].astype(float)
-            self.data.masked.put(mask, ["rho_int", "az_int", "cosf_int"], science.pcylindrical(r_int - c_int))
+        # Ensure continuous coordinates are float columns for pandas strictness.
+        for col in ("rho_int", "az_int", "cosf_int"):
+            if col not in self.data.columns:
+                self.data[col] = np.nan
+            if not pd.api.types.is_float_dtype(self.data[col].dtype):
+                self.data[col] = self.data[col].astype(float)
+        self.data.masked.put(_cond, ["rho_int", "az_int", "cosf_int"], science.pcylindrical(r_int - c_int_all))
 
-        #According to distance to intersetcion point generate z_cen_int
+        #According to distance to intersection point generate z_cen_int
         if self.infinite:
             self.data.masked.put(_cond, "z_cen_int", -np.inf)
         else:
-            z_cen_int = self.data.masked.get(_cond, "center_int_z")
-            self.data.masked.put(_cond, "z_cen_int", z_cen_int)
+            self.data.masked.put(_cond, "z_cen_int", c_int_all[:, 2])
 
         # Compute distance to intersection of each spangle and the
         if self.infinite:
             # Distance to all points is assumed infinite
-            self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int"], np.tile([0, 0, 1], (sum(cond), 1)))
-            self.data.masked.put(_cond, "d_int", np.inf)
-            self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int_ecl"], np.tile(n_int, (sum(cond), 1)))
+            n_int_arr = np.tile([0, 0, 1], (sum(cond), 1))
+            d_int_arr = np.full(sum(cond), np.inf)
+            n_int_ecl = np.tile(n_int, (sum(cond), 1))
         else:
             # Distance to origin of coordinates in the int system where the center is located
-            r_int = self.data.masked.get(_cond, ["x_int", "y_int", "z_int"])
             d_int_arr = np.linalg.norm(-r_int, axis=1)
             n_int_arr = -r_int / d_int_arr[:, None]
-            self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int"], n_int_arr)
-            self.data.masked.put(_cond, "d_int", d_int_arr)
             n_int_ecl = (M_int2ecl @ n_int_arr.T).T
-            self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int_ecl"], n_int_ecl)
 
         #Azimuth of the direction of the intersection vector in the tangent plane of the spangle
         wy_ecl = self.data.masked.get(_cond, ["wy_ecl_x","wy_ecl_y","wy_ecl_z"])
         wx_ecl = self.data.masked.get(_cond, ["wx_ecl_x","wx_ecl_y","wx_ecl_z"])
-        n_int_ecl = self.data.masked.get(_cond, SPANGLER_VEC_GROUPS["n_int_ecl"])
         dot_wy_n = np.sum(wy_ecl * n_int_ecl, axis=1)
         dot_wx_n = np.sum(wx_ecl * n_int_ecl, axis=1)
         if "azim_int" not in self.data.columns:
@@ -1178,9 +1174,13 @@ class Spangler(PrynglesCommon):
             self.data.masked.put(_cond, "cos_int", cos_int)
         else:
             # In this case n_int is a per-spangle variable
-            n_int_cond = self.data.masked.get(_cond, SPANGLER_VEC_GROUPS["n_int"])
-            cos_int = np.sum(ns_int * n_int_cond, axis=1)
+            cos_int = np.sum(ns_int * n_int_arr, axis=1)
             self.data.masked.put(_cond, "cos_int", cos_int)
+
+        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["center_int"], c_int_all)
+        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int"], n_int_arr)
+        self.data.masked.put(_cond, "d_int", d_int_arr)
+        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int_ecl"], n_int_ecl)
 
         #Set areas
         self.data.masked.put(_cond, "asp_int", self.data.masked.get(_cond, "asp"))
