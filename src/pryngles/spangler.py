@@ -1350,17 +1350,19 @@ class Spangler(PrynglesCommon):
 
         # Beta angle computation (Reference Plane rotation angle)
         # Appendix D arXiv:2404.16606v1
-        groups = self.data[cond].groupby("name")
-        names = self.data["name"].to_numpy()
-
-        for group_name, group in groups:
-            mask = cond & (names == group_name)
+        names_arr = self.data["name"].to_numpy()
+        ns_obs_arr = self.data.masked.get(_norm_cond, SPANGLER_VEC_GROUPS["ns_obs"])
+        spangle_type_arr = self.data.masked.get(_norm_cond, "spangle_type")
+        cos_obs_arr = self.data.masked.get(_norm_cond, "cos_obs")
+        betas_all = np.zeros(sum(cond))
+        for group_name in np.unique(names_arr):
+            group_cond = names_arr == group_name
             # Normal vector of each spangle
-            ns_obs = group.vectors.ns_obs.to_numpy()
+            ns_obs = ns_obs_arr[group_cond]
 
-            if group["spangle_type"].iloc[0] == 4:  # Ring Spangle
+            if spangle_type_arr[cond][0] == 4:  # Ring Spangle
                 # Cosine of the angle between normal vector and observer vector
-                cos_obs = group["cos_obs"].iloc[0]
+                cos_obs = cos_obs_arr[group_cond][0]
 
                 # X-Z angle
                 sigma = np.arctan2(ns_obs[0, 2], ns_obs[0, 0])
@@ -1376,12 +1378,13 @@ class Spangler(PrynglesCommon):
             else:  # Planetary or Stellar Spangle
                 betas = np.arctan(ns_obs[:, 1] / ns_obs[:, 0])
                 betas[ns_obs[:, 0] * ns_obs[:, 1] < 0] += np.pi
+            betas_all[group_cond] = betas
 
-            if "beta_loc" not in self.data.columns:
-                self.data["beta_loc"] = pd.Series([None] * len(self.data), dtype=object, index=self.data.index)
-            elif self.data["beta_loc"].dtype != object:
-                self.data["beta_loc"] = self.data["beta_loc"].astype(object)
-            self.data.masked.put(mask, "beta_loc", betas)
+        if "beta_loc" not in self.data.columns:
+            self.data["beta_loc"] = np.nan
+        if not pd.api.types.is_float_dtype(self.data["beta_loc"].dtype):
+            self.data["beta_loc"] = self.data["beta_loc"].astype(float)
+        self.data.masked.put(_norm_cond, "beta_loc", betas_all)
 
         # Update states
         self.data.unset = False
