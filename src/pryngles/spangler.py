@@ -1060,7 +1060,7 @@ class Spangler(PrynglesCommon):
 
         # Depending on body
         cond = self.data.name == name if name else np.ones(self.nspangles, dtype=bool)
-        _cond = MaskedAccessor.norm_mask(cond, len(self.data))
+        _norm_cond = MaskedAccessor.norm_mask(cond, len(self.data))
 
         # If no point is of type name
         if not cond.any():
@@ -1075,17 +1075,17 @@ class Spangler(PrynglesCommon):
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
 
-        r_ecl = self.data.masked.get(_cond, ["x_ecl", "y_ecl", "z_ecl"])
+        r_ecl = self.data.masked.get(_norm_cond, ["x_ecl", "y_ecl", "z_ecl"])
 
         #Pseudo-cylindrical coordinates in the observer system (vectorized over all cond rows)
         r_int = (self.M_ecl2int @ (r_ecl - center).T).T
-        self.data.masked.put(_cond, ["x_int", "y_int", "z_int"], r_int)
+        self.data.masked.put(_norm_cond, ["x_int", "y_int", "z_int"], r_int)
 
         # Center of the object in the observer reference system
-        # groups = self.data.masked.get(_cond).groupby("name")
+        # groups = self.data.masked.get(_norm_cond).groupby("name")
         names_arr = self.data["name"].to_numpy()
-        center_ecl = self.data.masked.get(_cond, SPANGLER_VEC_GROUPS["center_ecl"])
-        center_equ = self.data.masked.get(_cond, SPANGLER_VEC_GROUPS["center_equ"])
+        center_ecl = self.data.masked.get(_norm_cond, SPANGLER_VEC_GROUPS["center_ecl"])
+        center_equ = self.data.masked.get(_norm_cond, SPANGLER_VEC_GROUPS["center_equ"])
         c_int_all = np.zeros((sum(cond), 3))
         for group_name in np.unique(names_arr):
             group_cond = names_arr == group_name
@@ -1101,13 +1101,13 @@ class Spangler(PrynglesCommon):
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.masked.put(_cond, ["rho_int", "az_int", "cosf_int"], science.pcylindrical(r_int - c_int_all))
+        self.data.masked.put(_norm_cond, ["rho_int", "az_int", "cosf_int"], science.pcylindrical(r_int - c_int_all))
 
         #According to distance to intersection point generate z_cen_int
         if self.infinite:
-            self.data.masked.put(_cond, "z_cen_int", -np.inf)
+            self.data.masked.put(_norm_cond, "z_cen_int", -np.inf)
         else:
-            self.data.masked.put(_cond, "z_cen_int", c_int_all[:, 2])
+            self.data.masked.put(_norm_cond, "z_cen_int", c_int_all[:, 2])
 
         # Compute distance to intersection of each spangle and the
         if self.infinite:
@@ -1122,20 +1122,20 @@ class Spangler(PrynglesCommon):
             n_int_ecl = (M_int2ecl @ n_int_arr.T).T
 
         #Azimuth of the direction of the intersection vector in the tangent plane of the spangle
-        wy_ecl = self.data.masked.get(_cond, ["wy_ecl_x","wy_ecl_y","wy_ecl_z"])
-        wx_ecl = self.data.masked.get(_cond, ["wx_ecl_x","wx_ecl_y","wx_ecl_z"])
+        wy_ecl = self.data.masked.get(_norm_cond, ["wy_ecl_x","wy_ecl_y","wy_ecl_z"])
+        wx_ecl = self.data.masked.get(_norm_cond, ["wx_ecl_x","wx_ecl_y","wx_ecl_z"])
         dot_wy_n = np.sum(wy_ecl * n_int_ecl, axis=1)
         dot_wx_n = np.sum(wx_ecl * n_int_ecl, axis=1)
         if "azim_int" not in self.data.columns:
             self.data["azim_int"] = np.nan
         if not pd.api.types.is_float_dtype(self.data["azim_int"].dtype):
             self.data["azim_int"] = self.data["azim_int"].astype(float)
-        self.data.masked.put(_cond, "azim_int", np.arctan2(dot_wy_n, dot_wx_n))
+        self.data.masked.put(_norm_cond, "azim_int", np.arctan2(dot_wy_n, dot_wx_n))
 
         #Update spangles orientations
-        ns_ecl = self.data.masked.get(_cond, ["ns_ecl_x","ns_ecl_y","ns_ecl_z"])
+        ns_ecl = self.data.masked.get(_norm_cond, ["ns_ecl_x","ns_ecl_y","ns_ecl_z"])
         ns_int = (self.M_ecl2int @ ns_ecl.T).T
-        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["ns_int"], ns_int)
+        self.data.masked.put(_norm_cond, SPANGLER_VEC_GROUPS["ns_int"], ns_int)
 
         # Cosine of the direction of the intersection vector and the normal to the spangle
         # Store cosines as float: pandas >=2 raises LossySetitemError when assigning
@@ -1148,19 +1148,19 @@ class Spangler(PrynglesCommon):
         if self.infinite:
             # In this case n_int is a global variable
             cos_int = np.sum(ns_ecl * n_int, axis=1)
-            self.data.masked.put(_cond, "cos_int", cos_int)
+            self.data.masked.put(_norm_cond, "cos_int", cos_int)
         else:
             # In this case n_int is a per-spangle variable
             cos_int = np.sum(ns_int * n_int_arr, axis=1)
-            self.data.masked.put(_cond, "cos_int", cos_int)
+            self.data.masked.put(_norm_cond, "cos_int", cos_int)
 
-        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["center_int"], c_int_all)
-        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int"], n_int_arr)
-        self.data.masked.put(_cond, "d_int", d_int_arr)
-        self.data.masked.put(_cond, SPANGLER_VEC_GROUPS["n_int_ecl"], n_int_ecl)
+        self.data.masked.put(_norm_cond, SPANGLER_VEC_GROUPS["center_int"], c_int_all)
+        self.data.masked.put(_norm_cond, SPANGLER_VEC_GROUPS["n_int"], n_int_arr)
+        self.data.masked.put(_norm_cond, "d_int", d_int_arr)
+        self.data.masked.put(_norm_cond, SPANGLER_VEC_GROUPS["n_int_ecl"], n_int_ecl)
 
         #Set areas
-        self.data.masked.put(_cond, "asp_int", self.data.masked.get(_cond, "asp"))
+        self.data.masked.put(_norm_cond, "asp_int", self.data.masked.get(_norm_cond, "asp"))
 
         return cond, n_int, d_int
 
@@ -1332,21 +1332,21 @@ class Spangler(PrynglesCommon):
 
         # Set observer
         cond, self.n_obs, self.d_obs = self.set_intersect(nvec, alpha, center)
-        _cond = MaskedAccessor.norm_mask(cond)
+        _norm_cond = MaskedAccessor.norm_mask(cond, len(self.data))
 
         # Set properties
         self.alpha_obs = alpha
         self.rqf_obs = science.spherical(self.n_obs)
         self.center_obs = center.copy() if center else center
 
-        self.data.masked.put(_cond, "visible", False)
+        self.data.masked.put(_norm_cond, "visible", False)
         # Observer-frame coordinates are continuous, so keep them as float dtype.
         for col in SPANGLER_COL_OBS:
             if col not in self.data.columns:
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.masked.put(_cond, SPANGLER_COL_OBS, self.data.masked.get(_cond, SPANGLER_COL_INT))
+        self.data.masked.put(_norm_cond, SPANGLER_COL_OBS, self.data.masked.get(_norm_cond, SPANGLER_COL_INT))
 
         # Beta angle computation (Reference Plane rotation angle)
         # Appendix D arXiv:2404.16606v1
@@ -1400,7 +1400,7 @@ class Spangler(PrynglesCommon):
             & ((self.data.z_cen_obs + self.data.scale) < 0)
             & ((self.data.cos_obs > 0) | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)))
         )
-        self.data.masked.put(_cond, "visible", True)
+        self.data.masked.put(cond, "visible", True)
 
     def set_luz(self, nvec=None, alpha=0, center=None, name=None):
         """
@@ -1440,14 +1440,14 @@ class Spangler(PrynglesCommon):
 
         # Depending on body choose which spangles to change
         cond = self.data.name == name if name else np.ones(self.nspangles, dtype=bool)
-        _cond = MaskedAccessor.norm_mask(cond, len(self.data))
+        _norm_cond = MaskedAccessor.norm_mask(cond, len(self.data))
 
         # Set the light source direction in spherical coordinates
         self.rqf_luz = science.spherical(self.n_luz)
 
         # Set the default value of the states to change in False
-        self.data.masked.put(_cond, "illuminated", False)
-        self.data.masked.put(_cond, "transmit", False)
+        self.data.masked.put(_norm_cond, "illuminated", False)
+        self.data.masked.put(_norm_cond, "transmit", False)
 
         # Conditions
         # Light-source-frame coordinates are continuous, so keep them as float dtype.
@@ -1456,19 +1456,19 @@ class Spangler(PrynglesCommon):
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.masked.put(_cond, SPANGLER_COL_LUZ, self.data.masked.get(_cond, SPANGLER_COL_INT))
+        self.data.masked.put(_norm_cond, SPANGLER_COL_LUZ, self.data.masked.get(_norm_cond, SPANGLER_COL_INT))
 
         # Set relative azimuth [-pi,pi]
-        azim_obs_luz = self.data.masked.get(_cond, "azim_obs") - self.data.masked.get(_cond, "azim_luz")
+        azim_obs_luz = self.data.masked.get(_norm_cond, "azim_obs") - self.data.masked.get(_norm_cond, "azim_luz")
         # pi Shift and domain in [-pi,pi]
         if "azim_obs_luz" not in self.data.columns:
             self.data["azim_obs_luz"] = np.nan
         if not pd.api.types.is_float_dtype(self.data["azim_obs_luz"].dtype):
             self.data["azim_obs_luz"] = self.data["azim_obs_luz"].astype(float)
-        self.data.masked.put(_cond, "azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)))
+        self.data.masked.put(_norm_cond, "azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)))
 
         # Update states
-        self.data.masked.put(_cond, "unset", False)
+        self.data.masked.put(_norm_cond, "unset", False)
 
         # Condition for illumination
         """
