@@ -233,6 +233,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   // - Sarr is a C_CONTIGUOUS flattened 2D array (npix, nmat + 1)
 
   double be, SvR2, SvR3, P;
+  double cosmphi, sinmphi;
   double mu, mu0, muold = 1, mu0old = 1;
   int ki;
   double fac;
@@ -309,10 +310,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     for (int i = 0; i < npix; i++) {
       mu = theta[i];
       mu0 = theta0[i];
-      Bplus[0] = cos(m * phi[i]);
-      Bplus[1] = cos(m * phi[i]);
-      Bplus[2] = sin(m * phi[i]);
-      Bplus[3] = sin(m * phi[i]);
+      cosmphi = cos(m * phi[i]);
+      sinmphi = sin(m * phi[i]);
+      Bplus[0] = cosmphi;
+      Bplus[1] = cosmphi;
+      Bplus[2] = sinmphi;
+      Bplus[3] = sinmphi;
 
       if ((i > 0) && ((fabs(mu - muold) < 1e-6)) &&
           (fabs(mu0 - mu0old) < 1e-6)) {
