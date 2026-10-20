@@ -103,7 +103,7 @@ void free_cube(double ***C, int n, int m) {
  */
 int spline(double x[], double y[], int n, double y2[]) {
   double u[MAX_SPLINE_N];
-  double sig, p, qn, un;
+  double sig, p;
 
   if (n < 2 || n > MAX_SPLINE_N) {
     fprintf(stderr, "Error in spline: n=%d outside [2, %d].\n", n,
@@ -126,8 +126,8 @@ int spline(double x[], double y[], int n, double y2[]) {
            p;
   }
 
-  qn = 0;
-  un = 0;
+  double qn = 0;
+  double un = 0;
   y2[n - 1] = (un - qn * u[n - 2]) / (qn * y2[n - 2] + 1);
 
   for (int k = n - 2; k >= 0; k--) {
