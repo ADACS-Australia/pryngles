@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 // Maximum number of tabulated points spline() can handle (size of its
 // scratch array), and maximum number of Stokes elements reflection() supports
@@ -238,6 +237,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   int ki;
   double fac;
   int ret = 0;
+  size_t srow = (size_t)nmat + 1; // row length of the flat Sarr
 
   // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
   // and spline() has a fixed-size scratch array.
@@ -391,7 +391,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
      * elements
      *----------------------------------------------------------------------------
      */
-    size_t srow = (size_t)nmat + 1; // row length of the flat Sarr
     for (int k = 0; k < nmat; k++) {
       Sarr[(size_t)i * srow + (size_t)k] = SvR[k] * mu * apix[i];
     }
