@@ -1,0 +1,6 @@
+# Timing results are machine-specific
+results/
+
+# Profiler output
+*.pyisession
+*.html
