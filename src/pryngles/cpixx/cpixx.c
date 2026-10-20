@@ -101,7 +101,7 @@ void free_cube(double ***C, int n, int m) {
  *     Returns 0 on success, -1 if n < 2 or n > MAX_SPLINE_N.
  *----------------------------------------------------------------------------
  */
-int spline(double x[], double y[], int n, double y2[]) {
+int spline(const double x[], const double y[], int n, double y2[]) {
   double u[MAX_SPLINE_N];
   double sig, p;
 
@@ -137,7 +137,7 @@ int spline(double x[], double y[], int n, double y2[]) {
   return 0;
 }
 
-int bisect(double xa[], int n, double x) {
+int bisect(const double xa[], int n, double x) {
   int k;
   int klo = 0;
   int khi = n - 1;
@@ -160,7 +160,7 @@ int bisect(double xa[], int n, double x) {
  * degenerate (xa not strictly increasing). On failure the outputs are
  * left untouched.
  */
-int spline_coefficients(double xa[], int n, double x, int *klo_out,
+int spline_coefficients(const double xa[], int n, double x, int *klo_out,
                         int *khi_out, double *a_out, double *b_out,
                         double *h_out) {
   if (n < 2) {
@@ -205,8 +205,8 @@ int spline_coefficients(double xa[], int n, double x, int *klo_out,
  *     change for an individual pixel/spangle.
  *----------------------------------------------------------------------------
  */
-double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
-              double h) {
+double splint(const double ya[], const double y2a[], int klo, int khi, double a,
+              double b, double h) {
   double y =
       a * ya[klo] + b * ya[khi] +
       ((a * a * a - a) * y2a[klo] + (b * b * b - b) * y2a[khi]) * (h * h) / 6;
@@ -238,9 +238,10 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
  *     Date: September 2022
  *----------------------------------------------------------------------------
  */
-int reflection(int nmat, int nmugs, int nfou, double *xmu, double ***rfou,
-               double ***rtra, int qreflection, int npix, double *phi,
-               double *beta, double *theta0, double *theta, double *apix,
+int reflection(int nmat, int nmugs, int nfou, const double *xmu,
+               const double ***rfou, const double ***rtra, int qreflection,
+               int npix, const double *phi, const double *beta,
+               const double *theta0, const double *theta, const double *apix,
                double **Sarr) {
 
   double be, SvR2, SvR3, P;
