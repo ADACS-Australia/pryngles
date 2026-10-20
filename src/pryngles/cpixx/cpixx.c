@@ -1,27 +1,13 @@
-//////////////////////////////////////////////////////////////
-// DEPENDENCIES
-//////////////////////////////////////////////////////////////
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-//////////////////////////////////////////////////////////////
-// MACROS
-//////////////////////////////////////////////////////////////
-#define MAX_FOU 1000
-#define MAX_STRING 1000
-#define VERBOSITY 0
 
 // Maximum number of tabulated points spline() can handle (size of its
 // scratch array), and maximum number of Stokes elements reflection() supports
 // (size of Bplus).
 #define MAX_SPLINE_N 1000
 #define MAX_NMAT 4
-
-//////////////////////////////////////////////////////////////
-// ROUTINES
-//////////////////////////////////////////////////////////////
 
 /*
  * Checked calloc wrapper for the zeros_* allocators.
@@ -218,8 +204,8 @@ double splint(const double ya[], const double y2a[], int klo, int khi, double a,
 //////////////////////////////////////////////////////////////
 /*
  *----------------------------------------------------------------------------
- *     Read a Fourier coefficients file and calculate the Stokes vector
- *     for a given geometry.
+ *     Calculate the Stokes vector for a given geometry (given a table of
+ *     Fourier coefficients read from a file).
  *
  *     It is assumed that the Stokes vector of the incoming sunlight
  *     is [1,0,0,0], with the flux measured perpendicular to the direction
@@ -232,16 +218,20 @@ double splint(const double ya[], const double y2a[], int klo, int khi, double a,
  *     nmugs outside [2, MAX_SPLINE_N]) or a degenerate xmu grid. On failure
  *     Sarr is not (fully) written.
  *
- *     Sarr must have npix rows of at least nmat + 1 elements.
+ *     Sarr is a flat row-major buffer of npix * (nmat + 1) doubles: row i
+ *     holds the nmat Stokes elements of pixel i followed by the degree of
+ *     polarisation.
  *
- *     Author: Daphne M. Stam
- *     Date: September 2022
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double ***fourier_coefficients, int npix,
-               const double *phi, const double *beta, const double *theta0,
-               const double *theta, const double *apix, double **Sarr) {
+               const double *fou, int npix, const double *phi,
+               const double *beta, const double *theta0, const double *theta,
+               const double *apix, double *Sarr) {
+
+  // Note:
+  // - fou is a C_CONTIGUOUS flattened 3D array (nmat * nmugs, nmugs, nfou)
+  // - Sarr is a C_CONTIGUOUS flattened 2D array (npix, nmat + 1)
 
   double be, SvR2, SvR3, P;
   double mu, mu0, muold = 1, mu0old = 1;
@@ -268,16 +258,16 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   double *SvR, *rf3save;
   double Bplus[MAX_NMAT];
 
-  // Allocate dynamically temporal matrices
+  // Allocate dynamically temporary matrices
   // Cubes
   rf = zeros_cube(nmat, nmugs, nmugs);
   rfsec = zeros_cube(nmat, nmugs, nmugs);
   // Matrices
   rfmu0 = zeros_matrix(nmat, nmugs);
   RM = zeros_matrix(npix, nmat);
-  // Vectos nmugs
+  // Vectors nmugs
   rfsecmu0 = zeros_vector(nmugs);
-  // Vectos nmats
+  // Vectors nmats
   rf3save = zeros_vector(nmat);
   SvR = zeros_vector(nmat);
 
@@ -295,7 +285,9 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
         ki = j * nmat + k;
 
         for (int n = 0; n < nmugs; n++) {
-          rf[k][j][n] = fourier_coefficients[ki][n][m];
+          rf[k][j][n] =
+              fou[((size_t)ki * (size_t)nmugs + (size_t)n) * (size_t)nfou +
+                  (size_t)m];
         }
 
         // Use slice rf(k,j,:), write directly into corresponding rfsec row.
@@ -399,24 +391,25 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
      * elements
      *----------------------------------------------------------------------------
      */
+    size_t srow = (size_t)nmat + 1; // row length of the flat Sarr
     for (int k = 0; k < nmat; k++) {
-      Sarr[i][k] = SvR[k] * mu * apix[i];
+      Sarr[(size_t)i * srow + (size_t)k] = SvR[k] * mu * apix[i];
     }
 
     // The value of the degree of polarization
-    Sarr[i][nmat] = P;
+    Sarr[(size_t)i * srow + (size_t)nmat] = P;
   } // End i (pix)
 
 cleanup:
-  // Free temporal arrays (every level, bottom-up)
+  // Free temporary arrays (every level, bottom-up)
   free_cube(rf, nmat, nmugs);
   free_cube(rfsec, nmat, nmugs);
   // Matrices
   free_matrix(rfmu0, nmat);
   free_matrix(RM, npix);
-  // Vectos nmugs
+  // Vectors nmugs
   free(rfsecmu0);
-  // Vectos nmats
+  // Vectors nmats
   free(rf3save);
   free(SvR);
 
