@@ -22,12 +22,6 @@
 //////////////////////////////////////////////////////////////
 // ROUTINES
 //////////////////////////////////////////////////////////////
-struct FourierCoefficients {
-  int nmat, nmugs, nfou;
-  double *xmu;
-  double ***rfou;
-  double ***rtra;
-};
 
 /*
  * Checked calloc wrapper for the zeros_* allocators.
@@ -244,20 +238,16 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
  *     Date: September 2022
  *----------------------------------------------------------------------------
  */
-int reflection(struct FourierCoefficients F, int qreflection, int npix,
-               double *phi, double *beta, double *theta0, double *theta,
-               double *apix, double **Sarr) {
+int reflection(int nmat, int nmugs, int nfou, double *xmu, double ***rfou,
+               double ***rtra, int qreflection, int npix, double *phi,
+               double *beta, double *theta0, double *theta, double *apix,
+               double **Sarr) {
 
   double be, SvR2, SvR3, P;
   double mu, mu0, muold = 1, mu0old = 1;
   int ki;
   double fac;
   int ret = 0;
-
-  // Read sizes
-  int nmat = F.nmat;
-  int nmugs = F.nmugs;
-  int nfou = F.nfou;
 
   // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
   // and spline() has a fixed-size scratch array.
@@ -305,12 +295,12 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
         ki = j * nmat + k;
 
         for (int n = 0; n < nmugs; n++) {
-          rf[k][j][n] = qreflection ? F.rfou[ki][n][m] : F.rtra[ki][n][m];
+          rf[k][j][n] = qreflection ? rfou[ki][n][m] : rtra[ki][n][m];
         }
 
         // Use slice rf(k,j,:), write directly into corresponding rfsec row.
         // nmugs was validated above, so spline() cannot fail here.
-        spline(F.xmu, rf[k][j], nmugs, rfsec[k][j]);
+        spline(xmu, rf[k][j], nmugs, rfsec[k][j]);
 
       } // End k
 
@@ -343,7 +333,7 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
         // Get indices and coefficients to work with (at mu0)
         int klo, khi;
         double a, b, h;
-        if (spline_coefficients(F.xmu, nmugs, mu0, &klo, &khi, &a, &b, &h)) {
+        if (spline_coefficients(xmu, nmugs, mu0, &klo, &khi, &a, &b, &h)) {
           ret = -1;
           goto cleanup;
         }
@@ -358,13 +348,13 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
         }
 
         // Get indices and coefficients to work with (now at mu)
-        if (spline_coefficients(F.xmu, nmugs, mu, &klo, &khi, &a, &b, &h)) {
+        if (spline_coefficients(xmu, nmugs, mu, &klo, &khi, &a, &b, &h)) {
           ret = -1;
           goto cleanup;
         }
 
         for (int k = 0; k < nmat; k++) {
-          spline(F.xmu, rfmu0[k], nmugs, rfsecmu0);
+          spline(xmu, rfmu0[k], nmugs, rfsecmu0);
           // Do the spline interpolation between klo and khi, given the
           // coefficients a,b,h
           rf3save[k] = splint(rfmu0[k], rfsecmu0, klo, khi, a, b, h);
@@ -431,8 +421,4 @@ cleanup:
   free(SvR);
 
   return ret;
-}
-
-size_t fourier_coefficients_size(void) {
-  return sizeof(struct FourierCoefficients);
 }

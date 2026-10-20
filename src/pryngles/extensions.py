@@ -179,7 +179,12 @@ class FourierCoefficients(ctypes.Structure):
 # Define the argument and return types for the reflection function
 cpixx_ext.reflection.restype = ctypes.c_int
 cpixx_ext.reflection.argtypes = [
-    FourierCoefficients,
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    PDOUBLE,
+    PPPDOUBLE,
+    PPPDOUBLE,
     ctypes.c_int,
     ctypes.c_int,
     PDOUBLE,
@@ -280,7 +285,12 @@ class StokesScatterer:
         Sarr = np.zeros((npix, self.F.nmat + 1))
         Sarr_ptr = ExtensionUtil.mat2ptr(Sarr)
         ret = cpixx_ext.reflection(
-            self.F,
+            self.F.nmat,
+            self.F.nmugs,
+            self.F.nfou,
+            self.F.xmu,
+            self.F.rfou,
+            self.F.rtra,
             qreflection,
             npix,
             ExtensionUtil.vec2ptr(phi),
