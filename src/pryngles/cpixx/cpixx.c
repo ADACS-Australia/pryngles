@@ -108,7 +108,6 @@ void free_cube(double ***C, int n, int m) {
  *----------------------------------------------------------------------------
  */
 int spline(double x[], double y[], int n, double y2[]) {
-  int i, k;
   double u[MAX_SPLINE_N];
   double sig, p, qn, un;
 
@@ -121,7 +120,7 @@ int spline(double x[], double y[], int n, double y2[]) {
   y2[0] = 0;
   u[0] = 0;
 
-  for (i = 1; i < n - 1; i++) {
+  for (int i = 1; i < n - 1; i++) {
     sig = (x[i] - x[i - 1]) / (x[i + 1] - x[i - 1]);
     p = sig * y2[i - 1] + 2;
     y2[i] = (sig - 1) / p;
@@ -137,7 +136,7 @@ int spline(double x[], double y[], int n, double y2[]) {
   un = 0;
   y2[n - 1] = (un - qn * u[n - 2]) / (qn * y2[n - 2] + 1);
 
-  for (k = n - 2; k >= 0; k--) {
+  for (int k = n - 2; k >= 0; k--) {
     y2[k] = y2[k] * y2[k + 1] + u[k];
   }
 
@@ -248,8 +247,7 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
 int reflection(struct FourierCoefficients F, int qreflection, int npix,
                double *phi, double *beta, double *theta0, double *theta,
                double *apix, double **Sarr) {
-  // Declarations
-  int i, j, k, m, n;
+
   double be, SvR2, SvR3, P;
   double mu, mu0, muold = 1, mu0old = 1;
   int ki;
@@ -294,19 +292,19 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
   SvR = zeros_vector(nmat);
 
   // Loop over the Fourier coefficients:
-  for (m = 0; m < nfou; m++) {
+  for (int m = 0; m < nfou; m++) {
 
     fac = 1.0;
     if (m == 0)
       fac = 0.5;
 
     // Initialize the interpolation matrix for the current fourier coefficient:
-    for (j = 0; j < nmugs; j++) {
+    for (int j = 0; j < nmugs; j++) {
 
-      for (k = 0; k < nmat; k++) {
+      for (int k = 0; k < nmat; k++) {
         ki = j * nmat + k;
 
-        for (n = 0; n < nmugs; n++) {
+        for (int n = 0; n < nmugs; n++) {
           rf[k][j][n] = qreflection ? F.rfou[ki][n][m] : F.rtra[ki][n][m];
         }
 
@@ -326,7 +324,7 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
      * (mu,mu0) spline has to be called a second time.
      *----------------------------------------------------------------------------
      */
-    for (i = 0; i < npix; i++) {
+    for (int i = 0; i < npix; i++) {
       mu = theta[i];
       mu0 = theta0[i];
       Bplus[0] = cos(m * phi[i]);
@@ -337,7 +335,7 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
       if ((i > 0) && ((fabs(mu - muold) < 1e-6)) &&
           (fabs(mu0 - mu0old) < 1e-6)) {
 
-        for (k = 0; k < nmat; k++)
+        for (int k = 0; k < nmat; k++)
           RM[i][k] = RM[i][k] + 2 * Bplus[k] * fac * rf3save[k];
 
       } else {
@@ -350,8 +348,8 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
           goto cleanup;
         }
 
-        for (j = 0; j < nmugs; j++) {
-          for (k = 0; k < nmat; k++) {
+        for (int j = 0; j < nmugs; j++) {
+          for (int k = 0; k < nmat; k++) {
             // Use rf(k,j,:) and rfsec(k,j,:) slices directly, and write
             // straight into rmu0(k,j,:) Do the spline interpolation between klo
             // and khi, given the coefficients a,b,h
@@ -365,7 +363,7 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
           goto cleanup;
         }
 
-        for (k = 0; k < nmat; k++) {
+        for (int k = 0; k < nmat; k++) {
           spline(F.xmu, rfmu0[k], nmugs, rfsecmu0);
           // Do the spline interpolation between klo and khi, given the
           // coefficients a,b,h
@@ -379,12 +377,12 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
   } // End loop fourier coefficients
 
   // Loop again over the pixels to rotate Stokes vector:
-  for (i = 0; i < npix; i++) {
+  for (int i = 0; i < npix; i++) {
     mu = theta[i];
     mu0 = theta0[i];
 
     // Calculate the locally reflected Stokes vector:
-    for (k = 0; k < nmat; k++)
+    for (int k = 0; k < nmat; k++)
       SvR[k] = mu0 * RM[i][k];
 
     // Rotate Stokes elements Q and U to the actual reference plane:
@@ -411,7 +409,7 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
      * elements
      *----------------------------------------------------------------------------
      */
-    for (k = 0; k < nmat; k++) {
+    for (int k = 0; k < nmat; k++) {
       Sarr[i][k] = SvR[k] * mu * apix[i];
     }
 
