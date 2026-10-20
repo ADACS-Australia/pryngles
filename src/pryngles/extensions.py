@@ -184,8 +184,6 @@ cpixx_ext.reflection.argtypes = [
     ctypes.c_int,
     PDOUBLE,
     PPPDOUBLE,
-    PPPDOUBLE,
-    ctypes.c_int,
     ctypes.c_int,
     PDOUBLE,
     PDOUBLE,
@@ -284,14 +282,13 @@ class StokesScatterer:
         npix = len(phi)
         Sarr = np.zeros((npix, self.F.nmat + 1))
         Sarr_ptr = ExtensionUtil.mat2ptr(Sarr)
+        fourier_coefficients = self.F.rfou if qreflection else self.F.rtra
         ret = cpixx_ext.reflection(
             self.F.nmat,
             self.F.nmugs,
             self.F.nfou,
             self.F.xmu,
-            self.F.rfou,
-            self.F.rtra,
-            qreflection,
+            fourier_coefficients,
             npix,
             ExtensionUtil.vec2ptr(phi),
             ExtensionUtil.vec2ptr(beta),

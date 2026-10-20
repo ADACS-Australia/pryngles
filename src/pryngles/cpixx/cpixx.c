@@ -239,10 +239,9 @@ double splint(const double ya[], const double y2a[], int klo, int khi, double a,
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double ***rfou, const double ***rtra, int qreflection,
-               int npix, const double *phi, const double *beta,
-               const double *theta0, const double *theta, const double *apix,
-               double **Sarr) {
+               const double ***fourier_coefficients, int npix,
+               const double *phi, const double *beta, const double *theta0,
+               const double *theta, const double *apix, double **Sarr) {
 
   double be, SvR2, SvR3, P;
   double mu, mu0, muold = 1, mu0old = 1;
@@ -296,7 +295,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
         ki = j * nmat + k;
 
         for (int n = 0; n < nmugs; n++) {
-          rf[k][j][n] = qreflection ? rfou[ki][n][m] : rtra[ki][n][m];
+          rf[k][j][n] = fourier_coefficients[ki][n][m];
         }
 
         // Use slice rf(k,j,:), write directly into corresponding rfsec row.
