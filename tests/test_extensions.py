@@ -1,6 +1,7 @@
 """Tests for the functions in the ``extensions`` module."""
 
 import numpy as np
+import pytest
 
 import pryngles as pr
 
@@ -67,10 +68,40 @@ def test_stokes_ring_forwardscattering():
 def test_read_fourier(tmp_path):
     """``read_fourier`` parses the header and core data of a fourier file."""
     # A minimal synthetic file: nmat=3, nmugs=2, then the two xmu rows,
-    # then the core data rows (m, i, j, rfou..., rtra...).
+    # then the core data rows (m, i, j, rfou..., rtra...)
+
+    # Test an incomplete file
+    content_incomplete = (
+        "# comment line\n"
+        "3\n"
+        "2\n"
+        "0.1 0.2\n"
+        "0.3 0.4\n"
+        "0 1 1 1.0 2.0 3.0 4.0 5.0 6.0\n"
+        "0 1 2 7.0 8.0 9.0 10.0 11.0 12.0\n"
+    )  # fmt: skip
+    path = tmp_path / "fou_incomplete.dat"
+    path.write_text(content_incomplete)
+
+    # Each fourier coefficient should have numgs^2 rows, one for each (i,j) pair
+    # The number of coeffecients is determined from the max val of the first column
+    # in the core data.
+
+    with pytest.raises(RuntimeError, match="Expected a dense file"):
+        pr.StokesScatterer(str(path))
+
+    # Test a complete file
     content = (
-        "# comment line\n3\n2\n0.1 0.2\n0.3 0.4\n0 1 1 1.0 2.0 3.0 4.0 5.0 6.0\n0 1 2 7.0 8.0 9.0 10.0 11.0 12.0\n"
-    )
+        "# comment line\n"
+        "3\n"
+        "2\n"
+        "0.1 0.2\n"
+        "0.3 0.4\n"
+        "0 1 1 1.0 2.0 3.0 4.0 5.0 6.0\n"
+        "0 1 2 7.0 8.0 9.0 10.0 11.0 12.0\n"
+        "0 2 1 13.0 14.0 15.0 16.0 17.0 18.0\n"
+        "0 2 2 19.0 20.0 21.0 22.0 23.0 24.0\n"
+    )  # fmt: skip
     path = tmp_path / "fou_test.dat"
     path.write_text(content)
 
@@ -81,11 +112,14 @@ def test_read_fourier(tmp_path):
     np.testing.assert_allclose(S.xmu, [0.1, 0.3])
     assert S.rfou.shape == (3 * 2, 2, 1)
     assert S.rtra.shape == (3 * 2, 2, 1)
-    # First data row: m=0, i=1, j=1 -> rfou[0:3, 0, 0] = [1,2,3],
-    # rtra[0:3, 0, 0] = [4,5,6].
-    np.testing.assert_allclose(S.rfou[0:3, 0, 0], [1.0, 2.0, 3.0])
+
+    # First data row: m=0, i=1, j=1 -> rfou[0:3, 0, 0] = [1,2,3], rtra[0:3, 0, 0] = [4,5,6]
+    # Second data row: m=0, i=1, j=2 -> rfou[0:3, 1, 0] = [7,8,9], rtra[0:3, 1, 0] = [10,11,12]
+    # and so on...
     np.testing.assert_allclose(S.rtra[0:3, 0, 0], [4.0, 5.0, 6.0])
-    # Second data row: m=0, i=1, j=2 -> rfou[0:3, 1, 0] = [7,8,9],
-    # rtra[0:3, 1, 0] = [10,11,12].
     np.testing.assert_allclose(S.rfou[0:3, 1, 0], [7.0, 8.0, 9.0])
     np.testing.assert_allclose(S.rtra[0:3, 1, 0], [10.0, 11.0, 12.0])
+    np.testing.assert_allclose(S.rfou[3:6, 0, 0], [13.0, 14.0, 15.0])
+    np.testing.assert_allclose(S.rtra[3:6, 0, 0], [16.0, 17.0, 18.0])
+    np.testing.assert_allclose(S.rfou[3:6, 1, 0], [19.0, 20.0, 21.0])
+    np.testing.assert_allclose(S.rtra[3:6, 1, 0], [22.0, 23.0, 24.0])
