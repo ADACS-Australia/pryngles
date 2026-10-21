@@ -198,9 +198,14 @@ double splint(const double ya[], const double y2a[], int klo, int khi, double a,
   return y;
 }
 
-//////////////////////////////////////////////////////////////
-// PHYSICAL ROUTINES
-//////////////////////////////////////////////////////////////
+// Row fou[m][k][i][:] (nmugs consecutive doubles) of a flat
+// (nfou, nmat, nmugs, nmugs) Fourier array.
+static inline const double *fou_row(const double *fou, int nmat, int nmugs,
+                                    int m, int k, int i) {
+  return fou + (((size_t)m * (size_t)nmat + (size_t)k) * (size_t)nmugs + (size_t)i) *
+                   (size_t)nmugs;
+}
+
 /*
  *----------------------------------------------------------------------------
  *     Calculate the Stokes vector for a given geometry (given a table of
@@ -229,8 +234,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
                const double *apix, double *Sarr) {
 
   // Note:
-  // - fou is a C_CONTIGUOUS flattened 3D array (nmat * nmugs, nmugs, nfou)
-  // - Sarr is a C_CONTIGUOUS flattened 2D array (npix, nmat + 1)
+  // - fou is a C_CONTIGUOUS flattened 4D array (nfou, nmat, nmugs, nmugs), indexed fou[m][k][i][j]
+  // - Sarr is a C_CONTIGUOUS flattened 2D array (npix, nmat + 1), indexed Sarr[n,k]
 
   double be, SvR2, SvR3, P;
   double cosmphi, sinmphi;
@@ -253,7 +258,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     return -1;
   }
 
-  double ***rf, ***rfsec;
+  double ***rfsec;
   double **RM, **rfmu0;
   double *rfsecmu0;
   double *SvR, *rf3save;
@@ -261,7 +266,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
   // Allocate dynamically temporary matrices
   // Cubes
-  rf = zeros_cube(nmat, nmugs, nmugs);
   rfsec = zeros_cube(nmat, nmugs, nmugs);
   // Matrices
   rfmu0 = zeros_matrix(nmat, nmugs);
@@ -283,17 +287,9 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     for (int i = 0; i < nmugs; i++) {
 
       for (int k = 0; k < nmat; k++) {
-        ki = i * nmat + k;
 
-        for (int j = 0; j < nmugs; j++) {
-          rf[k][i][j] =
-              fou[((size_t)ki * (size_t)nmugs + (size_t)j) * (size_t)nfou +
-                  (size_t)m];
-        }
-
-        // Use slice rf(k,i,:), write directly into corresponding rfsec row.
-        // nmugs was validated above, so spline() cannot fail here.
-        spline(xmu, rf[k][i], nmugs, rfsec[k][i]);
+        // Row fou[m][k][i][:] is contiguous: no copy needed.
+        spline(xmu, fou_row(fou, nmat, nmugs, m, k, i), nmugs, rfsec[k][i]);
 
       } // End k
 
@@ -335,10 +331,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
         for (int i = 0; i < nmugs; i++) {
           for (int k = 0; k < nmat; k++) {
-            // Use rf(k,i,:) and rfsec(k,i,:) slices directly, and write
+            // Use fou(m,k,i,:) and rfsec(k,i,:) slices directly, and write
             // straight into rmu0(k,i,:) Do the spline interpolation between klo
             // and khi, given the coefficients a,b,h
-            rfmu0[k][i] = splint(rf[k][i], rfsec[k][i], klo, khi, a, b, h);
+            rfmu0[k][i] = splint(fou_row(fou, nmat, nmugs, m, k, i), rfsec[k][i], klo, khi, a, b, h);
           }
         }
 
@@ -407,7 +403,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
 cleanup:
   // Free temporary arrays (every level, bottom-up)
-  free_cube(rf, nmat, nmugs);
   free_cube(rfsec, nmat, nmugs);
   // Matrices
   free_matrix(rfmu0, nmat);

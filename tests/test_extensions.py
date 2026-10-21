@@ -90,6 +90,10 @@ def test_read_fourier(tmp_path):
     with pytest.raises(RuntimeError, match="Expected a dense file"):
         pr.StokesScatterer(str(path))
 
+    # Core data:
+    # First data row: m=0, i=1, j=1, nmat matrix elements for rfou, nmat matrix elements for rtra
+    # Second data row: m=0, i=1, j=2, nmat matrix elements for rfou, nmat matrix elements for rtra
+
     # Test a complete file
     content = (
         "# comment line\n"
@@ -107,19 +111,19 @@ def test_read_fourier(tmp_path):
 
     S = pr.StokesScatterer(str(path))
 
+    # Check header
     assert S.nmat == 3
     assert S.nmugs == 2
     np.testing.assert_allclose(S.xmu, [0.1, 0.3])
-    assert S.rfou.shape == (3 * 2, 2, 1)
-    assert S.rtra.shape == (3 * 2, 2, 1)
 
-    # First data row: m=0, i=1, j=1 -> rfou[0:3, 0, 0] = [1,2,3], rtra[0:3, 0, 0] = [4,5,6]
-    # Second data row: m=0, i=1, j=2 -> rfou[0:3, 1, 0] = [7,8,9], rtra[0:3, 1, 0] = [10,11,12]
-    # and so on...
-    np.testing.assert_allclose(S.rtra[0:3, 0, 0], [4.0, 5.0, 6.0])
-    np.testing.assert_allclose(S.rfou[0:3, 1, 0], [7.0, 8.0, 9.0])
-    np.testing.assert_allclose(S.rtra[0:3, 1, 0], [10.0, 11.0, 12.0])
-    np.testing.assert_allclose(S.rfou[3:6, 0, 0], [13.0, 14.0, 15.0])
-    np.testing.assert_allclose(S.rtra[3:6, 0, 0], [16.0, 17.0, 18.0])
-    np.testing.assert_allclose(S.rfou[3:6, 1, 0], [19.0, 20.0, 21.0])
-    np.testing.assert_allclose(S.rtra[3:6, 1, 0], [22.0, 23.0, 24.0])
+    # Check core data
+    assert S.rfou.shape == (1, 3, 2, 2)
+    assert S.rtra.shape == (1, 3, 2, 2)
+    np.testing.assert_allclose(S.rfou[0, :, 0, 0], [1.0, 2.0, 3.0])
+    np.testing.assert_allclose(S.rtra[0, :, 0, 0], [4.0, 5.0, 6.0])
+    np.testing.assert_allclose(S.rfou[0, :, 0, 1], [7.0, 8.0, 9.0])
+    np.testing.assert_allclose(S.rtra[0, :, 0, 1], [10.0, 11.0, 12.0])
+    np.testing.assert_allclose(S.rfou[0, :, 1, 0], [13.0, 14.0, 15.0])
+    np.testing.assert_allclose(S.rtra[0, :, 1, 0], [16.0, 17.0, 18.0])
+    np.testing.assert_allclose(S.rfou[0, :, 1, 1], [19.0, 20.0, 21.0])
+    np.testing.assert_allclose(S.rtra[0, :, 1, 1], [22.0, 23.0, 24.0])

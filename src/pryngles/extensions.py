@@ -27,7 +27,7 @@ from pryngles.common import VERB_SIMPLE, verbose
 
 f64_1d = ndpointer(np.float64, ndim=1, flags="C_CONTIGUOUS")
 f64_2d = ndpointer(np.float64, ndim=2, flags="C_CONTIGUOUS")  # Sarr
-f64_3d = ndpointer(np.float64, ndim=3, flags="C_CONTIGUOUS")  # rfou, rtra
+f64_4d = ndpointer(np.float64, ndim=4, flags="C_CONTIGUOUS")  # rfou, rtra
 
 
 # Load library
@@ -44,7 +44,7 @@ cpixx_ext.reflection.argtypes = [
     ctypes.c_int,
     ctypes.c_int,
     f64_1d,
-    f64_3d,
+    f64_4d,
     ctypes.c_int,
     f64_1d,
     f64_1d,
@@ -118,9 +118,9 @@ class StokesScatterer:
         #     k: matrix element index
         #   i,j: angle indices
         def fill(array):
-            out = np.zeros((nmugs, nmat, nmugs, nfou))  # axes: i, k, j, m
-            out[i - 1, :, j - 1, m] = array
-            return out.reshape(nmugs * nmat, nmugs, nfou)  # merge (i, k) into ki
+            out = np.zeros((nfou, nmat, nmugs, nmugs))       # axes: m, k, i, j
+            out[m, :, i - 1, j - 1] = array
+            return out
 
         # Get reflection coefficients
         rfou = fill(data[:, 3 : 3 + nmat])
