@@ -550,63 +550,61 @@ class Spangler(PrynglesCommon):
 
         # Convert from equatorial to ecliptic
         verbose(VERB_VERIFY, "Converting to equatorial")
-        groups = self.data.groupby("name", sort=False)
-        for name, group in groups:
+        names = self._get_cols("name")
+        r_equ_all = self._get_cols(["x_equ", "y_equ", "z_equ"])
+        c_equ_all = self._get_cols(SPANGLER_VEC_GROUPS["center_equ"])
+        c_ecl_all = self._get_cols(SPANGLER_VEC_GROUPS["center_ecl"])
+        ns_equ_all = self._get_cols(SPANGLER_VEC_GROUPS["ns_equ"])
+        for name in np.unique(names):
+            group = names == name
             M_equ2ecl = self.M_equ2ecl[name]
-            g_indices = group.index
 
             # Transform positions: batch M @ (r + c_equ) + c_ecl
-            r_equ = np.array(group[["x_equ", "y_equ", "z_equ"]])  # (G, 3)
-            c_equ = group.vectors.center_equ.to_numpy()  # (G, 3)
-            c_ecl = group.vectors.center_ecl.to_numpy()  # (G, 3)
-            self.data.loc[g_indices, ["x_ecl", "y_ecl", "z_ecl"]] = (M_equ2ecl @ (r_equ + c_equ).T).T + c_ecl
+            r_equ = r_equ_all[group]  # (G, 3)
+            c_equ = c_equ_all[group]  # (G, 3)
+            c_ecl = c_ecl_all[group]  # (G, 3)
+            self._set_cols(["x_ecl", "y_ecl", "z_ecl"], (M_equ2ecl @ (r_equ + c_equ).T).T + c_ecl, group)
 
             # #Update orientation of the spangle
-            ns_equ = group.vectors.ns_equ.to_numpy()  # (G, 3)
-            self.data.loc[g_indices, SPANGLER_VEC_GROUPS["ns_ecl"]] = (M_equ2ecl @ ns_equ.T).T
+            ns_equ = ns_equ_all[group]  # (G, 3)
+            self._set_cols(SPANGLER_VEC_GROUPS["ns_ecl"], (M_equ2ecl @ ns_equ.T).T, group)
 
         # Update matrix of the transformation from ecliptic to local (horizontal) reference frame of the spangle
 
         # Update matrix of the transformation from ecliptic to local (horizontal) reference frame of the spangle
 
         # Search all spangles pointing towards ez or -ez
-        ns_ecl = self.data.vectors.ns_ecl.to_numpy()  # Shape: (N, 3)
-        cond = pd.Series(np.abs(np.dot(ns_ecl, [0, 0, 1])) != 1.0, index=self.data.index)
+        ns_ecl = self._get_cols(SPANGLER_VEC_GROUPS["ns_ecl"])  # Shape: (N, 3)
+        cond = np.abs(np.dot(ns_ecl, [0, 0, 1])) != 1.0
         if cond.any():
-            verbose(VERB_VERIFY, f"Setting local vectors based on ns: {sum(cond)}")
+            verbose(VERB_VERIFY, f"Setting local vectors based on ns: {cond.sum()}")
 
             # wy = ez x ns because with this definition seen from above the system is oriented as usual
-            index = self.data.index[cond]
-            ns_ecl_masked = ns_ecl[cond.values]
+            ns_ecl_masked = ns_ecl[cond]
 
             # wy_ecl: unorm(cross(ez, ns))[0] (vectorized)
             cross_ez_ns = np.cross([0, 0, 1], ns_ecl_masked)
             wy = np.divide(cross_ez_ns, np.linalg.norm(cross_ez_ns, axis=1)[:, np.newaxis])
-            self.data.loc[index, SPANGLER_VEC_GROUPS["wy_ecl"]] = wy
+            self._set_cols(SPANGLER_VEC_GROUPS["wy_ecl"], wy, cond)
             # wx_ecl: cross([wy, 0, 0], ns)  (vectorized)
             wx = np.cross(wy, ns_ecl_masked)
-            self.data.loc[index, SPANGLER_VEC_GROUPS["wx_ecl"]] = wx
+            self._set_cols(SPANGLER_VEC_GROUPS["wx_ecl"], wx, cond)
 
             cond = ~cond
 
         else:
-            cond = pd.Series([True] * self.nspangles)
+            cond = np.full(self.nspangles, True)
 
         # Spangles pointing towards ez or -ez
         if cond.any():
-            verbose(VERB_VERIFY, f"Setting local matrix based on ex: {sum(cond)}")
+            verbose(VERB_VERIFY, f"Setting local matrix based on ex: {cond.sum()}")
 
-            indices_cond = self.data[cond].index
-            self.data.loc[indices_cond, SPANGLER_VEC_GROUPS["wx_ecl"]] = np.tile(
-                [1.0, 0.0, 0.0], (len(indices_cond), 1)
-            )
+            self._set_cols(SPANGLER_VEC_GROUPS["wx_ecl"], [1.0, 0.0, 0.0], cond)
 
             # wy_ecl: unorm(cross(ns_ecl, wx))[0] — vectorized
-            crosses = np.cross(
-                self.data.loc[indices_cond, SPANGLER_VEC_GROUPS["ns_ecl"]].to_numpy(), [1.0, 0.0, 0.0]
-            )  # (M, 3)
+            crosses = np.cross(ns_ecl[cond], [1.0, 0.0, 0.0])  # (M, 3)
             wy = np.divide(crosses, np.linalg.norm(crosses, axis=1)[:, np.newaxis])
-            self.data.loc[indices_cond, SPANGLER_VEC_GROUPS["wy_ecl"]] = wy
+            self._set_cols(SPANGLER_VEC_GROUPS["wy_ecl"], wy, cond)
 
         # Update velocities
         # Not implemented yet

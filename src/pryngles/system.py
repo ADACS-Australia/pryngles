@@ -958,15 +958,13 @@ class System(PrynglesCommon):
             self.sim.move_to_com()
 
             # Update positions
+            names = self.sg._get_cols("name")
             for name, body in self.bodies.items():
                 # Position of the body according
                 body.center_ecl = np.array(self.sim.particles[body.rbhash].xyz)
 
                 verbose(VERB_VERIFY, f"Updating center of body {name} @ {body.center_ecl}")
-                cond = self.sg.data.name == name
-                self.sg.data.loc[cond, ["center_ecl_x", "center_ecl_y", "center_ecl_z"]] = np.tile(
-                    body.center_ecl, (sum(cond), 1)
-                )
+                self.sg._set_cols(["center_ecl_x", "center_ecl_y", "center_ecl_z"], body.center_ecl, names == name)
 
             # Update positions (t = t) for rotation
             self.sg.set_positions()
