@@ -1999,30 +1999,29 @@ class Spangler(PrynglesCommon):
         verbose(VERB_SIMPLE, f"Exclusion list: {excluded}")
 
         # Objects included when performing intersection calculation
-        cond_included = self.data.name.apply(lambda x: x not in excluded)
+        name_arr = self._get_cols("name")
+        cond_included = np.isin(name_arr, excluded, invert=True)
 
         if cond_included.sum() == 0:
             raise AssertionError("You have excluded all objects when calculating intersetions.")
         else:
             verbose(VERB_SIMPLE, f"Points included in calculation: {cond_included.sum()}")
 
-        name_arr = self.data.name.to_numpy()
-        hidden_arr = self.data.hidden.to_numpy()
-        cos_int_arr = self.data.cos_int.to_numpy()
-        x_int_arr = self.data.x_int.to_numpy()
-        y_int_arr = self.data.y_int.to_numpy()
-        z_int_arr = self.data.z_int.to_numpy()
-        z_cen_int_arr = self.data.z_cen_int.to_numpy()
-        scale_arr = self.data.scale.to_numpy()
-        cond_included_arr = np.array(cond_included, dtype=bool)
-        semitrans_arr = self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)
+        hidden_arr = self._get_cols("hidden")
+        cos_int_arr = self._get_cols("cos_int")
+        x_int_arr = self._get_cols("x_int")
+        y_int_arr = self._get_cols("y_int")
+        z_int_arr = self._get_cols("z_int")
+        z_cen_int_arr = self._get_cols("z_cen_int")
+        scale_arr = self._get_cols("scale")
+        semitrans_arr = np.isin(self._get_cols("spangle_type"), SPANGLES_SEMITRANSPARENT)
 
         # Under the current circumstances all this spangles are intersecting
-        cond = (~hidden_arr) & ((cos_int_arr > 0) | (semitrans_arr)) & (cond_included_arr)
+        cond = (~hidden_arr) & ((cos_int_arr > 0) | (semitrans_arr)) & (cond_included)
 
-        self.data.loc[cond, "intersect"] = True
-        self.data.hidden_by_int = ""
-        self.data.transit_over_int = ""
+        self._set_cols("intersect", True, cond)
+        self._set_cols("hidden_by_int", "")
+        self._set_cols("transit_over_int", "")
 
         # Loop over objects producing intersection
         for name in names:
@@ -2069,14 +2068,20 @@ class Spangler(PrynglesCommon):
                 if htype == "hidden":
                     # Holes
                     inhull_not_in_hole = ~inhull
-                    verbose(VERB_SIMPLE, f"Points outside hidden hull for '{name}': {sum(inhull_not_in_hole)}")
-                    hull["notinhole"] = sum(inhull_not_in_hole)
+                    verbose(
+                        VERB_SIMPLE,
+                        f"Points outside hidden hull for '{name}': {np.count_nonzero(inhull_not_in_hole)}",
+                    )
+                    hull["notinhole"] = np.count_nonzero(inhull_not_in_hole)
 
                     continue
 
                 else:
                     # Body
-                    verbose(VERB_SIMPLE, f"Points not in hole for '{name}:{htype}': {sum(inhull_not_in_hole)}")
+                    verbose(
+                        VERB_SIMPLE,
+                        f"Points not in hole for '{name}:{htype}': {np.count_nonzero(inhull_not_in_hole)}",
+                    )
 
                     # Area of the body
                     ahull += vhull
@@ -2084,18 +2089,17 @@ class Spangler(PrynglesCommon):
                     # Spangles to evaluate
                     cond_vis = (cos_int_arr > 0) | (semitrans_arr)
                     cond_int = (~hidden_arr) & (name_arr != name) & (cond_vis)
-                    cond_int_arr = np.asarray(cond_int, dtype=bool)
 
                     not_in_hole = np.asarray(inhull_not_in_hole, dtype=bool)
 
                     if htype == "cen":
-                        below = not_in_hole & inhull & cond_int_arr & (z_int_arr <= zcen)
-                        above = not_in_hole & inhull & cond_int_arr & (z_int_arr > zcen)
+                        below = not_in_hole & inhull & cond_int & (z_int_arr <= zcen)
+                        above = not_in_hole & inhull & cond_int & (z_int_arr > zcen)
 
                     elif htype == "plane":
                         # Not in hole, inhull, not hidden, not in object and intersect
-                        cond_full = not_in_hole & inhull & cond_int_arr
-                        verbose(VERB_SIMPLE, "Fulfilling all conditions:", sum(cond_full))
+                        cond_full = not_in_hole & inhull & cond_int
+                        verbose(VERB_SIMPLE, "Fulfilling all conditions:", np.count_nonzero(cond_full))
 
                         plane = hull["plane"]
                         below[cond_full] = plane.is_below(
@@ -2106,24 +2110,23 @@ class Spangler(PrynglesCommon):
                         raise ValueError("Type of hull '{htype}' not recognized")
 
                 # Store information
-                verbose(VERB_SIMPLE, f"Points in hull for '{name}:{htype}': {sum(inhull)}")
-                verbose(VERB_SIMPLE, f"Points below '{name}:{htype}': {sum(below)}")
+                verbose(VERB_SIMPLE, f"Points in hull for '{name}:{htype}': {np.count_nonzero(inhull)}")
+                verbose(VERB_SIMPLE, f"Points below '{name}:{htype}': {np.count_nonzero(below)}")
 
                 # Set visibility
-                self.data.loc[below, "intersect"] = False
-                self.data.loc[below, "hidden_by_int"] = self.data.loc[below, "hidden_by_int"] + f"{name}:{zord:.3e}&"
-                self.data.loc[below, "occult"] = True
+                self._set_cols("intersect", False, below)
+                self._set_cols("hidden_by_int", self._get_cols("hidden_by_int", below) + f"{name}:{zord:.3e}&", below)
+                self._set_cols("occult", True, below)
 
                 # Compute distance to center for transiting spangles
                 dist = np.sqrt((x_int_arr[above] - xcen) ** 2 + (y_int_arr[above] - ycen) ** 2) / scale
-                self.data.loc[above, "string_int"] = [f"{name}:{zord:.3e}:{d:.3e}&" for d in dist]
-                self.data.loc[above, "transit_over_int"] = (
-                    self.data.loc[above, "transit_over_int"] + self.data.loc[above, "string_int"]
-                )
-                self.data.loc[above, "transit"] = True
+                string_int = np.array([f"{name}:{zord:.3e}:{d:.3e}&" for d in dist], dtype=object)
+                self._set_cols("string_int", string_int, above)
+                self._set_cols("transit_over_int", self._get_cols("transit_over_int", above) + string_int, above)
+                self._set_cols("transit", True, above)
 
-                hull["inhull"] = sum(inhull)
-                hull["below"] = sum(below)
+                hull["inhull"] = np.count_nonzero(inhull)
+                hull["below"] = np.count_nonzero(below)
 
             # Correct areas
         # self._normalize_areas()
@@ -2155,11 +2158,11 @@ class Spangler(PrynglesCommon):
         "transit_over_obs" in the `data` DataFrame.
         """
         self.update_intersection_state()
-        self.data[SPANGLER_COL_OBS] = self.data[SPANGLER_COL_INT]
+        self._set_cols(SPANGLER_COL_OBS, self._get_cols(SPANGLER_COL_INT))
 
-        self.data.hidden_by_obs = self.data.hidden_by_obs + self.data.hidden_by_int
-        self.data.transit_over_obs = self.data.transit_over_obs + self.data.transit_over_int
-        self.data.visible = self.data.visible & self.data.intersect
+        self._set_cols("hidden_by_obs", self._get_cols("hidden_by_obs") + self._get_cols("hidden_by_int"))
+        self._set_cols("transit_over_obs", self._get_cols("transit_over_obs") + self._get_cols("transit_over_int"))
+        self._set_cols("visible", self._get_cols("visible") & self._get_cols("intersect"))
 
     def update_illumination_state(self, excluded=None, included=None):
         """
@@ -2187,13 +2190,14 @@ class Spangler(PrynglesCommon):
         if excluded is None:
             excluded = []
         self.update_intersection_state(excluded, included)
-        self.data[SPANGLER_COL_LUZ] = self.data[SPANGLER_COL_INT]
+        self._set_cols(SPANGLER_COL_LUZ, self._get_cols(SPANGLER_COL_INT))
 
-        self.data.hidden_by_luz = self.data.hidden_by_luz + self.data.hidden_by_int
-        self.data.transit_over_luz = self.data.transit_over_luz + self.data.transit_over_int
+        self._set_cols("hidden_by_luz", self._get_cols("hidden_by_luz") + self._get_cols("hidden_by_int"))
+        self._set_cols("transit_over_luz", self._get_cols("transit_over_luz") + self._get_cols("transit_over_int"))
 
         # Update illumination
-        self.data.illuminated = self.data.illuminated & self.data.intersect
+        intersect = self._get_cols("intersect")
+        self._set_cols("illuminated", self._get_cols("illuminated") & intersect)
 
         # Not intersected and spangles in the direction of the light-source are for sure shadowed spangles
         # Condition for visibility
@@ -2205,13 +2209,15 @@ class Spangler(PrynglesCommon):
                 | Spangle type is semitransparent
             )
         """
-        self.data.shadow = (self.data.shadow) | (
-            (~self.data.intersect) & ((self.data.cos_int > 0) | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)))
+        spangle_type = self._get_cols("spangle_type")
+        shadow = (self._get_cols("shadow")) | (
+            (~intersect) & ((self._get_cols("cos_int") > 0) | (np.isin(spangle_type, SPANGLES_SEMITRANSPARENT)))
         )
+        self._set_cols("shadow", shadow)
 
         # Stellar spangles are always illuminated
-        cond = self.data.spangle_type == SPANGLE_STELLAR
-        self.data.loc[cond, "illuminated"] = True
+        cond = spangle_type == SPANGLE_STELLAR
+        self._set_cols("illuminated", True, cond)
 
         # In stellar spangles cos_luz = cos_obs for not having strange visual representations
-        self.data.loc[cond, "cos_luz"] = self.data.loc[cond, "cos_obs"]
+        self._set_cols("cos_luz", self._get_cols("cos_obs", cond), cond)
