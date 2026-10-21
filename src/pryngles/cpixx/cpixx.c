@@ -362,6 +362,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   } // End loop fourier coefficients
 
   // Loop again over the pixels to rotate Stokes vector:
+  double cosbe, sinbe;
   for (int i = 0; i < npix; i++) {
     mu = theta[i];
     mu0 = theta0[i];
@@ -372,8 +373,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
     // Rotate Stokes elements Q and U to the actual reference plane:
     be = 2 * beta[i];
-    SvR2 = cos(be) * SvR[1] + sin(be) * SvR[2];
-    SvR3 = -sin(be) * SvR[1] + cos(be) * SvR[2];
+    cosbe = cos(be);
+    sinbe = sin(be);
+    SvR2 = cosbe * SvR[1] + sinbe * SvR[2];
+    SvR3 = -sinbe * SvR[1] + cosbe * SvR[2];
     SvR[1] = SvR2;
     SvR[2] = SvR3;
 
