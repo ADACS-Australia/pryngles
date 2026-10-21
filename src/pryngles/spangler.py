@@ -1399,32 +1399,43 @@ class Spangler(PrynglesCommon):
         self.rqf_obs = science.spherical(self.n_obs)
         self.center_obs = center.copy() if center else center
 
-        self.data.loc[cond, "visible"] = False
+        mask = np.asarray(cond, dtype=bool)
+        self._set_cols("visible", False, mask)
         # Observer-frame coordinates are continuous, so keep them as float dtype.
         for col in SPANGLER_COL_OBS:
             if col not in self.data.columns:
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.loc[cond, SPANGLER_COL_OBS] = self.data.loc[cond, SPANGLER_COL_INT].to_numpy()
+        self._set_cols(SPANGLER_COL_OBS, self._get_cols(SPANGLER_COL_INT, mask), mask)
 
         # Beta angle computation (Reference Plane rotation angle)
         # Appendix D arXiv:2404.16606v1
-        groups = self.data[cond].groupby("name")
+        if "beta_loc" not in self.data.columns:
+            self.data["beta_loc"] = pd.Series([None] * len(self.data), dtype=object, index=self.data.index)
+        elif self.data["beta_loc"].dtype != object:
+            self.data["beta_loc"] = self.data["beta_loc"].astype(object)
 
-        for _, group in groups:
+        names = self._get_cols("name")
+        spangle_type = self._get_cols("spangle_type")
+        cos_obs = self._get_cols("cos_obs")
+        ns_obs_all = self._get_cols(SPANGLER_VEC_GROUPS["ns_obs"])
+        for group_name in np.unique(names[mask]):
+            group = mask & (names == group_name)
+            first = np.flatnonzero(group)[0]
+
             # Normal vector of each spangle
-            ns_obs = group.vectors.ns_obs.to_numpy()
+            ns_obs = ns_obs_all[group]
 
-            if group["spangle_type"].iloc[0] == 4:  # Ring Spangle
+            if spangle_type[first] == 4:  # Ring Spangle
                 # Cosine of the angle between normal vector and observer vector
-                cos_obs = group["cos_obs"].iloc[0]
+                cos_obs_ring = cos_obs[first]
 
                 # X-Z angle
                 sigma = np.arctan2(ns_obs[0, 2], ns_obs[0, 0])
 
                 # Beta angle
-                cos_beta = np.cos(sigma) / np.sin(np.arccos(cos_obs))
+                cos_beta = np.cos(sigma) / np.sin(np.arccos(cos_obs_ring))
                 betas = np.full_like(ns_obs[:, 0], fill_value=np.arccos(cos_beta))
 
                 # Check Rotation Direction
@@ -1435,14 +1446,10 @@ class Spangler(PrynglesCommon):
                 betas = np.arctan(ns_obs[:, 1] / ns_obs[:, 0])
                 betas[ns_obs[:, 0] * ns_obs[:, 1] < 0] += np.pi
 
-            if "beta_loc" not in self.data.columns:
-                self.data["beta_loc"] = pd.Series([None] * len(self.data), dtype=object, index=self.data.index)
-            elif self.data["beta_loc"].dtype != object:
-                self.data["beta_loc"] = self.data["beta_loc"].astype(object)
-            self.data.loc[group.index, "beta_loc"] = pd.Series(betas.tolist(), dtype=object, index=group.index)
+            self._set_cols("beta_loc", betas, group)
 
         # Update states
-        self.data.unset = False
+        self._set_cols("unset", False)
 
         # Condition for visibility
         """
@@ -1453,12 +1460,12 @@ class Spangler(PrynglesCommon):
                 | Spangle type is semitransparent
             )
         """
-        cond = (
-            (~self.data.hidden)
-            & ((self.data.z_cen_obs + self.data.scale) < 0)
-            & ((self.data.cos_obs > 0) | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)))
+        visible = (
+            (~self._get_cols("hidden"))
+            & ((self._get_cols("z_cen_obs") + self._get_cols("scale")) < 0)
+            & ((cos_obs > 0) | np.isin(spangle_type, SPANGLES_SEMITRANSPARENT))
         )
-        self.data.loc[cond, "visible"] = True
+        self._set_cols("visible", True, visible)
 
     def set_luz(self, nvec=None, alpha=0, center=None, name=None):
         """
@@ -1496,16 +1503,16 @@ class Spangler(PrynglesCommon):
         verbose(VERB_SIMPLE, f"Number of points: {sum(cond)}")
 
         # Depending on body choose which spangles to change
-        cond = pd.Series([True] * self.nspangles, index=self.data.index)
+        mask = np.full(self.nspangles, True)
         if name:
-            cond = self.data.name == name
+            mask = self._get_cols("name") == name
 
         # Set the light source direction in spherical coordinates
         self.rqf_luz = science.spherical(self.n_luz)
 
         # Set the default value of the states to change in False
-        self.data.loc[cond, "illuminated"] = False
-        self.data.loc[cond, "transmit"] = False
+        self._set_cols("illuminated", False, mask)
+        self._set_cols("transmit", False, mask)
 
         # Conditions
         # Light-source-frame coordinates are continuous, so keep them as float dtype.
@@ -1514,19 +1521,19 @@ class Spangler(PrynglesCommon):
                 self.data[col] = np.nan
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
-        self.data.loc[cond, SPANGLER_COL_LUZ] = self.data.loc[cond, SPANGLER_COL_INT].to_numpy()
+        self._set_cols(SPANGLER_COL_LUZ, self._get_cols(SPANGLER_COL_INT, mask), mask)
 
         # Set relative azimuth [-pi,pi]
-        azim_obs_luz = (self.data.loc[cond, "azim_obs"] - self.data.loc[cond, "azim_luz"]).to_numpy(dtype=float)
+        azim_obs_luz = np.asarray(self._get_cols("azim_obs", mask) - self._get_cols("azim_luz", mask), dtype=float)
         # pi Shift and domain in [-pi,pi]
         if "azim_obs_luz" not in self.data.columns:
             self.data["azim_obs_luz"] = np.nan
         if not pd.api.types.is_float_dtype(self.data["azim_obs_luz"].dtype):
             self.data["azim_obs_luz"] = self.data["azim_obs_luz"].astype(float)
-        self.data.loc[cond, "azim_obs_luz"] = np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi))
+        self._set_cols("azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)), mask)
 
         # Update states
-        self.data.loc[cond, "unset"] = False
+        self._set_cols("unset", False, mask)
 
         # Condition for illumination
         """
@@ -1538,18 +1545,22 @@ class Spangler(PrynglesCommon):
                 | cos_luz > 0: spangle it is towards the light source
             )
         """
-        cond = (
-            cond
-            & (~self.data.hidden)
-            & ((self.data.z_cen_luz + self.data.scale) < 0)
+        hidden = self._get_cols("hidden")
+        spangle_type = self._get_cols("spangle_type")
+        semitransparent = np.isin(spangle_type, SPANGLES_SEMITRANSPARENT)
+        cos_luz = self._get_cols("cos_luz")
+        illuminated = (
+            mask
+            & (~hidden)
+            & ((self._get_cols("z_cen_luz") + self._get_cols("scale")) < 0)
             & (
-                (self.data.geometry == SAMPLER_GEOMETRY_CIRCLE)
-                | (self.data.cos_luz > 0)
-                | (self.data.spangle_type == SPANGLE_STELLAR)
-                | (self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT))
+                (self._get_cols("geometry") == SAMPLER_GEOMETRY_CIRCLE)
+                | (cos_luz > 0)
+                | (spangle_type == SPANGLE_STELLAR)
+                | semitransparent
             )
         )
-        self.data.loc[cond, "illuminated"] = True
+        self._set_cols("illuminated", True, illuminated)
 
         # Conditions for transmission:
         """
@@ -1561,12 +1572,8 @@ class Spangler(PrynglesCommon):
 
         ATTENTION: TRANSMISSION IS ONLY PROPERLY SET IF OBSERVER HAVE BEEN PREVIOUSLY SET.
         """
-        cond = (
-            cond
-            & (~self.data.hidden)
-            & ((self.data.spangle_type.isin(SPANGLES_SEMITRANSPARENT)) & ((self.data.cos_luz * self.data.cos_obs) <= 0))
-        )
-        self.data.loc[cond, "transmit"] = True
+        transmit = illuminated & (~hidden) & semitransparent & ((cos_luz * self._get_cols("cos_obs")) <= 0)
+        self._set_cols("transmit", True, transmit)
 
     def plot2d(
         self,
