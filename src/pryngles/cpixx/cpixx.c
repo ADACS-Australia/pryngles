@@ -217,8 +217,8 @@ double splint(const double ya[], const double y2a[], int klo, int khi, double a,
  *     nmugs outside [2, MAX_SPLINE_N]) or a degenerate xmu grid. On failure
  *     Sarr is not (fully) written.
  *
- *     Sarr is a flat row-major buffer of npix * (nmat + 1) doubles: row i
- *     holds the nmat Stokes elements of pixel i followed by the degree of
+ *     Sarr is a flat row-major buffer of npix * (nmat + 1) doubles: row n
+ *     holds the nmat Stokes elements of pixel n followed by the degree of
  *     polarisation.
  *
  *----------------------------------------------------------------------------
@@ -280,24 +280,24 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       fac = 0.5;
 
     // Initialize the interpolation matrix for the current fourier coefficient:
-    for (int j = 0; j < nmugs; j++) {
+    for (int i = 0; i < nmugs; i++) {
 
       for (int k = 0; k < nmat; k++) {
-        ki = j * nmat + k;
+        ki = i * nmat + k;
 
-        for (int n = 0; n < nmugs; n++) {
-          rf[k][j][n] =
-              fou[((size_t)ki * (size_t)nmugs + (size_t)n) * (size_t)nfou +
+        for (int j = 0; j < nmugs; j++) {
+          rf[k][i][j] =
+              fou[((size_t)ki * (size_t)nmugs + (size_t)j) * (size_t)nfou +
                   (size_t)m];
         }
 
-        // Use slice rf(k,j,:), write directly into corresponding rfsec row.
+        // Use slice rf(k,i,:), write directly into corresponding rfsec row.
         // nmugs was validated above, so spline() cannot fail here.
-        spline(xmu, rf[k][j], nmugs, rfsec[k][j]);
+        spline(xmu, rf[k][i], nmugs, rfsec[k][i]);
 
       } // End k
 
-    } // End j
+    } // End i
 
     /*
      *----------------------------------------------------------------------------
@@ -307,21 +307,21 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
      * (mu,mu0) spline has to be called a second time.
      *----------------------------------------------------------------------------
      */
-    for (int i = 0; i < npix; i++) {
-      mu = theta[i];
-      mu0 = theta0[i];
-      cosmphi = cos(m * phi[i]);
-      sinmphi = sin(m * phi[i]);
+    for (int n = 0; n < npix; n++) {
+      mu = theta[n];
+      mu0 = theta0[n];
+      cosmphi = cos(m * phi[n]);
+      sinmphi = sin(m * phi[n]);
       Bplus[0] = cosmphi;
       Bplus[1] = cosmphi;
       Bplus[2] = sinmphi;
       Bplus[3] = sinmphi;
 
-      if ((i > 0) && ((fabs(mu - muold) < 1e-6)) &&
+      if ((n > 0) && ((fabs(mu - muold) < 1e-6)) &&
           (fabs(mu0 - mu0old) < 1e-6)) {
 
         for (int k = 0; k < nmat; k++)
-          RM[i][k] = RM[i][k] + 2 * Bplus[k] * fac * rf3save[k];
+          RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * rf3save[k];
 
       } else {
 
@@ -333,12 +333,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
           goto cleanup;
         }
 
-        for (int j = 0; j < nmugs; j++) {
+        for (int i = 0; i < nmugs; i++) {
           for (int k = 0; k < nmat; k++) {
-            // Use rf(k,j,:) and rfsec(k,j,:) slices directly, and write
-            // straight into rmu0(k,j,:) Do the spline interpolation between klo
+            // Use rf(k,i,:) and rfsec(k,i,:) slices directly, and write
+            // straight into rmu0(k,i,:) Do the spline interpolation between klo
             // and khi, given the coefficients a,b,h
-            rfmu0[k][j] = splint(rf[k][j], rfsec[k][j], klo, khi, a, b, h);
+            rfmu0[k][i] = splint(rf[k][i], rfsec[k][i], klo, khi, a, b, h);
           }
         }
 
@@ -355,24 +355,24 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
           rf3save[k] = splint(rfmu0[k], rfsecmu0, klo, khi, a, b, h);
           muold = mu;
           mu0old = mu0;
-          RM[i][k] = RM[i][k] + 2 * Bplus[k] * fac * rf3save[k];
+          RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * rf3save[k];
         }
       } // End else
-    } // End i (pix)
+    } // End n (pix)
   } // End loop fourier coefficients
 
   // Loop again over the pixels to rotate Stokes vector:
   double cosbe, sinbe;
-  for (int i = 0; i < npix; i++) {
-    mu = theta[i];
-    mu0 = theta0[i];
+  for (int n = 0; n < npix; n++) {
+    mu = theta[n];
+    mu0 = theta0[n];
 
     // Calculate the locally reflected Stokes vector:
     for (int k = 0; k < nmat; k++)
-      SvR[k] = mu0 * RM[i][k];
+      SvR[k] = mu0 * RM[n][k];
 
     // Rotate Stokes elements Q and U to the actual reference plane:
-    be = 2 * beta[i];
+    be = 2 * beta[n];
     cosbe = cos(be);
     sinbe = sin(be);
     SvR2 = cosbe * SvR[1] + sinbe * SvR[2];
@@ -398,12 +398,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
      *----------------------------------------------------------------------------
      */
     for (int k = 0; k < nmat; k++) {
-      Sarr[(size_t)i * srow + (size_t)k] = SvR[k] * mu * apix[i];
+      Sarr[(size_t)n * srow + (size_t)k] = SvR[k] * mu * apix[n];
     }
 
     // The value of the degree of polarization
-    Sarr[(size_t)i * srow + (size_t)nmat] = P;
-  } // End i (pix)
+    Sarr[(size_t)n * srow + (size_t)nmat] = P;
+  } // End n (pix)
 
 cleanup:
   // Free temporary arrays (every level, bottom-up)
