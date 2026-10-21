@@ -118,7 +118,7 @@ class StokesScatterer:
         #     k: matrix element index
         #   i,j: angle indices
         def fill(array):
-            out = np.zeros((nfou, nmat, nmugs, nmugs))       # axes: m, k, i, j
+            out = np.zeros((nfou, nmat, nmugs, nmugs))  # axes: m, k, i, j
             out[m, :, i - 1, j - 1] = array
             return out
 
@@ -129,7 +129,7 @@ class StokesScatterer:
         if data.shape[1] > 3 + nmat:
             rtra = fill(data[:, 3 + nmat : 3 + 2 * nmat])
         else:
-            rtra =np.zeros_like(rfou)
+            rtra = np.zeros_like(rfou)
 
         verbose(VERB_SIMPLE, f"Checksum '{self.filename}': {rfou.sum() + rtra.sum():.16e}")
 
