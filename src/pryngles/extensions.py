@@ -103,16 +103,33 @@ class StokesScatterer:
         data = np.loadtxt(lines[2 + nmugs :])
         nfou = int(data[:, 0].max()) + 1
 
-        rfou = np.zeros((nmat * nmugs, nmugs, nfou))
-        rtra = np.zeros((nmat * nmugs, nmugs, nfou))
+        # Ensure the size is as expected
+        if len(data) != nfou * nmugs * nmugs:
+            raise RuntimeError(
+                f"Expected a dense file ordered by (m, i, j), "
+                f"but got {len(data)} rows instead of {nfou * nmugs * nmugs}"
+            )
 
-        # Read fourier coefficients
-        for row in data:
-            m, i, j = int(row[0]), int(row[1]) - 1, int(row[2]) - 1
-            ibase = i * nmat
-            rfou[ibase : ibase + 3, j, m] = row[3 : 3 + nmat]
-            if len(row[3:]) > nmat:
-                rtra[ibase : ibase + 3, j, m] = row[3 + nmat : 3 + 2 * nmat]
+        # Index columns
+        m, i, j = (data[:, c].astype(int) for c in range(3))
+
+        # Function which defines how to store the fourier coefficients, where
+        #     m: fourier coefficient index
+        #     k: matrix element index
+        #   i,j: angle indices
+        def fill(array):
+            out = np.zeros((nmugs, nmat, nmugs, nfou))  # axes: i, k, j, m
+            out[i - 1, :, j - 1, m] = array
+            return out.reshape(nmugs * nmat, nmugs, nfou)  # merge (i, k) into ki
+
+        # Get reflection coefficients
+        rfou = fill(data[:, 3 : 3 + nmat])
+
+        # Get transmission coefficients if they exist, otherwise fill with zeros
+        if data.shape[1] > 3 + nmat:
+            rtra = fill(data[:, 3 + nmat : 3 + 2 * nmat])
+        else:
+            rtra =np.zeros_like(rfou)
 
         verbose(VERB_SIMPLE, f"Checksum '{self.filename}': {rfou.sum() + rtra.sum():.16e}")
 
