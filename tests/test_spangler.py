@@ -71,6 +71,57 @@ def test_reset_state():
         assert (sg.data["transit_over_" + coords] == "").all()
 
 
+def test_get_set_cols_vector():
+    """_set_cols writes masked rows of several columns; _get_cols reads them back."""
+    sg = pr.Spangler(nspangles=10, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
+    cols = pr.consts.SPANGLER_VEC_GROUPS["center_int"]
+    mask = np.arange(sg.nspangles) % 2 == 0
+    before = sg.data.copy()
+
+    values = np.arange(15, dtype=float).reshape(5, 3)
+    sg._set_cols(cols, values, mask)
+
+    np.testing.assert_array_equal(sg._get_cols(cols, mask), values)
+    np.testing.assert_array_equal(sg.data.loc[~mask, cols].to_numpy(), before.loc[~mask, cols].to_numpy())
+    assert (sg.data.dtypes == before.dtypes).all()
+
+
+def test_set_cols_broadcast():
+    """A 1D value is one value per column; a scalar fills every selected row."""
+    sg = pr.Spangler(nspangles=10, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
+    cols = pr.consts.SPANGLER_VEC_GROUPS["center_int"]
+    mask = np.arange(sg.nspangles) < 4
+
+    sg._set_cols(cols, [1.0, 2.0, 3.0], mask)
+    np.testing.assert_array_equal(sg._get_cols(cols, mask), np.tile([1.0, 2.0, 3.0], (4, 1)))
+
+    sg._set_cols("d_int", np.inf, mask)
+    assert np.isinf(sg._get_cols("d_int", mask)).all()
+
+
+def test_set_cols_keeps_dtypes():
+    """Bool, string and int columns keep their dtype after a masked write."""
+    sg = pr.Spangler(nspangles=10, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
+    mask = np.arange(sg.nspangles) < 3
+    dtypes = sg.data.dtypes.copy()
+
+    sg._set_cols("illuminated", True, mask)
+    sg._set_cols("hidden_by_obs", "Ring:1.0&", mask)
+    sg._set_cols("geometry", 7, mask)
+
+    assert (sg.data.dtypes == dtypes).all()
+    assert sg.data.illuminated.tolist() == [True] * 3 + [False] * 7
+    assert (sg.data.loc[mask, "hidden_by_obs"] == "Ring:1.0&").all()
+    assert (sg.data.loc[mask, "geometry"] == 7).all()
+
+
+def test_set_cols_rejects_lossy_cast():
+    """Writing floats into an int column raises instead of truncating."""
+    sg = pr.Spangler(nspangles=10, center_equ=[0, 0, 0], n_equ=[1, 0, 0])
+    with pytest.raises(TypeError):
+        sg._set_cols("geometry", 1.5)
+
+
 def test_set_scale():
     """set_scale scales lengths by scale, areas by scale**2, vectors by scale."""
     sg = pr.Spangler(nspangles=10, center_equ=[1, 2, 3])

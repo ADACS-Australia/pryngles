@@ -295,6 +295,76 @@ class Spangler(PrynglesCommon):
             self.data["hidden_by_" + coords] = ""
             self.data["transit_over_" + coords] = ""
 
+    def _get_cols(self, cols, mask=None):
+        """
+        Reads columns of the spangle data as numpy arrays.
+
+        Parameters
+        ----------
+        cols : str or list of str
+            A single column name, or a list of column names
+            (e.g. ``SPANGLER_VEC_GROUPS["center_int"]``).
+        mask : array_like of bool, optional
+            Rows to read. If None, all rows are read.
+
+        Returns
+        -------
+        numpy.ndarray
+            1D array for a single column, or a 2D array of shape (rows, len(cols)).
+
+        Notes
+        -----
+        Treat the result as read-only; use `_set_cols` to modify the data.
+        """
+        rows = slice(None) if mask is None else np.asarray(mask, dtype=bool)
+        if isinstance(cols, str):
+            return self.data[cols].to_numpy()[rows]
+        return np.column_stack([self.data[col].to_numpy()[rows] for col in cols])
+
+    def _set_cols(self, cols, values, mask=None):
+        """
+        Writes values into columns of the spangle data.
+
+        Parameters
+        ----------
+        cols : str or list of str
+            A single column name, or a list of column names.
+        values : scalar or array_like
+            For a single column: a scalar or a 1D array with one value per selected row.
+            For several columns: a scalar, a 1D array with one value per column (broadcast
+            over the selected rows), or a 2D array of shape (rows, len(cols)).
+        mask : array_like of bool, optional
+            Rows to write. If None, all rows are written.
+
+        Raises
+        ------
+        TypeError
+            If the values cannot be stored in a column without loss (e.g. floats into an
+            int column).
+
+        Notes
+        -----
+        Columns are updated in place, so their dtypes are preserved.
+        """
+        single = isinstance(cols, str)
+        cols = [cols] if single else list(cols)
+        values = np.asarray(values)
+        rows = slice(None) if mask is None else np.asarray(mask, dtype=bool)
+        for i, col in enumerate(cols):
+            if single or values.ndim == 0:
+                col_values = values
+            elif values.ndim == 1:
+                col_values = values[i]
+            else:
+                col_values = values[:, i]
+            arr = self.data[col].to_numpy(copy=True)
+            if not np.can_cast(np.asarray(col_values).dtype, arr.dtype, casting="same_kind"):
+                raise TypeError(
+                    f"Cannot assign {np.asarray(col_values).dtype} values to column '{col}' of dtype {arr.dtype}"
+                )
+            arr[rows] = col_values
+            self.data.loc[:, col] = arr
+
     def set_scale(self, scale):
         """
         Adjusts the scale of all length and area attributes of the spangles.
@@ -1075,8 +1145,8 @@ class Spangler(PrynglesCommon):
             if not pd.api.types.is_float_dtype(self.data[col].dtype):
                 self.data[col] = self.data[col].astype(float)
 
-        r_ecl = self.data.loc[cond, ["x_ecl", "y_ecl", "z_ecl"]].to_numpy()
-        self.data.loc[cond, ["x_int", "y_int", "z_int"]] = (self.M_ecl2int @ (r_ecl - center).T).T
+        r_ecl = self._get_cols(["x_ecl", "y_ecl", "z_ecl"], cond)
+        self._set_cols(["x_int", "y_int", "z_int"], (self.M_ecl2int @ (r_ecl - center).T).T, cond)
 
         # Center of the object in the observer reference system
         groups = self.data[cond].groupby("name")
