@@ -90,14 +90,14 @@ class StokesScatterer:
 
         # Drop comments and blank lines
         with open(self.filename) as f:
-            lines = [l for l in f if "#" not in l and l.strip()]
+            lines = [line for line in f if "#" not in line and line.strip()]
 
         # Read header:
         # First two lines are nmat and nmugs
         nmat, nmugs = int(lines[0]), int(lines[1])
 
         # then the next nmugs lines are the xmu values,
-        xmu = np.array([float(l.split()[0]) for l in lines[2 : 2 + nmugs]])
+        xmu = np.array([float(line.split()[0]) for line in lines[2 : 2 + nmugs]])
 
         # Rest is the core data: m i j rfou... rtra...
         data = np.loadtxt(lines[2 + nmugs :])
