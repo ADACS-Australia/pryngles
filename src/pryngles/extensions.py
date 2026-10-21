@@ -87,27 +87,27 @@ class StokesScatterer:
             rtra: array (nmugs*nmat,nmugs,nfou):
                Matrix for the fourier coefficients for transmission
         """
-        f = open(self.filename)
+        with open(self.filename, "r") as f:
 
-        # Read header
-        nmat = 0
-        imu = 0
-        for _i, line in enumerate(f):
-            if "#" in line:
-                continue
-            data = line.split()
-            if len(data) < 3:
-                if len(data) == 1:
-                    if not nmat:
-                        nmat = int(data[0])
+            # Read header
+            nmat = 0
+            imu = 0
+            for _i, line in enumerate(f):
+                if "#" in line:
+                    continue
+                data = line.split()
+                if len(data) < 3:
+                    if len(data) == 1:
+                        if not nmat:
+                            nmat = int(data[0])
+                        else:
+                            nmugs = int(data[0])
+                            xmu = np.zeros(nmugs)
                     else:
-                        nmugs = int(data[0])
-                        xmu = np.zeros(nmugs)
+                        xmu[imu] = float(data[0])
+                        imu += 1
                 else:
-                    xmu[imu] = float(data[0])
-                    imu += 1
-            else:
-                break
+                    break
 
         # Get core data
         data = np.loadtxt(self.filename, skiprows=_i)
@@ -125,7 +125,6 @@ class StokesScatterer:
                 rtra[ibase : ibase + 3, j, m] = row[3 + nmat : 3 + 2 * nmat]
 
         verbose(VERB_SIMPLE, f"Checksum '{self.filename}': {rfou.sum() + rtra.sum():.16e}")
-        f.close()
 
         self.nmat, self.nmugs, self.nfou = nmat, nmugs, nfou
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
