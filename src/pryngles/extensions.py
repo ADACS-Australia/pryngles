@@ -87,30 +87,20 @@ class StokesScatterer:
             rtra: array (nmugs*nmat,nmugs,nfou):
                Matrix for the fourier coefficients for transmission
         """
-        with open(self.filename, "r") as f:
 
-            # Read header
-            nmat = 0
-            imu = 0
-            for _i, line in enumerate(f):
-                if "#" in line:
-                    continue
-                data = line.split()
-                if len(data) < 3:
-                    if len(data) == 1:
-                        if not nmat:
-                            nmat = int(data[0])
-                        else:
-                            nmugs = int(data[0])
-                            xmu = np.zeros(nmugs)
-                    else:
-                        xmu[imu] = float(data[0])
-                        imu += 1
-                else:
-                    break
+        # Drop comments and blank lines
+        with open(self.filename) as f:
+            lines = [l for l in f if "#" not in l and l.strip()]
 
-        # Get core data
-        data = np.loadtxt(self.filename, skiprows=_i)
+        # Read header:
+        # First two lines are nmat and nmugs
+        nmat, nmugs = int(lines[0]), int(lines[1])
+
+        # then the next nmugs lines are the xmu values,
+        xmu = np.array([float(l.split()[0]) for l in lines[2 : 2 + nmugs]])
+
+        # Rest is the core data: m i j rfou... rtra...
+        data = np.loadtxt(lines[2 + nmugs :])
         nfou = int(data[:, 0].max()) + 1
 
         rfou = np.zeros((nmat * nmugs, nmugs, nfou))
