@@ -30,40 +30,14 @@ static void *xcalloc(int n, size_t size) {
   return p;
 }
 
-double *zeros_vector(int n) {
-  return (double *)xcalloc(n, sizeof(double)); /* calloc already zeroes */
+static void *zeros1d(int n) { return xcalloc(n, sizeof(double)); }
+
+static void *zeros2d(int n, int m) {
+  return xcalloc(n, (size_t)m * sizeof(double));
 }
 
-double **zeros_matrix(int n, int m) {
-  double **M = (double **)xcalloc(n, sizeof(double *));
-  for (int i = 0; i < n; i++)
-    M[i] = zeros_vector(m);
-  return M;
-}
-
-double ***zeros_cube(int n, int m, int p) {
-  double ***C = (double ***)xcalloc(n, sizeof(double **));
-  for (int i = 0; i < n; i++)
-    C[i] = zeros_matrix(m, p);
-  return C;
-}
-
-// Free a matrix allocated with zeros_matrix(n, m)
-void free_matrix(double **M, int n) {
-  if (!M)
-    return;
-  for (int i = 0; i < n; i++)
-    free(M[i]);
-  free(M);
-}
-
-// Free a cube allocated with zeros_cube(n, m, p)
-void free_cube(double ***C, int n, int m) {
-  if (!C)
-    return;
-  for (int i = 0; i < n; i++)
-    free_matrix(C[i], m);
-  free(C);
+static void *zeros3d(int n, int m, int k) {
+  return xcalloc(n, (size_t)m * (size_t)k * sizeof(double));
 }
 
 /*
@@ -229,12 +203,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   double be, SvR2, SvR3, P, cosmphi, sinmphi, mu, mu0, fac;
   double muold = 1, mu0old = 1;
   int ret = 0;
-
-  // Array pointers
-  double ***ddf;
-  double **RM, **f_mu0;
-  double *ddf_mu0;
-  double *SvR, *f_mu0_mu;
   double Bplus[MAX_NMAT];
 
   // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
@@ -250,16 +218,14 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     return -1;
   }
 
-  // Dynamically allocate temporary arrays
-  ddf = zeros_cube(nmat, nmugs, nmugs);
-
-  f_mu0 = zeros_matrix(nmat, nmugs);
-  RM = zeros_matrix(npix, nmat);
-
-  ddf_mu0 = zeros_vector(nmugs);
-
-  f_mu0_mu = zeros_vector(nmat);
-  SvR = zeros_vector(nmat);
+  // Allocate temporary arrays with VLA pointers,
+  // using calloc (so that they're on the heap)
+  double (*ddf)[nmugs][nmugs] = zeros3d(nmat, nmugs, nmugs);
+  double (*f_mu0)[nmugs] = zeros2d(nmat, nmugs);
+  double (*RM)[nmat] = zeros2d(npix, nmat);
+  double *ddf_mu0 = zeros1d(nmugs);
+  double *f_mu0_mu = zeros1d(nmat);
+  double *SvR = zeros1d(nmat);
 
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
@@ -385,10 +351,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   } // End loop over pixels
 
 cleanup:
-  // Free temporary arrays (every level, bottom-up)
-  free_cube(ddf, nmat, nmugs);
-  free_matrix(f_mu0, nmat);
-  free_matrix(RM, npix);
+  // Free temporary arrays
+  free(ddf);
+  free(f_mu0);
+  free(RM);
   free(ddf_mu0);
   free(f_mu0_mu);
   free(SvR);
