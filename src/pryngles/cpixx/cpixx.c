@@ -200,19 +200,6 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
 
 /*
  *----------------------------------------------------------------------------
- *     Helper function to return the row fou[m][k][i][:] of a flattened 4D
- *     Fourier array with dimesnion (nfou, nmat, nmugs, nmugs)
- *----------------------------------------------------------------------------
- */
-static inline const double *fou_row(const double *fou, int nmat, int nmugs,
-                                    int m, int k, int i) {
-  return fou +
-         (((size_t)m * (size_t)nmat + (size_t)k) * (size_t)nmugs + (size_t)i) *
-             (size_t)nmugs;
-}
-
-/*
- *----------------------------------------------------------------------------
  *     Calculate the Stokes vector for a given geometry (given a table of
  *     Fourier coefficients read from a file).
  *
@@ -234,17 +221,11 @@ static inline const double *fou_row(const double *fou, int nmat, int nmugs,
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double *fou, int npix, const double *phi,
-               const double *beta, const double *theta0, const double *theta,
-               const double *apix, double *stokes) {
+               const double fou[nfou][nmat][nmugs][nmugs], int npix,
+               const double phi[npix], const double beta[npix],
+               const double theta0[npix], const double theta[npix],
+               const double apix[npix], double stokes[npix][nmat + 1]) {
 
-  // Note:
-  // - fou is a C_CONTIGUOUS flattened 4D array (nfou, nmat, nmugs, nmugs),
-  // indexed fou[m,k,i,j]
-  // - stokes is a C_CONTIGUOUS flattened 2D array (npix, nmat + 1), indexed
-  // stokes[n,k]
-
-  size_t srow = (size_t)nmat + 1; // row length of the flat stokes
   double be, SvR2, SvR3, P, cosmphi, sinmphi, mu, mu0, fac;
   double muold = 1, mu0old = 1;
   int ret = 0;
@@ -293,7 +274,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
         // Row fou[m][k][i][:] is contiguous: no copy needed.
         // Write directly into corresponding ddf row.
         // nmugs was validated above, so dderiv() cannot fail here.
-        dderiv(xmu, fou_row(fou, nmat, nmugs, m, k, i), nmugs, ddf[k][i]);
+        dderiv(xmu, fou[m][k][i], nmugs, ddf[k][i]);
       }
     }
 
@@ -333,8 +314,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
             // Use fou(m,k,i,:) and ddf(k,i,:) slices directly, and write
             // straight into rmu0(k,i,:) Do the spline interpolation between klo
             // and khi, given the coefficients a,b,h
-            f_mu0[k][i] = interp(fou_row(fou, nmat, nmugs, m, k, i), ddf[k][i],
-                                 klo, khi, a, b, h);
+            f_mu0[k][i] = interp(fou[m][k][i], ddf[k][i], klo, khi, a, b, h);
           }
         }
 
@@ -396,11 +376,11 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     // Multiply with mu and the actual pixel area to obtain the stokes
     // element k for each pixel n.
     for (int k = 0; k < nmat; k++) {
-      stokes[(size_t)n * srow + (size_t)k] = SvR[k] * mu * apix[n];
+      stokes[n][k] = SvR[k] * mu * apix[n];
     }
 
     // The value of the degree of polarization (last index)
-    stokes[(size_t)n * srow + (size_t)nmat] = P;
+    stokes[n][nmat] = P;
 
   } // End loop over pixels
 
