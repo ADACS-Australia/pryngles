@@ -243,7 +243,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   double be, SvR2, SvR3, P;
   double cosmphi, sinmphi;
   double mu, mu0, muold = 1, mu0old = 1;
-  int ki;
   double fac;
   int ret = 0;
   size_t srow = (size_t)nmat + 1; // row length of the flat stokes
