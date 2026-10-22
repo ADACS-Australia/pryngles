@@ -260,20 +260,22 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     return -1;
   }
 
-  double ***ddf;
-  double **RM, **f_mu0;
-  double *ddf_mu0;
+  double ***ddf, ***ddf_i, ***ddf_ij;
+  double **RM;
+  double *f_col, *ddf_col;
   double *SvR, *f_mu0_mu;
   double Bplus[MAX_NMAT];
 
   // Allocate dynamically temporary matrices
   // Cubes
-  ddf = zeros_cube(nmat, nmugs, nmugs);
+  ddf = zeros_cube(nmat, nmugs, nmugs);    // ddf[k][i][:]    d2f/dj2
+  ddf_i = zeros_cube(nmat, nmugs, nmugs);  // ddf_i[k][i][j]  d2f/di2
+  ddf_ij = zeros_cube(nmat, nmugs, nmugs); // ddf_ij[k][i][:] d2(ddf_i)/dj2
   // Matrices
-  f_mu0 = zeros_matrix(nmat, nmugs);
   RM = zeros_matrix(npix, nmat);
   // Vectors nmugs
-  ddf_mu0 = zeros_vector(nmugs);
+  f_col = zeros_vector(nmugs);
+  ddf_col = zeros_vector(nmugs);
   // Vectors nmats
   f_mu0_mu = zeros_vector(nmat);
   SvR = zeros_vector(nmat);
@@ -285,25 +287,40 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     if (m == 0)
       fac = 0.5;
 
-    // Initialize the interpolation matrix for the current fourier coefficient:
-    for (int i = 0; i < nmugs; i++) {
+    // Initialize the interpolation matrices for the current fourier
+    // coefficient. nmugs was validated above, so dderiv() cannot fail here.
+    for (int k = 0; k < nmat; k++) {
 
-      for (int k = 0; k < nmat; k++) {
-        // Row fou[m][k][i][:] is contiguous: no copy needed.
-        // Write directly into corresponding ddf row.
-        // nmugs was validated above, so dderiv() cannot fail here.
+      // d2f/dj2 along each row fou[m][k][i][:], which is contiguous: no copy
+      // needed. Write directly into corresponding ddf row.
+      for (int i = 0; i < nmugs; i++)
         dderiv(xmu, fou_row(fou, nmat, nmugs, m, k, i), nmugs, ddf[k][i]);
 
-      } // End k
+      // d2f/di2 along each column fou[m][k][:][j]
+      for (int j = 0; j < nmugs; j++) {
+        for (int i = 0; i < nmugs; i++)
+          f_col[i] = fou_row(fou, nmat, nmugs, m, k, i)[j];
+        dderiv(xmu, f_col, nmugs, ddf_col);
+        for (int i = 0; i < nmugs; i++)
+          ddf_i[k][i][j] = ddf_col[i];
+      }
 
-    } // End i
+      // d2(d2f/di2)/dj2, so that d2f/di2 can itself be interpolated along j
+      for (int i = 0; i < nmugs; i++)
+        dderiv(xmu, ddf_i[k][i], nmugs, ddf_ij[k][i]);
+
+    } // End k
 
     /*
      *----------------------------------------------------------------------------
      *     Loop over the pixels:
      *     If the input angles are (very) similar to a previously calculated
-     *     case use those values. To obtain obtain the fourier coefficient at
-     *     (mu,mu0) spline has to be called a second time.
+     *     case use those values. To obtain the fourier coefficient at
+     *     (mu,mu0) it is interpolated along j at mu0 and then along i at mu.
+     *     The second pass needs d2f/di2 at the rows that bracket mu: these
+     *     are interpolated along j from the precomputed ddf_i (spline
+     *     construction along i and interpolation along j commute), so no
+     *     spline has to be solved per pixel.
      *----------------------------------------------------------------------------
      */
     for (int n = 0; n < npix; n++) {
@@ -324,35 +341,39 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
       } else {
 
-        // Get indices and coefficients to work with (at mu0)
-        int klo, khi;
-        double a, b, h;
-        if (spline_coefficients(xmu, nmugs, mu0, &klo, &khi, &a, &b, &h)) {
+        // Get indices and coefficients to work with (at mu0, along j)
+        int jlo, jhi;
+        double ja, jb, jh;
+        if (spline_coefficients(xmu, nmugs, mu0, &jlo, &jhi, &ja, &jb, &jh)) {
           ret = -1;
           goto cleanup;
         }
 
-        for (int i = 0; i < nmugs; i++) {
-          for (int k = 0; k < nmat; k++) {
-            // Use fou(m,k,i,:) and ddf(k,i,:) slices directly, and write
-            // straight into rmu0(k,i,:) Do the spline interpolation between klo
-            // and khi, given the coefficients a,b,h
-            f_mu0[k][i] = interp(fou_row(fou, nmat, nmugs, m, k, i), ddf[k][i],
-                                 klo, khi, a, b, h);
-          }
-        }
-
-        // Get indices and coefficients to work with (now at mu)
-        if (spline_coefficients(xmu, nmugs, mu, &klo, &khi, &a, &b, &h)) {
+        // Get indices and coefficients to work with (now at mu, along i)
+        int ilo, ihi;
+        double ia, ib, ih;
+        if (spline_coefficients(xmu, nmugs, mu, &ilo, &ihi, &ia, &ib, &ih)) {
           ret = -1;
           goto cleanup;
         }
 
         for (int k = 0; k < nmat; k++) {
-          dderiv(xmu, f_mu0[k], nmugs, ddf_mu0);
-          // Do the spline interpolation between klo and khi, given the
-          // coefficients a,b,h
-          f_mu0_mu[k] = interp(f_mu0[k], ddf_mu0, klo, khi, a, b, h);
+          // Only the two rows i=ilo,ihi that bracket mu are needed. For each,
+          // interpolate f and d2f/di2 along j at mu0, given the coefficients
+          // ja,jb,jh
+          double f_mu0[2], ddf_mu0[2];
+          f_mu0[0] = interp(fou_row(fou, nmat, nmugs, m, k, ilo), ddf[k][ilo],
+                            jlo, jhi, ja, jb, jh);
+          f_mu0[1] = interp(fou_row(fou, nmat, nmugs, m, k, ihi), ddf[k][ihi],
+                            jlo, jhi, ja, jb, jh);
+          ddf_mu0[0] = interp(ddf_i[k][ilo], ddf_ij[k][ilo], jlo, jhi, ja, jb,
+                              jh);
+          ddf_mu0[1] = interp(ddf_i[k][ihi], ddf_ij[k][ihi], jlo, jhi, ja, jb,
+                              jh);
+
+          // Do the spline interpolation along i between the two rows, given
+          // the coefficients ia,ib,ih
+          f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, 1, ia, ib, ih);
           muold = mu;
           mu0old = mu0;
           RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * f_mu0_mu[k];
@@ -407,11 +428,13 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 cleanup:
   // Free temporary arrays (every level, bottom-up)
   free_cube(ddf, nmat, nmugs);
+  free_cube(ddf_i, nmat, nmugs);
+  free_cube(ddf_ij, nmat, nmugs);
   // Matrices
-  free_matrix(f_mu0, nmat);
   free_matrix(RM, npix);
   // Vectors nmugs
-  free(ddf_mu0);
+  free(f_col);
+  free(ddf_col);
   // Vectors nmats
   free(f_mu0_mu);
   free(SvR);
