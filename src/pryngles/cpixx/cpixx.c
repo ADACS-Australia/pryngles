@@ -200,7 +200,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
                const double theta0[npix], const double theta[npix],
                const double apix[npix], double stokes[npix][nmat + 1]) {
 
-  double be, SvR2, SvR3, P, cosmphi, sinmphi, mu, mu0, fac;
   double muold = 1, mu0old = 1;
   int ret = 0;
   double Bplus[MAX_NMAT];
@@ -230,7 +229,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
 
-    fac = 1.0;
+    double fac = 1.0;
     if (m == 0)
       fac = 0.5;
 
@@ -253,10 +252,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
      *----------------------------------------------------------------------------
      */
     for (int n = 0; n < npix; n++) {
-      mu = theta[n];
-      mu0 = theta0[n];
-      cosmphi = cos(m * phi[n]);
-      sinmphi = sin(m * phi[n]);
+      double mu = theta[n];
+      double mu0 = theta0[n];
+      double cosmphi = cos(m * phi[n]);
+      double sinmphi = sin(m * phi[n]);
       Bplus[0] = cosmphi;
       Bplus[1] = cosmphi;
       Bplus[2] = sinmphi;
@@ -310,10 +309,9 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   } // End loop over fourier coefficients
 
   // Loop again over the pixels to rotate the Stokes vector
-  double cosbe, sinbe;
   for (int n = 0; n < npix; n++) {
-    mu = theta[n];
-    mu0 = theta0[n];
+    double mu = theta[n];
+    double mu0 = theta0[n];
 
     // Calculate the locally reflected Stokes vector:
     for (int k = 0; k < nmat; k++)
@@ -321,15 +319,15 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
     // Rotate Stokes elements Q and U to the actual reference plane.
     // Note: does this implicitly assume nmat=3 ?
-    be = 2 * beta[n];
-    cosbe = cos(be);
-    sinbe = sin(be);
-    SvR2 = cosbe * SvR[1] + sinbe * SvR[2];
-    SvR3 = -sinbe * SvR[1] + cosbe * SvR[2];
+    double cosb2 = cos(2 * beta[n]);
+    double sinb2 = sin(2 * beta[n]);
+    double SvR2 = cosb2 * SvR[1] + sinb2 * SvR[2];
+    double SvR3 = -sinb2 * SvR[1] + cosb2 * SvR[2];
     SvR[1] = SvR2;
     SvR[2] = SvR3;
 
     // Compute the local degree of polarisation P:
+    double P;
     if (fabs(SvR[0]) < 1e-6)
       P = 0;
     else if (fabs(SvR[2]) < 1e-6)
