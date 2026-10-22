@@ -30,40 +30,14 @@ static void *xcalloc(int n, size_t size) {
   return p;
 }
 
-double *zeros_vector(int n) {
-  return (double *)xcalloc(n, sizeof(double)); /* calloc already zeroes */
+static void *zeros1d(int n) { return xcalloc(n, sizeof(double)); }
+
+static void *zeros2d(int n, int m) {
+  return xcalloc(n, (size_t)m * sizeof(double));
 }
 
-double **zeros_matrix(int n, int m) {
-  double **M = (double **)xcalloc(n, sizeof(double *));
-  for (int i = 0; i < n; i++)
-    M[i] = zeros_vector(m);
-  return M;
-}
-
-double ***zeros_cube(int n, int m, int p) {
-  double ***C = (double ***)xcalloc(n, sizeof(double **));
-  for (int i = 0; i < n; i++)
-    C[i] = zeros_matrix(m, p);
-  return C;
-}
-
-// Free a matrix allocated with zeros_matrix(n, m)
-void free_matrix(double **M, int n) {
-  if (!M)
-    return;
-  for (int i = 0; i < n; i++)
-    free(M[i]);
-  free(M);
-}
-
-// Free a cube allocated with zeros_cube(n, m, p)
-void free_cube(double ***C, int n, int m) {
-  if (!C)
-    return;
-  for (int i = 0; i < n; i++)
-    free_matrix(C[i], m);
-  free(C);
+static void *zeros3d(int n, int m, int k) {
+  return xcalloc(n, (size_t)m * (size_t)k * sizeof(double));
 }
 
 /*
@@ -198,15 +172,6 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
   return yi;
 }
 
-// Row fou[m][k][i][:] (nmugs consecutive doubles) of a flat
-// (nfou, nmat, nmugs, nmugs) Fourier array.
-static inline const double *fou_row(const double *fou, int nmat, int nmugs,
-                                    int m, int k, int i) {
-  return fou +
-         (((size_t)m * (size_t)nmat + (size_t)k) * (size_t)nmugs + (size_t)i) *
-             (size_t)nmugs;
-}
-
 /*
  *----------------------------------------------------------------------------
  *     Calculate the Stokes vector for a given geometry (given a table of
@@ -230,22 +195,15 @@ static inline const double *fou_row(const double *fou, int nmat, int nmugs,
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double *fou, int npix, const double *phi,
-               const double *beta, const double *theta0, const double *theta,
-               const double *apix, double *stokes) {
+               const double fou[nfou][nmat][nmugs][nmugs], int npix,
+               const double phi[npix], const double beta[npix],
+               const double theta0[npix], const double theta[npix],
+               const double apix[npix], double stokes[npix][nmat + 1]) {
 
-  // Note:
-  // - fou is a C_CONTIGUOUS flattened 4D array (nfou, nmat, nmugs, nmugs),
-  // indexed fou[m,k,i,j]
-  // - stokes is a C_CONTIGUOUS flattened 2D array (npix, nmat + 1), indexed
-  // stokes[n,k]
-
-  double be, SvR2, SvR3, P;
-  double cosmphi, sinmphi;
-  double mu, mu0, muold = 1, mu0old = 1;
-  double fac;
+  double be, SvR2, SvR3, P, cosmphi, sinmphi, mu, mu0, fac;
+  double muold = 1, mu0old = 1;
   int ret = 0;
-  size_t srow = (size_t)nmat + 1; // row length of the flat stokes
+  double Bplus[MAX_NMAT];
 
   // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
   // and dderiv() has a fixed-size scratch array.
@@ -260,25 +218,19 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     return -1;
   }
 
-  double ***ddf, ***ddf_i, ***ddf_ij;
-  double **RM;
-  double *f_col, *ddf_col;
-  double *SvR, *f_mu0_mu;
-  double Bplus[MAX_NMAT];
-
-  // Allocate dynamically temporary matrices
-  // Cubes
-  ddf = zeros_cube(nmat, nmugs, nmugs);    // ddf[k][i][:]    d2f/dj2
-  ddf_i = zeros_cube(nmat, nmugs, nmugs);  // ddf_i[k][i][j]  d2f/di2
-  ddf_ij = zeros_cube(nmat, nmugs, nmugs); // ddf_ij[k][i][:] d2(ddf_i)/dj2
-  // Matrices
-  RM = zeros_matrix(npix, nmat);
-  // Vectors nmugs
-  f_col = zeros_vector(nmugs);
-  ddf_col = zeros_vector(nmugs);
-  // Vectors nmats
-  f_mu0_mu = zeros_vector(nmat);
-  SvR = zeros_vector(nmat);
+  // Allocate temporary arrays with VLA pointers,
+  // using calloc (so that they're on the heap)
+  double (*ddf)[nmugs][nmugs] =
+      zeros3d(nmat, nmugs, nmugs); // ddf[k][i][:]    d2f/dj2
+  double (*ddf_i)[nmugs][nmugs] =
+      zeros3d(nmat, nmugs, nmugs); // ddf_i[k][i][j]  d2f/di2
+  double (*ddf_ij)[nmugs][nmugs] =
+      zeros3d(nmat, nmugs, nmugs); // ddf_ij[k][i][:] d2(ddf_i)/dj2
+  double (*RM)[nmat] = zeros2d(npix, nmat);
+  double *f_col = zeros1d(nmugs);
+  double *ddf_col = zeros1d(nmugs);
+  double *f_mu0_mu = zeros1d(nmat);
+  double *SvR = zeros1d(nmat);
 
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
@@ -294,12 +246,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       // d2f/dj2 along each row fou[m][k][i][:], which is contiguous: no copy
       // needed. Write directly into corresponding ddf row.
       for (int i = 0; i < nmugs; i++)
-        dderiv(xmu, fou_row(fou, nmat, nmugs, m, k, i), nmugs, ddf[k][i]);
+        dderiv(xmu, fou[m][k][i], nmugs, ddf[k][i]);
 
       // d2f/di2 along each column fou[m][k][:][j]
       for (int j = 0; j < nmugs; j++) {
         for (int i = 0; i < nmugs; i++)
-          f_col[i] = fou_row(fou, nmat, nmugs, m, k, i)[j];
+          f_col[i] = fou[m][k][i][j];
         dderiv(xmu, f_col, nmugs, ddf_col);
         for (int i = 0; i < nmugs; i++)
           ddf_i[k][i][j] = ddf_col[i];
@@ -333,13 +285,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       Bplus[2] = sinmphi;
       Bplus[3] = sinmphi;
 
-      if ((n > 0) && ((fabs(mu - muold) < 1e-6)) &&
-          (fabs(mu0 - mu0old) < 1e-6)) {
-
-        for (int k = 0; k < nmat; k++)
-          RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * f_mu0_mu[k];
-
-      } else {
+      if ((n <= 0) || (fabs(mu - muold) > 1e-6) ||
+          (fabs(mu0 - mu0old) > 1e-6)) {
+        // Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip and
+        // reuse previous cached value
 
         // Get indices and coefficients to work with (at mu0, along j)
         int jlo, jhi;
@@ -362,27 +311,31 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
           // interpolate f and d2f/di2 along j at mu0, given the coefficients
           // ja,jb,jh
           double f_mu0[2], ddf_mu0[2];
-          f_mu0[0] = interp(fou_row(fou, nmat, nmugs, m, k, ilo), ddf[k][ilo],
-                            jlo, jhi, ja, jb, jh);
-          f_mu0[1] = interp(fou_row(fou, nmat, nmugs, m, k, ihi), ddf[k][ihi],
-                            jlo, jhi, ja, jb, jh);
-          ddf_mu0[0] = interp(ddf_i[k][ilo], ddf_ij[k][ilo], jlo, jhi, ja, jb,
-                              jh);
-          ddf_mu0[1] = interp(ddf_i[k][ihi], ddf_ij[k][ihi], jlo, jhi, ja, jb,
-                              jh);
+          f_mu0[0] = interp(fou[m][k][ilo], ddf[k][ilo], jlo, jhi, ja, jb, jh);
+          f_mu0[1] = interp(fou[m][k][ihi], ddf[k][ihi], jlo, jhi, ja, jb, jh);
+          ddf_mu0[0] =
+              interp(ddf_i[k][ilo], ddf_ij[k][ilo], jlo, jhi, ja, jb, jh);
+          ddf_mu0[1] =
+              interp(ddf_i[k][ihi], ddf_ij[k][ihi], jlo, jhi, ja, jb, jh);
 
           // Do the spline interpolation along i between the two rows, given
           // the coefficients ia,ib,ih
           f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, 1, ia, ib, ih);
           muold = mu;
           mu0old = mu0;
-          RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * f_mu0_mu[k];
         }
-      } // End else
-    } // End n (pix)
-  } // End loop fourier coefficients
+      }
 
-  // Loop again over the pixels to rotate Stokes vector:
+      // Compute the reflection matrix at pixel n and stokes parameter k,
+      // summing over fourier terms m
+      for (int k = 0; k < nmat; k++) {
+        RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * f_mu0_mu[k];
+      }
+
+    } // End loop over pixels
+  } // End loop over fourier coefficients
+
+  // Loop again over the pixels to rotate the Stokes vector
   double cosbe, sinbe;
   for (int n = 0; n < npix; n++) {
     mu = theta[n];
@@ -392,7 +345,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     for (int k = 0; k < nmat; k++)
       SvR[k] = mu0 * RM[n][k];
 
-    // Rotate Stokes elements Q and U to the actual reference plane:
+    // Rotate Stokes elements Q and U to the actual reference plane.
+    // Note: does this implicitly assume nmat=3 ?
     be = 2 * beta[n];
     cosbe = cos(be);
     sinbe = sin(be);
@@ -411,31 +365,25 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     if (fabs(P) < 1e-6)
       P = 0;
 
-    /*
-     *----------------------------------------------------------------------------
-     *     Add the Stokes elements of the pixel to an array:
-     *     Multiply with mu and the actual pixel area to obtain stokes elements
-     *----------------------------------------------------------------------------
-     */
+    // Multiply with mu and the actual pixel area to obtain the stokes
+    // element k for each pixel n.
     for (int k = 0; k < nmat; k++) {
-      stokes[(size_t)n * srow + (size_t)k] = SvR[k] * mu * apix[n];
+      stokes[n][k] = SvR[k] * mu * apix[n];
     }
 
-    // The value of the degree of polarization
-    stokes[(size_t)n * srow + (size_t)nmat] = P;
-  } // End n (pix)
+    // The value of the degree of polarization (last index)
+    stokes[n][nmat] = P;
+
+  } // End loop over pixels
 
 cleanup:
-  // Free temporary arrays (every level, bottom-up)
-  free_cube(ddf, nmat, nmugs);
-  free_cube(ddf_i, nmat, nmugs);
-  free_cube(ddf_ij, nmat, nmugs);
-  // Matrices
-  free_matrix(RM, npix);
-  // Vectors nmugs
+  // Free temporary arrays
+  free(ddf);
+  free(ddf_i);
+  free(ddf_ij);
+  free(RM);
   free(f_col);
   free(ddf_col);
-  // Vectors nmats
   free(f_mu0_mu);
   free(SvR);
 
