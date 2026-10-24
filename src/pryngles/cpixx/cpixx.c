@@ -6,7 +6,8 @@
 // scratch array), and maximum number of Stokes elements reflection() supports
 // (size of Bplus).
 #define MAX_SPLINE_N 1000
-#define MAX_NMAT 4
+#define MAX_NSTOKES 4
+#define MAX_NMAT (MAX_NSTOKES - 1)
 
 /*
  * Checked calloc wrapper for the zeros_* allocators.
@@ -202,10 +203,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
   double muold = 1, mu0old = 1;
   int ret = 0;
-  double Bplus[MAX_NMAT];
+  double Bplus[MAX_NSTOKES];
 
-  // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
-  // and dderiv() has a fixed-size scratch array.
+  // Validate sizes before allocating anything
+
   if (nmat < 1 || nmat > MAX_NMAT) {
     fprintf(stderr, "Error in reflection: nmat=%d outside [1, %d].\n", nmat,
             MAX_NMAT);
@@ -233,8 +234,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   double *ddf_mu0 = zeros1d(nmugs);
 
   // nmat is small, these can go on the stack
-  double f_mu0_mu[MAX_NMAT] = {0};
-  double SvR[MAX_NMAT] = {0};
+  double f_mu0_mu[MAX_NSTOKES] = {0};
+  double SvR[MAX_NSTOKES] = {0};
 
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
