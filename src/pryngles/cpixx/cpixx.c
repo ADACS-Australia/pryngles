@@ -196,10 +196,14 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double fou[nfou][nmat][nmugs][nmugs], int npix,
-               const double phi[npix], const double beta[npix],
-               const double theta0[npix], const double theta[npix],
-               const double apix[npix], double stokes[npix][nmat + 1]) {
+               const double *fou_flat, int npix, const double *phi,
+               const double *beta, const double *theta0, const double *theta,
+               const double *apix, double *stokes_flat) {
+
+  // xmu is a 1D array of length nmugs
+  // phi, beta, theta0, theta, and apix are 1D arrays of length npix
+  // fou_flat is a flattened 4D array with shape (nfou, nmat, nmugs, nmugs)
+  // stokes_flat is a flattened 2D array with shape (npix, nmat + 1)
 
   double muold = 1, mu0old = 1;
   int ret = 0;
@@ -225,6 +229,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     fprintf(stderr, "Error in reflection: nfou=%d is < 1.\n", nfou);
     return -1;
   }
+
+  // VLA-pointer views of the flat buffers: the bounds are evaluated here,
+  // after validation being validated above
+  const double (*fou)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])fou_flat;
+  double (*stokes)[nmat + 1] = (double (*)[nmat + 1]) stokes_flat;
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
