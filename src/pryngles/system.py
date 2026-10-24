@@ -1642,10 +1642,16 @@ class System(PrynglesCommon):
             [bodies, list(effects_registry.keys()) + ["scattering"]], names=["body", "effect"]
         )
 
-        df_output = pd.DataFrame(index=pd.Index(times, name="time"), columns=columns, dtype=float)
+        # Accumulate in a numpy array (NaN = effect not computed); build the DataFrame once at the end
+        output = np.full((len(times), len(columns)), np.nan)
+        col_index = {key: j for j, key in enumerate(columns)}
+
+        # Spangles of each body (names do not change during the lightcurve)
+        names = self.sg._get_cols("name")
+        cond_bodies = {body: names == body for body in bodies}
 
         iterator = tqdm(times, total=len(times), desc="Computing Lightcurve ")
-        for t in iterator:
+        for i, t in enumerate(iterator):
             self.integrate_perspective(t)
 
             for effect in effects:
@@ -1653,17 +1659,20 @@ class System(PrynglesCommon):
                 func_effect()
 
                 for body in bodies:
-                    cond_body = self.data.name == body
-                    flux_val = np.sum(self.data.loc[cond_body, data_column].values, axis=0)
+                    cond_body = cond_bodies[body]
 
                     # Updates Polarized Flux and Degree of Polarization
                     if effect == "polarization":
-                        df_output.loc[t, (body, "reflection")] = 0
-                        df_output.loc[t, (body, "scattering")] = sgn * flux_val[0]
-                        df_output.loc[t, (body, effect)] = sgn * flux_val[1]
+                        flux_val = [np.sum(self.sg._get_cols(col, cond_body)) for col in data_column]
+                        output[i, col_index[(body, "reflection")]] = 0
+                        output[i, col_index[(body, "scattering")]] = sgn * flux_val[0]
+                        output[i, col_index[(body, effect)]] = sgn * flux_val[1]
 
                     else:
-                        df_output.loc[t, (body, effect)] = sgn * flux_val
+                        flux_val = np.sum(self.sg._get_cols(data_column, cond_body))
+                        output[i, col_index[(body, effect)]] = sgn * flux_val
+
+        df_output = pd.DataFrame(output, index=pd.Index(times, name="time"), columns=columns)
 
         total_flux = df_output.drop(columns="polarization", level="effect").sum(axis=1).values + 1.0  # Normalized Flux
 
