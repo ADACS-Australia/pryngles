@@ -231,8 +231,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   double (*f_mu0)[nmugs] = zeros2d(nmat, nmugs);
   double (*RM)[nmat] = zeros2d(npix, nmat);
   double *ddf_mu0 = zeros1d(nmugs);
-  double *f_mu0_mu = zeros1d(nmat);
-  double *SvR = zeros1d(nmat);
+
+  // nmat is small, these can go on the stack
+  double f_mu0_mu[MAX_NMAT] = {0};
+  double SvR[MAX_NMAT] = {0};
 
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
@@ -362,8 +364,6 @@ cleanup:
   free(f_mu0);
   free(RM);
   free(ddf_mu0);
-  free(f_mu0_mu);
-  free(SvR);
 
   return ret;
 }
