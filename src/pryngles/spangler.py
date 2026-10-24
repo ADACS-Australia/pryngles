@@ -513,14 +513,6 @@ class Spangler(PrynglesCommon):
             n_equ = []
         verbose(VERB_VERIFY, "Setting positions")
 
-        # Pandas >= 2.2 is strict about assigning floats into int columns.
-        # These coordinates are continuous, so keep them as float dtype.
-        for col in ("x_ecl", "y_ecl", "z_ecl"):
-            if col not in self.data.columns:
-                self.data[col] = np.nan
-            if not pd.api.types.is_float_dtype(self.data[col].dtype):
-                self.data[col] = self.data[col].astype(float)
-
         # Update normal vectors
         qupdate = False
 
@@ -1136,14 +1128,6 @@ class Spangler(PrynglesCommon):
         mask = np.asarray(cond, dtype=bool)
 
         # Update positions in the intersection reference frame
-        # Pandas >= 2.2 is strict about assigning floats into int columns.
-        # Intersection-frame coordinates are continuous, so keep them as float dtype.
-        for col in ("x_int", "y_int", "z_int", "rho_int", "az_int", "cosf_int"):
-            if col not in self.data.columns:
-                self.data[col] = np.nan
-            if not pd.api.types.is_float_dtype(self.data[col].dtype):
-                self.data[col] = self.data[col].astype(float)
-
         r_ecl = self._get_cols(["x_ecl", "y_ecl", "z_ecl"], mask)
         self._set_cols(["x_int", "y_int", "z_int"], (self.M_ecl2int @ (r_ecl - center).T).T, mask)
 
@@ -1190,10 +1174,6 @@ class Spangler(PrynglesCommon):
         n_int_ecl = self._get_cols(SPANGLER_VEC_GROUPS["n_int_ecl"], mask)
         dot_wy_n = np.sum(wy_ecl * n_int_ecl, axis=1)
         dot_wx_n = np.sum(wx_ecl * n_int_ecl, axis=1)
-        if "azim_int" not in self.data.columns:
-            self.data["azim_int"] = np.nan
-        if not pd.api.types.is_float_dtype(self.data["azim_int"].dtype):
-            self.data["azim_int"] = self.data["azim_int"].astype(float)
         self._set_cols("azim_int", np.arctan2(dot_wy_n, dot_wx_n), mask)
 
         # Update spangles orientations
@@ -1202,13 +1182,6 @@ class Spangler(PrynglesCommon):
         self._set_cols(SPANGLER_VEC_GROUPS["ns_int"], ns_int, mask)
 
         # Cosine of the direction of the intersection vector and the normal to the spangle
-        # Store cosines as float: pandas >=2 raises LossySetitemError when assigning
-        # floats into an int-typed column, so coerce cos_int to float first.
-        if "cos_int" not in self.data.columns:
-            self.data["cos_int"] = np.nan
-        if not pd.api.types.is_float_dtype(self.data["cos_int"].dtype):
-            self.data["cos_int"] = self.data["cos_int"].astype(float)
-
         if self.infinite:
             # In this case n_int is a global variable
             cos_int = np.sum(ns_ecl * n_int, axis=1)
@@ -1399,12 +1372,6 @@ class Spangler(PrynglesCommon):
 
         mask = np.asarray(cond, dtype=bool)
         self._set_cols("visible", False, mask)
-        # Observer-frame coordinates are continuous, so keep them as float dtype.
-        for col in SPANGLER_COL_OBS:
-            if col not in self.data.columns:
-                self.data[col] = np.nan
-            if not pd.api.types.is_float_dtype(self.data[col].dtype):
-                self.data[col] = self.data[col].astype(float)
         self._set_cols(SPANGLER_COL_OBS, self._get_cols(SPANGLER_COL_INT, mask), mask)
 
         # Beta angle computation (Reference Plane rotation angle)
@@ -1513,21 +1480,11 @@ class Spangler(PrynglesCommon):
         self._set_cols("transmit", False, mask)
 
         # Conditions
-        # Light-source-frame coordinates are continuous, so keep them as float dtype.
-        for col in SPANGLER_COL_LUZ:
-            if col not in self.data.columns:
-                self.data[col] = np.nan
-            if not pd.api.types.is_float_dtype(self.data[col].dtype):
-                self.data[col] = self.data[col].astype(float)
         self._set_cols(SPANGLER_COL_LUZ, self._get_cols(SPANGLER_COL_INT, mask), mask)
 
         # Set relative azimuth [-pi,pi]
         azim_obs_luz = np.asarray(self._get_cols("azim_obs", mask) - self._get_cols("azim_luz", mask), dtype=float)
         # pi Shift and domain in [-pi,pi]
-        if "azim_obs_luz" not in self.data.columns:
-            self.data["azim_obs_luz"] = np.nan
-        if not pd.api.types.is_float_dtype(self.data["azim_obs_luz"].dtype):
-            self.data["azim_obs_luz"] = self.data["azim_obs_luz"].astype(float)
         self._set_cols("azim_obs_luz", np.arctan2(np.sin(azim_obs_luz + np.pi), np.cos(azim_obs_luz + np.pi)), mask)
 
         # Update states

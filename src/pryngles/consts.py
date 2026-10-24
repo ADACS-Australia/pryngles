@@ -336,9 +336,9 @@ SPANGLER_COLUMNS = OrderedDict(
         "center_ecl_x": 0.0,
         "center_ecl_y": 0.0,
         "center_ecl_z": 0.0,  # Center of the body with respect to barycenter
-        "x_ecl": 1,
-        "y_ecl": 0,
-        "z_ecl": 0,  # Cartesian coordinates of the spangle
+        "x_ecl": 1.0,
+        "y_ecl": 0.0,
+        "z_ecl": 0.0,  # Cartesian coordinates of the spangle
         "wx_ecl_x": 1.0,
         "wx_ecl_y": 0.0,
         "wx_ecl_z": 0.0,  # y-axis on the surface of the tangent plane to the spangle: wx = (wy x ns)
@@ -352,17 +352,17 @@ SPANGLER_COLUMNS = OrderedDict(
         "center_int_x": 0.0,
         "center_int_y": 0.0,
         "center_int_z": 0.0,  # Center of the body
-        "x_int": 1,
-        "y_int": 0,
-        "z_int": 0,  # Cartesian coordinates
+        "x_int": 1.0,
+        "y_int": 0.0,
+        "z_int": 0.0,  # Cartesian coordinates
         "ns_int_x": 0.0,
         "ns_int_y": 0.0,
         "ns_int_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
-        "rho_int": 1,
-        "az_int": 0,
-        "cosf_int": 0,  # Pseudo cylindrical coordinates of the spangle: rho, phi, cos(theta)
-        "cos_int": 1,  # Angle between normal to spangle and direction of intersection
-        "azim_int": 0,  # Azimuth of the direction of intersection
+        "rho_int": 1.0,
+        "az_int": 0.0,
+        "cosf_int": 0.0,  # Pseudo cylindrical coordinates of the spangle: rho, phi, cos(theta)
+        "cos_int": 1.0,  # Angle between normal to spangle and direction of intersection
+        "azim_int": 0.0,  # Azimuth of the direction of intersection
         "n_int_x": 0.0,
         "n_int_y": 0.0,
         "n_int_z": -np.inf,  # Vector from the intersection origin to each spangle
@@ -379,17 +379,17 @@ SPANGLER_COLUMNS = OrderedDict(
         "center_obs_x": 0.0,
         "center_obs_y": 0.0,
         "center_obs_z": 0.0,  # Center of the body
-        "x_obs": 1,
-        "y_obs": 0,
-        "z_obs": 0,  # Cartesian coordinates of the spangle
+        "x_obs": 1.0,
+        "y_obs": 0.0,
+        "z_obs": 0.0,  # Cartesian coordinates of the spangle
         "ns_obs_x": 0.0,
         "ns_obs_y": 0.0,
         "ns_obs_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
-        "rho_obs": 1,
-        "az_obs": 0,
-        "cosf_obs": 0,  # Cylindrical coordinates of the spangle: rho, phi, cos(theta)
-        "cos_obs": 1,  # Angle between normal to spangle and direction of observer
-        "azim_obs": 0,  # Azimuth of the direction of the observer
+        "rho_obs": 1.0,
+        "az_obs": 0.0,
+        "cosf_obs": 0.0,  # Cylindrical coordinates of the spangle: rho, phi, cos(theta)
+        "cos_obs": 1.0,  # Angle between normal to spangle and direction of observer
+        "azim_obs": 0.0,  # Azimuth of the direction of the observer
         "n_obs_x": 0.0,
         "n_obs_y": 0.0,
         "n_obs_z": -np.inf,  # Vector from the observer origin to each spangle
@@ -403,27 +403,27 @@ SPANGLER_COLUMNS = OrderedDict(
         "center_luz_x": 0.0,
         "center_luz_y": 0.0,
         "center_luz_z": 0.0,  # Center of the body
-        "x_luz": 1,
-        "y_luz": 0,
-        "z_luz": 0,  # Calculated in the class
+        "x_luz": 1.0,
+        "y_luz": 0.0,
+        "z_luz": 0.0,  # Calculated in the class
         "ns_luz_x": 0.0,
         "ns_luz_y": 0.0,
         "ns_luz_z": 1.0,  # Unitary vector normal to the spangle, calculated in the class
-        "rho_luz": 1,
-        "az_luz": 0,
-        "cosf_luz": 0,  # Cylindrical coordinates of the spangle: rho, phi, cos(theta)
-        "cos_luz": 1,  # Angle between normal to spangle and direction of light-source
-        "azim_luz": 0,  # Azimuth of the direction of the light-source
+        "rho_luz": 1.0,
+        "az_luz": 0.0,
+        "cosf_luz": 0.0,  # Cylindrical coordinates of the spangle: rho, phi, cos(theta)
+        "cos_luz": 1.0,  # Angle between normal to spangle and direction of light-source
+        "azim_luz": 0.0,  # Azimuth of the direction of the light-source
         "n_luz_x": 0.0,
         "n_luz_y": 0.0,
         "n_luz_z": -np.inf,  # Vector from the light-source origin to each spangle
         "d_luz": -np.inf,  # Distance of the Spangle to light-source
-        "asp_luz": 1,  # Effective area of the spangle with respect to light-source perspective
+        "asp_luz": 1.0,  # Effective area of the spangle with respect to light-source perspective
         "z_cen_luz": 0.0,  # z-coordinate of the center of the body to which the spangle belows
         "hidden_by_luz": "",  # Which body intersect the observer or light coming to a Spangle
         "transit_over_luz": "",  # Which body is intersected by the Spangle (is transiting over)
         # Azimutal angles
-        "azim_obs_luz": 0,  # Difference between the azimuth of the observer over the spangle and that of light-source
+        "azim_obs_luz": 0.0,  # Difference between the azimuth of the observer over the spangle and that of light-source
         # Geometrical parameters
         "asp": 1.0,  # Effective area of the spangle in 3D
         "dsp": 1.0,  # Effective diameter of spangle, dsp = 2*(asp/pi)**0.5
@@ -478,11 +478,11 @@ SPANGLER_FLUX = OrderedDict(
         "transit_flux": 0.0,  # Flux blocked from the star during transit
         "thermal_flux": 0.0,  # Thermal Emission Flux from the spangle towards the observer
         # Polarization parameters
-        "stokes_F": 0,
-        "stokes_Q": 0,
-        "stokes_U": 0,
-        "stokes_V": 0,
-        "stokes_P": 0,  # Stokes vector components
+        "stokes_F": 0.0,
+        "stokes_Q": 0.0,
+        "stokes_U": 0.0,
+        "stokes_V": 0.0,
+        "stokes_P": 0.0,  # Stokes vector components
         # "polarized_flux": 0.0, #Polarized flux from the spangle towards the observer
         # "polarized_degree": 0.0, #Polarization degree of the spangle
     }

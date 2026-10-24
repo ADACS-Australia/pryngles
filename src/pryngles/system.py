@@ -1371,10 +1371,6 @@ class System(PrynglesCommon):
 
         # Set Stokes Parameters
         stokes_cols = ["stokes_F", "stokes_Q", "stokes_U", "stokes_V", "stokes_P"]
-        # Keep these as float columns; pandas is strict about int<-float assignment.
-        for col in stokes_cols:
-            if not pd.api.types.is_float_dtype(self.data[col].dtype):
-                self.data[col] = self.data[col].astype(float)
         self.sg._set_cols(stokes_cols, 0.0)
 
         # Star radius
@@ -1542,12 +1538,6 @@ class System(PrynglesCommon):
             Stokes = np.column_stack((Stokes / Consts.ppm, np.full(Stokes.shape[0], stokes_P / cond_full.sum())))
 
             # Update Spangle DataFrame
-            # Ensure destination dtype is float (Stokes values are continuous).
-            for col in stokes_cols:
-                if col not in body.sg.data.columns:
-                    body.sg.data[col] = 0.0
-                if not pd.api.types.is_float_dtype(body.sg.data[col].dtype):
-                    body.sg.data[col] = body.sg.data[col].astype(float)
             body.sg._set_cols(stokes_cols, 0.0)
             body.sg._set_cols(stokes_cols, Stokes[cond_full], cond_full)
 
