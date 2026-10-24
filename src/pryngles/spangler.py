@@ -294,6 +294,8 @@ class Spangler(PrynglesCommon):
         for coords in "int", "obs", "luz":
             self.data["hidden_by_" + coords] = ""
             self.data["transit_over_" + coords] = ""
+            self._set_cols(["hidden_mask_" + coords, "transit_mask_" + coords], 0)
+            self._set_cols("transit_rho_" + coords, np.nan)
 
     def _get_cols(self, cols, mask=None):
         """
@@ -1950,6 +1952,8 @@ class Spangler(PrynglesCommon):
 
         # List of objects in spangler
         names = list(misc.flatten([self.name]))
+        if len(names) > 63:
+            raise ValueError("The hidden/transit bitmask columns support at most 63 bodies per spangler.")
 
         if len(included):
             excluded = [n for n in names if n not in included]
@@ -1978,7 +1982,10 @@ class Spangler(PrynglesCommon):
 
         self._set_cols("intersect", True, cond)
         self._set_cols("hidden_by_int", "")
+
         self._set_cols("transit_over_int", "")
+        self._set_cols(["hidden_mask_int", "transit_mask_int"], 0)
+        self._set_cols("transit_rho_int", np.nan)
 
         # Loop over objects producing intersection
         for name in names:
@@ -1989,6 +1996,7 @@ class Spangler(PrynglesCommon):
 
             # Points in present body
             cond = name_arr == name
+            body_bit = 1 << names.index(name)
             scale = scale_arr[cond][0]
 
             # If this body is not in the field-of-view, avoid computation
@@ -2073,6 +2081,7 @@ class Spangler(PrynglesCommon):
                 # Set visibility
                 self._set_cols("intersect", False, below)
                 self._set_cols("hidden_by_int", self._get_cols("hidden_by_int", below) + f"{name}:{zord:.3e}&", below)
+                self._set_cols("hidden_mask_int", self._get_cols("hidden_mask_int", below) | body_bit, below)
                 self._set_cols("occult", True, below)
 
                 # Compute distance to center for transiting spangles
@@ -2080,6 +2089,9 @@ class Spangler(PrynglesCommon):
                 string_int = np.array([f"{name}:{zord:.3e}:{d:.3e}&" for d in dist], dtype=object)
                 self._set_cols("string_int", string_int, above)
                 self._set_cols("transit_over_int", self._get_cols("transit_over_int", above) + string_int, above)
+                self._set_cols("transit_mask_int", self._get_cols("transit_mask_int", above) | body_bit, above)
+                # Same rounding as the string representation (4 significant figures)
+                self._set_cols("transit_rho_int", np.array([float(f"{d:.3e}") for d in dist]), above)
                 self._set_cols("transit", True, above)
 
                 hull["inhull"] = np.count_nonzero(inhull)
@@ -2119,6 +2131,11 @@ class Spangler(PrynglesCommon):
 
         self._set_cols("hidden_by_obs", self._get_cols("hidden_by_obs") + self._get_cols("hidden_by_int"))
         self._set_cols("transit_over_obs", self._get_cols("transit_over_obs") + self._get_cols("transit_over_int"))
+        transit_mask_int = self._get_cols("transit_mask_int")
+        transits = transit_mask_int != 0
+        self._set_cols("hidden_mask_obs", self._get_cols("hidden_mask_obs") | self._get_cols("hidden_mask_int"))
+        self._set_cols("transit_mask_obs", self._get_cols("transit_mask_obs") | transit_mask_int)
+        self._set_cols("transit_rho_obs", self._get_cols("transit_rho_int", transits), transits)
         self._set_cols("visible", self._get_cols("visible") & self._get_cols("intersect"))
 
     def update_illumination_state(self, excluded=None, included=None):
@@ -2151,6 +2168,12 @@ class Spangler(PrynglesCommon):
 
         self._set_cols("hidden_by_luz", self._get_cols("hidden_by_luz") + self._get_cols("hidden_by_int"))
         self._set_cols("transit_over_luz", self._get_cols("transit_over_luz") + self._get_cols("transit_over_int"))
+
+        transit_mask_int = self._get_cols("transit_mask_int")
+        transits = transit_mask_int != 0
+        self._set_cols("hidden_mask_luz", self._get_cols("hidden_mask_luz") | self._get_cols("hidden_mask_int"))
+        self._set_cols("transit_mask_luz", self._get_cols("transit_mask_luz") | transit_mask_int)
+        self._set_cols("transit_rho_luz", self._get_cols("transit_rho_int", transits), transits)
 
         # Update illumination
         intersect = self._get_cols("intersect")

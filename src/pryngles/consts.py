@@ -375,6 +375,9 @@ SPANGLER_COLUMNS = OrderedDict(
         "hidden_by_int": "",  # Which body intersect the observer or light coming to a Spangle
         "transit_over_int": "",  # Which body is intersected by the Spangle (is transiting over)
         "string_int": "",  # Temporal string
+        "hidden_mask_int": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
+        "transit_mask_int": 0,  # Bitmask of the bodies the spangle transits over
+        "transit_rho_int": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
         # Coordinates of the spangle (cartesian and spherical) in the observer system
         "center_obs_x": 0.0,
         "center_obs_y": 0.0,
@@ -398,6 +401,9 @@ SPANGLER_COLUMNS = OrderedDict(
         "z_cen_obs": 0.0,  # z-coordinate of the center of the body to which the spangle belows
         "hidden_by_obs": "",  # Which body intersect the observer or light coming to a Spangle
         "transit_over_obs": "",  # Which body is intersected by the Spangle (is transiting over)
+        "hidden_mask_obs": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
+        "transit_mask_obs": 0,  # Bitmask of the bodies the spangle transits over
+        "transit_rho_obs": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
         "beta_loc": 0,  # Beta angle rotates the local scattering plane to the planetary scattering plane
         # Coordinates of the spangle (cartesian and spherical) in the light-source system
         "center_luz_x": 0.0,
@@ -422,6 +428,9 @@ SPANGLER_COLUMNS = OrderedDict(
         "z_cen_luz": 0.0,  # z-coordinate of the center of the body to which the spangle belows
         "hidden_by_luz": "",  # Which body intersect the observer or light coming to a Spangle
         "transit_over_luz": "",  # Which body is intersected by the Spangle (is transiting over)
+        "hidden_mask_luz": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
+        "transit_mask_luz": 0,  # Bitmask of the bodies the spangle transits over
+        "transit_rho_luz": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
         # Azimutal angles
         "azim_obs_luz": 0.0,  # Difference between the azimuth of the observer over the spangle and that of light-source
         # Geometrical parameters
@@ -510,6 +519,9 @@ SPANGLER_KEY_ORDERING = [
     "cos_obs",
     "hidden_by_obs",
     "transit_over_obs",
+    "hidden_mask_obs",  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
+    "transit_mask_obs",  # Bitmask of the bodies the spangle transits over
+    "transit_rho_obs",  # Distance (in units of body scale) to the center of the last body transited over
     "beta_loc",
     "azim_luz",
     "n_luz_x",
@@ -520,6 +532,9 @@ SPANGLER_KEY_ORDERING = [
     "cos_luz",
     "hidden_by_luz",
     "transit_over_luz",
+    "hidden_mask_luz",  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
+    "transit_mask_luz",  # Bitmask of the bodies the spangle transits over
+    "transit_rho_luz",  # Distance (in units of body scale) to the center of the last body transited over
     # Geometrical bulk properties
     "asp",
     # Physical bulk properties
@@ -610,6 +625,9 @@ SPANGLER_KEY_ORDERING = [
     "hidden_by_int",
     "transit_over_int",
     "string_int",
+    "hidden_mask_int",
+    "transit_mask_int",
+    "transit_rho_int",
     "center_obs_x",
     "center_obs_y",
     "center_obs_z",
