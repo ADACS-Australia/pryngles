@@ -6,7 +6,8 @@
 // scratch array), and maximum number of Stokes elements reflection() supports
 // (size of Bplus).
 #define MAX_SPLINE_N 1000
-#define MAX_NMAT 4
+#define MAX_NSTOKES 4
+#define MAX_NMAT (MAX_NSTOKES - 1)
 
 /*
  * Checked calloc wrapper for the zeros_* allocators.
@@ -195,17 +196,21 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double fou[nfou][nmat][nmugs][nmugs], int npix,
-               const double phi[npix], const double beta[npix],
-               const double theta0[npix], const double theta[npix],
-               const double apix[npix], double stokes[npix][nmat + 1]) {
+               const double *fou_flat, int npix, const double *phi,
+               const double *beta, const double *theta0, const double *theta,
+               const double *apix, double *stokes_flat) {
+
+  // xmu is a 1D array of length nmugs
+  // phi, beta, theta0, theta, and apix are 1D arrays of length npix
+  // fou_flat is a flattened 4D array with shape (nfou, nmat, nmugs, nmugs)
+  // stokes_flat is a flattened 2D array with shape (npix, nmat + 1)
 
   double muold = 1, mu0old = 1;
   int ret = 0;
-  double Bplus[MAX_NMAT];
+  double Bplus[MAX_NSTOKES];
 
-  // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
-  // and dderiv() has a fixed-size scratch array.
+  // Validate sizes before allocating anything
+
   if (nmat < 1 || nmat > MAX_NMAT) {
     fprintf(stderr, "Error in reflection: nmat=%d outside [1, %d].\n", nmat,
             MAX_NMAT);
@@ -220,6 +225,16 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     fprintf(stderr, "Error in reflection: npix=%d is < 1.\n", npix);
     return -1;
   }
+  if (nfou < 1) {
+    fprintf(stderr, "Error in reflection: nfou=%d is < 1.\n", nfou);
+    return -1;
+  }
+
+  // VLA-pointer views of the flat buffers.
+  // The bounds are evaluated here after being validated (above)
+  const double (*fou)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])fou_flat;
+  double (*stokes)[nmat + 1] = (double (*)[nmat + 1]) stokes_flat;
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
@@ -232,8 +247,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   double (*RM)[nmat] = zeros2d(npix, nmat);
   double *f_col = zeros1d(nmugs);
   double *ddf_col = zeros1d(nmugs);
-  double *f_mu0_mu = zeros1d(nmat);
-  double *SvR = zeros1d(nmat);
+
+  // nmat is small, these can go on the stack
+  double f_mu0_mu[MAX_NSTOKES] = {0};
+  double SvR[MAX_NSTOKES] = {0};
 
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
@@ -288,8 +305,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       Bplus[2] = sinmphi;
       Bplus[3] = sinmphi;
 
-      if ((n <= 0) || (fabs(mu - muold) > 1e-6) ||
-          (fabs(mu0 - mu0old) > 1e-6)) {
+      if ((n <= 0) || !(fabs(mu - muold) < 1e-6) ||
+          !(fabs(mu0 - mu0old) < 1e-6)) {
         // Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip and
         // reuse previous cached value
 
@@ -386,8 +403,6 @@ cleanup:
   free(RM);
   free(f_col);
   free(ddf_col);
-  free(f_mu0_mu);
-  free(SvR);
 
   return ret;
 }
