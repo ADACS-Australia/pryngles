@@ -282,8 +282,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       Bplus[2] = sinmphi;
       Bplus[3] = sinmphi;
 
-      if ((n <= 0) || (fabs(mu - muold) > 1e-6) ||
-          (fabs(mu0 - mu0old) > 1e-6)) {
+      if ((n <= 0) || !(fabs(mu - muold) < 1e-6) ||
+          !(fabs(mu0 - mu0old) < 1e-6)) {
         // Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip and
         // reuse previous cached value
 
