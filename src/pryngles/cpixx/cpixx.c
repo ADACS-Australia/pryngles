@@ -230,8 +230,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     return -1;
   }
 
-  // VLA-pointer views of the flat buffers: the bounds are evaluated here,
-  // after validation being validated above
+  // VLA-pointer views of the flat buffers.
+  // The bounds are evaluated here after being validated (above)
   const double (*fou)[nmat][nmugs][nmugs] =
       (const double (*)[nmat][nmugs][nmugs])fou_flat;
   double (*stokes)[nmat + 1] = (double (*)[nmat + 1]) stokes_flat;
