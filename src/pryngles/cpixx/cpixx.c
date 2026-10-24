@@ -216,6 +216,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
             MAX_SPLINE_N);
     return -1;
   }
+  if (npix < 1) {
+    fprintf(stderr, "Error in reflection: npix=%d is < 1.\n", npix);
+    return -1;
+  }
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)

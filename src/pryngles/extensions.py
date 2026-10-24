@@ -140,6 +140,11 @@ class StokesScatterer:
         """ """
         npix = len(phi)
         stokes = np.zeros((npix, self.nmat + 1))
+
+        # Don't rely on C extension safely handling zero-length arrays
+        if npix == 0:
+            return stokes
+
         fourier_coefficients = self.rfou if qreflection else self.rtra
         ret = cpixx_ext.reflection(
             self.nmat,
@@ -155,6 +160,8 @@ class StokesScatterer:
             apix,
             stokes,
         )
+
         if ret != 0:
             raise RuntimeError(f"Error in reflection calculation: {ret}")
+
         return stokes
