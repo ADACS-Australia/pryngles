@@ -220,6 +220,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     fprintf(stderr, "Error in reflection: npix=%d is < 1.\n", npix);
     return -1;
   }
+  if (nfou < 1) {
+    fprintf(stderr, "Error in reflection: nfou=%d is < 1.\n", nfou);
+    return -1;
+  }
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
