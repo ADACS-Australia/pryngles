@@ -9,6 +9,21 @@ list of the features introduced in each version family of the package.
 
 - **1.0.x versions**:
 
+  - **Performance — spangle data stored as numpy arrays**: light curves are 1.7x faster for WASP-43b-like systems
+    with polarization (11.9 s → 7.1 s for 11 time steps) and 7.7x faster with diffuse reflection (5.7 s → 0.7 s);
+    spangling is 2x faster. The remaining time with polarization is mostly the Stokes reflection kernel.
+  - **API change — `Spangler.data` / `System.data` are now snapshots**: the data is stored as one numpy array per
+    column, and `.data` builds a new `pandas.DataFrame` on every access. Modifying the returned DataFrame no longer
+    changes the spangler; assign a whole DataFrame (`sg.data = df`) to replace the data. `System.data` is read-only.
+    Spanglers and systems saved with earlier versions are converted when loaded.
+  - **API change — hidden/transit state columns**: the string columns `hidden_by_*`, `transit_over_*` and
+    `string_int` are replaced by integer bitmasks `hidden_mask_*` / `transit_mask_*` (one bit per body, see
+    `Spangler.body_bit`) and `transit_rho_*` (distance to the center of the transited body). For example,
+    spangles hidden from the observer by the ring: `(sys.data.hidden_mask_obs & sys.sg.body_bit("Ring")) != 0`.
+  - **Column dtypes**: coordinate, cosine and Stokes columns are `float64` from construction, and `beta_loc` is
+    now a `float64` column (previously `object`).
+  - **Benchmarks**: new `benchmarks/bench_lightcurve.py` times the regression-test systems phase by phase (see
+    `benchmarks/README.md`).
   - `System` interface is now capable to flux modelling for arbitrary configurations and parameters
   - Methods `System.update_DiffuseReflection` and `System.update_Transit` are adapted from `RingedPlanet` 
     interface to compute Diffuse Reflection and Transit effects.

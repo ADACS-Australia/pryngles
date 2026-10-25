@@ -1215,7 +1215,7 @@ class System(PrynglesCommon):
         for star in self.bodies:
             if self.bodies[star].kind == "Star":
                 # Considered Spangles: transiting over this star and no other body
-                cond = (transit_mask == self.sg._body_bit(star)) & (~hidden)
+                cond = (transit_mask == self.sg.body_bit(star)) & (~hidden)
 
                 # Source-Spangle Projected Distance
                 rhos = self.sg._get_cols("transit_rho_obs", cond)
@@ -1439,7 +1439,7 @@ class System(PrynglesCommon):
                 cond_active = visible & illuminated
 
                 # Hidden by the Ring and no other body
-                cond_hidden = body.sg._get_cols("hidden_mask_obs") == self.sg._body_bit(ring_name)
+                cond_hidden = body.sg._get_cols("hidden_mask_obs") == self.sg.body_bit(ring_name)
 
                 # Visible but Indirectly Illuminated (in Shadow)
                 cond_indirect = visible & shadow

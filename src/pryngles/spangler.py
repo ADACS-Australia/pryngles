@@ -328,12 +328,19 @@ class Spangler(PrynglesCommon):
         if data is not None:
             self.data = data
 
-    def _body_bit(self, name):
+    def body_bit(self, name):
         """
         Returns the bit that represents body `name` in the hidden/transit mask columns.
 
         Bit i corresponds to the i-th body name of the spangler (``self.name``).
+
+        Examples
+        --------
+        Spangles hidden from the observer by the body called "Ring" (possibly among others):
+
+        >>> hidden_by_ring = (sys.data.hidden_mask_obs & sys.sg.body_bit("Ring")) != 0
         """
+
         return 1 << list(misc.flatten([self.name])).index(name)
 
     def _get_cols(self, cols, mask=None):
@@ -2086,7 +2093,7 @@ class Spangler(PrynglesCommon):
 
             # Points in present body
             cond = name_arr == name
-            body_bit = self._body_bit(name)
+            body_bit = self.body_bit(name)
             scale = scale_arr[cond][0]
 
             # If this body is not in the field-of-view, avoid computation
