@@ -1195,15 +1195,16 @@ class System(PrynglesCommon):
         self.sg._set_cols("transit_flux", 0.0)
 
         hidden = self.sg._get_cols("hidden")
+        transit_mask = self.sg._get_cols("transit_mask_obs")
 
         # Over all Stars
         for star in self.bodies:
             if self.bodies[star].kind == "Star":
-                # Considered Spangles
-                cond = self.data.transit_over_obs.str.fullmatch(rf"^{star}[^&]*&$").to_numpy(dtype=bool) & (~hidden)
+                # Considered Spangles: transiting over this star and no other body
+                cond = (transit_mask == self.sg._body_bit(star)) & (~hidden)
 
                 # Source-Spangle Projected Distance
-                rhos = self.data.transit_over_obs[cond].str.extract(r":([^:]*)&", expand=False).astype(float).to_numpy()
+                rhos = self.sg._get_cols("transit_rho_obs", cond)
 
                 # Optical Parameters
                 limb_coeffs = self.bodies[star].limb_coeffs
@@ -1423,8 +1424,8 @@ class System(PrynglesCommon):
                 # Visible and Illuminated
                 cond_active = visible & illuminated
 
-                # Hidden by Ring
-                cond_hidden = body.sg.data.hidden_by_obs.str.fullmatch(rf"^{ring_name}[^&]*&$").to_numpy(dtype=bool)
+                # Hidden by the Ring and no other body
+                cond_hidden = body.sg._get_cols("hidden_mask_obs") == self.sg._body_bit(ring_name)
 
                 # Visible but Indirectly Illuminated (in Shadow)
                 cond_indirect = visible & shadow

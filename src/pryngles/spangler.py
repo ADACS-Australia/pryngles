@@ -297,6 +297,14 @@ class Spangler(PrynglesCommon):
             self._set_cols(["hidden_mask_" + coords, "transit_mask_" + coords], 0)
             self._set_cols("transit_rho_" + coords, np.nan)
 
+    def _body_bit(self, name):
+        """
+        Returns the bit that represents body `name` in the hidden/transit mask columns.
+
+        Bit i corresponds to the i-th body name of the spangler (``self.name``).
+        """
+        return 1 << list(misc.flatten([self.name])).index(name)
+
     def _get_cols(self, cols, mask=None):
         """
         Reads columns of the spangle data as numpy arrays.
@@ -1996,7 +2004,7 @@ class Spangler(PrynglesCommon):
 
             # Points in present body
             cond = name_arr == name
-            body_bit = 1 << names.index(name)
+            body_bit = self._body_bit(name)
             scale = scale_arr[cond][0]
 
             # If this body is not in the field-of-view, avoid computation
