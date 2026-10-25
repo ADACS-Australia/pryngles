@@ -9,6 +9,8 @@
 #define MAX_NSTOKES 4
 #define MAX_NMAT (MAX_NSTOKES - 1)
 
+#define REFLECTION_TOLERANCE 1.0e-6
+
 /*
  * Checked calloc wrapper for the zeros_* allocators.
  *
@@ -296,8 +298,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       Bplus[2] = sinmphi;
       Bplus[3] = sinmphi;
 
-      if ((n <= 0) || !(fabs(mu - muold) < 1e-6) ||
-          !(fabs(mu0 - mu0old) < 1e-6)) {
+      if ((n <= 0) || !(fabs(mu - muold) < REFLECTION_TOLERANCE) ||
+          !(fabs(mu0 - mu0old) < REFLECTION_TOLERANCE)) {
         // Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip and
         // reuse previous cached value
 
