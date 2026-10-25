@@ -181,9 +181,9 @@ int spline_coefficients(const double x[], int n, double xi, int *klo_out,
  */
 double interp(const double y[], const double ddy[], int klo, int khi, double a,
               double b, double h) {
-  return
-      a * y[klo] + b * y[khi] +
-      ((a * a * a - a) * ddy[klo] + (b * b * b - b) * ddy[khi]) * (h * h) / 6;
+  return a * y[klo] + b * y[khi] +
+         ((a * a * a - a) * ddy[klo] + (b * b * b - b) * ddy[khi]) * (h * h) /
+             6;
 }
 
 /*
