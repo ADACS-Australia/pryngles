@@ -399,7 +399,7 @@ SPANGLER_COLUMNS = OrderedDict(
         "hidden_mask_obs": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
         "transit_mask_obs": 0,  # Bitmask of the bodies the spangle transits over
         "transit_rho_obs": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
-        "beta_loc": 0,  # Beta angle rotates the local scattering plane to the planetary scattering plane
+        "beta_loc": 0.0,  # Beta angle rotates the local scattering plane to the planetary scattering plane
         # Coordinates of the spangle (cartesian and spherical) in the light-source system
         "center_luz_x": 0.0,
         "center_luz_y": 0.0,

@@ -289,8 +289,8 @@ class Spangler(PrynglesCommon):
         :data:`pryngles.consts.SPANGLER_VISIBILITY_STATES` to False, setting "unset" to True,
         and clearing the "hidden_mask_*", "transit_mask_*" and "transit_rho_*" fields.
         """
-        self.data[list(SPANGLER_SOURCE_STATES) + list(SPANGLER_VISIBILITY_STATES)] = False
-        self.data["unset"] = True
+        self._set_cols(list(SPANGLER_SOURCE_STATES) + list(SPANGLER_VISIBILITY_STATES), False)
+        self._set_cols("unset", True)
         for coords in "int", "obs", "luz":
             self._set_cols(["hidden_mask_" + coords, "transit_mask_" + coords], 0)
             self._set_cols("transit_rho_" + coords, np.nan)
@@ -373,6 +373,23 @@ class Spangler(PrynglesCommon):
             arr[rows] = col_values
             self.data.loc[:, col] = arr
 
+    def _columns(self):
+        """Returns the names of the spangle data columns, in order."""
+        return list(self.data.columns)
+
+    def _add_col(self, name, value):
+        """
+        Adds a new column `name` to the spangle data, filled with `value`.
+
+        Raises
+        ------
+        ValueError
+            If the column already exists.
+        """
+        if name in self._columns():
+            raise ValueError(f"Column '{name}' already exists.")
+        self.data[name] = value
+
     def set_scale(self, scale):
         """
         Adjusts the scale of all length and area attributes of the spangles.
@@ -394,9 +411,12 @@ class Spangler(PrynglesCommon):
         and :data:`pryngles.consts.SPANGLER_VECTORS`. Sets the `scale` attribute.
         """
         self.scale = scale
-        self.data[SPANGLER_LENGTHS] *= self.scale
-        self.data[SPANGLER_AREAS] *= self.scale**2
-        self.data[SPANGLER_VECTORS] *= self.scale
+        # Setup only: modify the full table and assign it back
+        data = self.data
+        data[SPANGLER_LENGTHS] *= self.scale
+        data[SPANGLER_AREAS] *= self.scale**2
+        data[SPANGLER_VECTORS] *= self.scale
+        self.data = data
 
     def _join_spanglers(self, spanglers):
         """
@@ -528,12 +548,13 @@ class Spangler(PrynglesCommon):
         if t is not None:
             verbose(VERB_VERIFY, f"Updating rotations at t = {t}")
 
-            self.data["q_equ"] = [
-                q + q0 + w * t for q, w, q0 in zip(self.data.q_equ, self.data.w, self.data.q0, strict=True)
+            # Not part of the lightcurve loop: modify the full table and assign it back
+            data = self.data
+            data["q_equ"] = [q + q0 + w * t for q, w, q0 in zip(data.q_equ, data.w, data.q0, strict=True)]
+            data[["x_equ", "y_equ", "z_equ"]] = [
+                science.cartesian(r) for r in np.array(data[["r_equ", "q_equ", "f_equ"]])
             ]
-            self.data[["x_equ", "y_equ", "z_equ"]] = [
-                science.cartesian(r) for r in np.array(self.data[["r_equ", "q_equ", "f_equ"]])
-            ]
+            self.data = data
 
             qupdate = True
 
@@ -544,9 +565,9 @@ class Spangler(PrynglesCommon):
 
             # If the spangler has been poputaled update normals
             if self.sample:
-                self.data[SPANGLER_VEC_GROUPS["ns_equ"]] = self.sample.update_normals(
-                    self.data[["x_equ", "y_equ", "z_equ"]]
-                )
+                data = self.data
+                data[SPANGLER_VEC_GROUPS["ns_equ"]] = self.sample.update_normals(data[["x_equ", "y_equ", "z_equ"]])
+                self.data = data
 
         # Convert from equatorial to ecliptic
         verbose(VERB_VERIFY, "Converting to equatorial")
@@ -1128,7 +1149,7 @@ class Spangler(PrynglesCommon):
         # Depending on body
         cond = np.full(self.nspangles, True)
         if name:
-            cond = self.data.name == name
+            cond = self._get_cols("name") == name
 
         # If no point is of type name
         if not cond.any():
@@ -1247,25 +1268,30 @@ class Spangler(PrynglesCommon):
 
         """
 
+        # Modify the full table and assign it back
+        data = self.data
+
         # Over each Body
         for i, name in enumerate(self.name):
             # Only Face-On Spangles
-            cond_name = self.data.name == name
-            cond = cond_name * (self.data.cos_obs >= 0) * (~self.data.hidden)
+            cond_name = data.name == name
+            cond = cond_name * (data.cos_obs >= 0) * (~data.hidden)
 
             # Only for Ring
             r_int = self.spanglers[i].sample.ri if hasattr(self.spanglers[i].sample, "ri") else 0
 
-            asp = self.data[cond_name].asp.iloc[0]
-            scale = self.data[cond_name].scale.iloc[0]
-            cos = self.data[cond].cos_obs.iloc[0] if r_int != 0 else 1
+            asp = data[cond_name].asp.iloc[0]
+            scale = data[cond_name].scale.iloc[0]
+            cos = data[cond].cos_obs.iloc[0] if r_int != 0 else 1
 
             # Normalization
             expected_area = np.pi * (1 - r_int**2) * scale**2 * cos
-            norm_factor = expected_area / (asp * self.data[cond].cos_obs).sum()
+            norm_factor = expected_area / (asp * data[cond].cos_obs).sum()
 
             # Area Correction
-            self.data.loc[cond_name, "asp_int"] *= norm_factor
+            data.loc[cond_name, "asp_int"] *= norm_factor
+
+        self.data = data
 
     def _calc_qhulls(self):
         """
@@ -1281,12 +1307,12 @@ class Spangler(PrynglesCommon):
         (e.g., rings). Used internally by intersection state updates.
         """
 
-        name_arr = self.data.name.to_numpy()
-        hidden_arr = self.data.hidden.to_numpy()
-        x_int_arr = self.data.x_int.to_numpy()
-        y_int_arr = self.data.y_int.to_numpy()
-        z_int_arr = self.data.z_int.to_numpy()
-        center_int_arr = self.data.vectors.center_int.to_numpy()
+        name_arr = self._get_cols("name")
+        hidden_arr = self._get_cols("hidden")
+        x_int_arr = self._get_cols("x_int")
+        y_int_arr = self._get_cols("y_int")
+        z_int_arr = self._get_cols("z_int")
+        center_int_arr = self._get_cols(SPANGLER_VEC_GROUPS["center_int"])
 
         # Convex hulls
         for name in misc.flatten([self.name]):
@@ -1384,11 +1410,6 @@ class Spangler(PrynglesCommon):
 
         # Beta angle computation (Reference Plane rotation angle)
         # Appendix D arXiv:2404.16606v1
-        if "beta_loc" not in self.data.columns:
-            self.data["beta_loc"] = pd.Series([None] * len(self.data), dtype=object, index=self.data.index)
-        elif self.data["beta_loc"].dtype != object:
-            self.data["beta_loc"] = self.data["beta_loc"].astype(object)
-
         names = self._get_cols("name")
         spangle_type = self._get_cols("spangle_type")
         cos_obs = self._get_cols("cos_obs")
