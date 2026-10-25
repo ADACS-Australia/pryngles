@@ -67,8 +67,9 @@ def test_reset_state():
     for col in list(pr.consts.SPANGLER_VISIBILITY_STATES) + list(pr.consts.SPANGLER_SOURCE_STATES):
         assert not sg.data[col].any()
     for coords in "int", "obs", "luz":
-        assert (sg.data["hidden_by_" + coords] == "").all()
-        assert (sg.data["transit_over_" + coords] == "").all()
+        assert (sg.data["hidden_mask_" + coords] == 0).all()
+        assert (sg.data["transit_mask_" + coords] == 0).all()
+        assert sg.data["transit_rho_" + coords].isna().all()
 
 
 def test_get_set_cols_vector():
@@ -106,12 +107,12 @@ def test_set_cols_keeps_dtypes():
     dtypes = sg.data.dtypes.copy()
 
     sg._set_cols("illuminated", True, mask)
-    sg._set_cols("hidden_by_obs", "Ring:1.0&", mask)
+    sg._set_cols("emmitter", "lambert", mask)
     sg._set_cols("geometry", 7, mask)
 
     assert (sg.data.dtypes == dtypes).all()
     assert sg.data.illuminated.tolist() == [True] * 3 + [False] * 7
-    assert (sg.data.loc[mask, "hidden_by_obs"] == "Ring:1.0&").all()
+    assert (sg.data.loc[mask, "emmitter"] == "lambert").all()
     assert (sg.data.loc[mask, "geometry"] == 7).all()
 
 
@@ -273,5 +274,5 @@ def test_update_intersection_state():
     """update_intersection_state computes occlusion via convex hulls."""
     # TODO: verify that update_intersection_state raises AssertionError when no
     # intersection vantage point has been set (empty qhulls), and that it
-    # correctly marks hidden_by_int / transit_over_int for an occulting body.
+    # correctly marks hidden_mask_int / transit_mask_int for an occulting body.
     pass

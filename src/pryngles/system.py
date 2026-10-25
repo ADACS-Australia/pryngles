@@ -792,7 +792,7 @@ class System(PrynglesCommon):
         """Set illumination in the system.
 
         Update:
-            States: illuminated, shadow, hidden_by_luz
+            States: illuminated, shadow, hidden_mask_luz
         """
         if self._is_spangled():
             if not self._observer_set:

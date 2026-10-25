@@ -287,13 +287,11 @@ class Spangler(PrynglesCommon):
         Modifies the `data` DataFrame in-place, resetting columns listed in
         :data:`pryngles.consts.SPANGLER_SOURCE_STATES` and
         :data:`pryngles.consts.SPANGLER_VISIBILITY_STATES` to False, setting "unset" to True,
-        and clearing "hidden_by_*" and "transit_over_*" fields.
+        and clearing the "hidden_mask_*", "transit_mask_*" and "transit_rho_*" fields.
         """
         self.data[list(SPANGLER_SOURCE_STATES) + list(SPANGLER_VISIBILITY_STATES)] = False
         self.data["unset"] = True
         for coords in "int", "obs", "luz":
-            self.data["hidden_by_" + coords] = ""
-            self.data["transit_over_" + coords] = ""
             self._set_cols(["hidden_mask_" + coords, "transit_mask_" + coords], 0)
             self._set_cols("transit_rho_" + coords, np.nan)
 
@@ -1989,9 +1987,6 @@ class Spangler(PrynglesCommon):
         cond = (~hidden_arr) & ((cos_int_arr > 0) | (semitrans_arr)) & (cond_included)
 
         self._set_cols("intersect", True, cond)
-        self._set_cols("hidden_by_int", "")
-
-        self._set_cols("transit_over_int", "")
         self._set_cols(["hidden_mask_int", "transit_mask_int"], 0)
         self._set_cols("transit_rho_int", np.nan)
 
@@ -2028,7 +2023,6 @@ class Spangler(PrynglesCommon):
 
                 htype = hull["hulltype"]
                 xcen, ycen, zcen = hull["center"]
-                zord = hull["zord"]
 
                 verbose(VERB_SIMPLE, f"Hull {i + 1} for '{name}' of type '{htype}'")
 
@@ -2088,15 +2082,11 @@ class Spangler(PrynglesCommon):
 
                 # Set visibility
                 self._set_cols("intersect", False, below)
-                self._set_cols("hidden_by_int", self._get_cols("hidden_by_int", below) + f"{name}:{zord:.3e}&", below)
                 self._set_cols("hidden_mask_int", self._get_cols("hidden_mask_int", below) | body_bit, below)
                 self._set_cols("occult", True, below)
 
                 # Compute distance to center for transiting spangles
                 dist = np.sqrt((x_int_arr[above] - xcen) ** 2 + (y_int_arr[above] - ycen) ** 2) / scale
-                string_int = np.array([f"{name}:{zord:.3e}:{d:.3e}&" for d in dist], dtype=object)
-                self._set_cols("string_int", string_int, above)
-                self._set_cols("transit_over_int", self._get_cols("transit_over_int", above) + string_int, above)
                 self._set_cols("transit_mask_int", self._get_cols("transit_mask_int", above) | body_bit, above)
                 # Same rounding as the string representation (4 significant figures)
                 self._set_cols("transit_rho_int", np.array([float(f"{d:.3e}") for d in dist]), above)
@@ -2131,14 +2121,12 @@ class Spangler(PrynglesCommon):
 
         Notes
         -----
-        Calls :meth:`update_intersection_state` and updates "visible", "hidden_by_obs", and
-        "transit_over_obs" in the `data` DataFrame.
+        Calls :meth:`update_intersection_state` and updates "visible", "hidden_mask_obs",
+        "transit_mask_obs" and "transit_rho_obs" in the `data` DataFrame.
         """
         self.update_intersection_state()
         self._set_cols(SPANGLER_COL_OBS, self._get_cols(SPANGLER_COL_INT))
 
-        self._set_cols("hidden_by_obs", self._get_cols("hidden_by_obs") + self._get_cols("hidden_by_int"))
-        self._set_cols("transit_over_obs", self._get_cols("transit_over_obs") + self._get_cols("transit_over_int"))
         transit_mask_int = self._get_cols("transit_mask_int")
         transits = transit_mask_int != 0
         self._set_cols("hidden_mask_obs", self._get_cols("hidden_mask_obs") | self._get_cols("hidden_mask_int"))
@@ -2173,9 +2161,6 @@ class Spangler(PrynglesCommon):
             excluded = []
         self.update_intersection_state(excluded, included)
         self._set_cols(SPANGLER_COL_LUZ, self._get_cols(SPANGLER_COL_INT))
-
-        self._set_cols("hidden_by_luz", self._get_cols("hidden_by_luz") + self._get_cols("hidden_by_int"))
-        self._set_cols("transit_over_luz", self._get_cols("transit_over_luz") + self._get_cols("transit_over_int"))
 
         transit_mask_int = self._get_cols("transit_mask_int")
         transits = transit_mask_int != 0

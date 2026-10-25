@@ -122,20 +122,3 @@ class SystemChecks:
     def check_multi_index_df(self, multi_index_df, dataframe_regression, basename):
         df = multi_index_df.set_axis(["_".join(c) for c in multi_index_df.columns], axis=1)
         dataframe_regression.check(df, default_tolerance=self.TOL, basename=basename)
-
-    # Temporary (phase 3 of the pandas -> numpy conversion): the typed hidden/transit columns
-    # must describe exactly the same state as the string columns they will replace.
-    def test_typed_state_matches_strings(self, system):
-        names = system.sg.name if isinstance(system.sg.name, list) else [system.sg.name]
-        data = system.sg.data
-        for coords in ("int", "obs", "luz"):
-            for string_col, mask_col in (("hidden_by", "hidden_mask"), ("transit_over", "transit_mask")):
-                expected = [
-                    sum({1 << names.index(entry.split(":")[0]) for entry in s.split("&") if entry})
-                    for s in data[f"{string_col}_{coords}"]
-                ]
-                np.testing.assert_array_equal(data[f"{mask_col}_{coords}"].to_numpy(), expected)
-            expected_rho = [
-                float(s.split("&")[-2].split(":")[2]) if s else np.nan for s in data[f"transit_over_{coords}"]
-            ]
-            np.testing.assert_array_equal(data[f"transit_rho_{coords}"].to_numpy(), expected_rho)

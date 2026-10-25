@@ -372,9 +372,6 @@ SPANGLER_COLUMNS = OrderedDict(
         "d_int": -np.inf,  # Distance of the Spangle to intersection
         "asp_int": 1.0,  # Effective area of the spangle with respect to intersection perspective
         "z_cen_int": 0.0,  # z-coordinate of the center of the body to which the spangle belows
-        "hidden_by_int": "",  # Which body intersect the observer or light coming to a Spangle
-        "transit_over_int": "",  # Which body is intersected by the Spangle (is transiting over)
-        "string_int": "",  # Temporal string
         "hidden_mask_int": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
         "transit_mask_int": 0,  # Bitmask of the bodies the spangle transits over
         "transit_rho_int": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
@@ -399,8 +396,6 @@ SPANGLER_COLUMNS = OrderedDict(
         "d_obs": -np.inf,  # Distance of the Spangle to light-source
         "asp_obs": 1.0,  # Effective area of the spangle with respect to observer perspective
         "z_cen_obs": 0.0,  # z-coordinate of the center of the body to which the spangle belows
-        "hidden_by_obs": "",  # Which body intersect the observer or light coming to a Spangle
-        "transit_over_obs": "",  # Which body is intersected by the Spangle (is transiting over)
         "hidden_mask_obs": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
         "transit_mask_obs": 0,  # Bitmask of the bodies the spangle transits over
         "transit_rho_obs": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
@@ -426,8 +421,6 @@ SPANGLER_COLUMNS = OrderedDict(
         "d_luz": -np.inf,  # Distance of the Spangle to light-source
         "asp_luz": 1.0,  # Effective area of the spangle with respect to light-source perspective
         "z_cen_luz": 0.0,  # z-coordinate of the center of the body to which the spangle belows
-        "hidden_by_luz": "",  # Which body intersect the observer or light coming to a Spangle
-        "transit_over_luz": "",  # Which body is intersected by the Spangle (is transiting over)
         "hidden_mask_luz": 0,  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
         "transit_mask_luz": 0,  # Bitmask of the bodies the spangle transits over
         "transit_rho_luz": np.nan,  # Distance (in units of body scale) to the center of the last body transited over
@@ -517,8 +510,6 @@ SPANGLER_KEY_ORDERING = [
     "d_obs",
     "asp_obs",
     "cos_obs",
-    "hidden_by_obs",
-    "transit_over_obs",
     "hidden_mask_obs",  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
     "transit_mask_obs",  # Bitmask of the bodies the spangle transits over
     "transit_rho_obs",  # Distance (in units of body scale) to the center of the last body transited over
@@ -530,8 +521,6 @@ SPANGLER_KEY_ORDERING = [
     "d_luz",
     "asp_luz",
     "cos_luz",
-    "hidden_by_luz",
-    "transit_over_luz",
     "hidden_mask_luz",  # Bitmask of the bodies hiding the spangle (bit i = i-th body of the spangler)
     "transit_mask_luz",  # Bitmask of the bodies the spangle transits over
     "transit_rho_luz",  # Distance (in units of body scale) to the center of the last body transited over
@@ -622,9 +611,6 @@ SPANGLER_KEY_ORDERING = [
     "d_int",
     "asp_int",
     "z_cen_int",
-    "hidden_by_int",
-    "transit_over_int",
-    "string_int",
     "hidden_mask_int",
     "transit_mask_int",
     "transit_rho_int",
@@ -687,7 +673,7 @@ SPANGLER_KEY_SUMMARY = [
     "d_obs",
     "asp_obs",
     "cos_obs",
-    "hidden_by_obs",
+    "hidden_mask_obs",
     "transit_by_obs",
     "azim_luz",
     "n_luz_x",
@@ -696,7 +682,7 @@ SPANGLER_KEY_SUMMARY = [
     "d_luz",
     "asp_luz",
     "cos_luz",
-    "hidden_by_luz",
+    "hidden_mask_luz",
     "transit_by_luz",
     # Geometrical bulk properties
     "asp",
