@@ -393,22 +393,45 @@ class System(PrynglesCommon):
         if not self._spangled:
             raise AssertionError("You need to spangle the system before updating the scatterers.")
 
+        # Setup only: modify the full table and assign it back
+        data = self.data
+
         # This column stores python objects; keep as object dtype.
-        if "scatterer" in self.data.columns and self.data["scatterer"].dtype != object:
-            self.data["scatterer"] = self.data["scatterer"].astype(object)
+        if "scatterer" in data.columns and data["scatterer"].dtype != object:
+            data["scatterer"] = data["scatterer"].astype(object)
 
         # Update scatterer only for the non-assigned one
-        cond = self.data.scatterer == ""
-        mask = self.data.loc[cond]
+        cond = data.scatterer == ""
+        mask = data.loc[cond]
         for spangle_type, group in mask.groupby("spangle_type"):
             # Get scatterer class and options description
             spangle_scatterer, spangle_options = self.spangle_scatterers[spangle_type]
             # Build options of scatterers from options description
             options = {key: group[value].iloc[0] for key, value in spangle_options.items()}
             # Instantiate object of scatterer and save hash into DataFrame data object
-            self.data.loc[group.index, "scatterer"] = pd.Series(
+            data.loc[group.index, "scatterer"] = pd.Series(
                 [spangle_scatterer(**options)] * len(group), dtype=object, index=group.index
             )
+
+        self.sg.data = data
+
+        # The bodies' tables receive these objects through update_perspective
+        self._align_body_dtypes()
+
+    def _align_body_dtypes(self):
+        """
+        Give each body's spangle table the same column dtypes as the system table.
+
+        Setup only: afterwards update_perspective can copy values into the bodies' tables
+        without dtype conversions.
+        """
+        system_dtypes = self.data.dtypes
+        for body in self.bodies.values():
+            data = body.sg.data
+            for col in data.columns:
+                if data[col].dtype != system_dtypes[col]:
+                    data[col] = data[col].astype(system_dtypes[col])
+            body.sg.data = data
 
     def _update_albedos(self):
         """
@@ -422,8 +445,8 @@ class System(PrynglesCommon):
         """
 
         # Creating lambertian_albedo column for directional-dependent albedo for surface/atmosphere scattering
-        if "lambertian_albedo" not in self.data.columns:
-            self.data["lambertian_albedo"] = 0.0
+        if "lambertian_albedo" not in self.sg._columns():
+            self.sg._add_col("lambertian_albedo", 0.0)
         else:
             self.sg._set_cols("lambertian_albedo", 0.0)
 
@@ -448,9 +471,9 @@ class System(PrynglesCommon):
         Update the optical depth of all bodies in the system by the user input.
         """
 
+        names = self.sg._get_cols("name")
         for name, body in self.bodies.items():
-            cond_body = self.data["name"] == name
-            self.data.loc[cond_body, "tau_gray_optical"] = body.tau_gray_optical
+            self.sg._set_cols("tau_gray_optical", body.tau_gray_optical, names == name)
 
     # --------------------------------------------------
     # Tested methods from module file system
@@ -726,8 +749,8 @@ class System(PrynglesCommon):
         # Join spanglers
         self.sg = Spangler(spanglers=list(self._spanglers.values()))
 
-        # An usefule alias
-        self.data = self.sg.data
+        # Same column dtypes in the system and body tables (see update_perspective)
+        self._align_body_dtypes()
 
         # Set default observer
         self.update_perspective(n_obs=self.n_obs, alpha_obs=self.alpha_obs)
@@ -828,10 +851,9 @@ class System(PrynglesCommon):
                         f"Parent body of ring, {body.parent.name} is a star. All spangles will be illuminated",
                     )
                     self.sg.set_luz(nvec=nluz, center=body.center_source, name=name)
-                    cond = self.sg.data.name == name
-                    self.sg.data.loc[cond, "unset"] = False
-                    self.sg.data.loc[cond, "illuminated"] = True
-                    self.sg.data.loc[cond, "shadow"] = False
+                    cond = self.sg._get_cols("name") == name
+                    self.sg._set_cols(["unset", "illuminated", "shadow"], [False, True, False], cond)
+
                 else:
                     verbose(verbosity, f"Illuminating body {name} and all its childs")
                     self._set_luz_recursive(name, nluz, verbosity)
@@ -841,6 +863,11 @@ class System(PrynglesCommon):
             self._luz_set = True
         else:
             raise AssertionError("You must first spangle system before setting light.")
+
+    @property
+    def data(self):
+        """The system's spangle table (an alias of ``self.sg.data``)."""
+        return self.sg.data
 
     def update_perspective(self, n_obs=None, alpha_obs=0, center_obs=None):
         """
@@ -869,23 +896,12 @@ class System(PrynglesCommon):
         self._set_observer(nvec=self.n_obs, alpha=self.alpha_obs, center=center_obs)
         self._set_luz()
 
-        # Update data of each Body instance
+        # Update data of each Body instance (dtypes were aligned in spangle_system / _update_scatterers)
+        names = self.sg._get_cols("name")
         for name, body in self.bodies.items():
-            cond = self.data.name == name
-
-            src = self.data.loc[cond, body.sg.data.columns]
-            # Ensure destination dtypes can hold source values (e.g. python objects like scatterers).
-            for col in body.sg.data.columns:
-                if col in src.columns and src[col].dtype == object and body.sg.data[col].dtype != object:
-                    body.sg.data[col] = body.sg.data[col].astype(object)
-                # Also handle numeric strictness: don't try to put floats into int columns.
-                if (
-                    col in src.columns
-                    and pd.api.types.is_float_dtype(src[col].dtype)
-                    and not pd.api.types.is_float_dtype(body.sg.data[col].dtype)
-                ):
-                    body.sg.data[col] = body.sg.data[col].astype(float)
-            body.sg.data.iloc[:, :] = src.to_numpy(copy=True)
+            cond = names == name
+            for col in body.sg._columns():
+                body.sg._set_cols(col, self.sg._get_cols(col, cond))
 
     def update_body(self, body, **props):
         """

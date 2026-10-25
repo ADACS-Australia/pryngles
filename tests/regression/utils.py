@@ -25,34 +25,31 @@ class SystemChecks:
 
     def test_spangler_data(self, system, dataframe_regression, file_regression):
         # Note: spangler data is a dataframe of mixed types.
-
-        # Special handling of 'beta_loc', which is a numpy array of floats,
-        # but gets converted to object dtype in the dataframe, for some reason...
-        # Convert column to float.
-        system.sg.data["beta_loc"] = system.sg.data["beta_loc"].astype(float)
+        # Work on a copy, so the system's own table is left untouched.
+        data = system.sg.data.copy()
 
         # Expand 3-vector columns into separate numeric columns
-        cols = system.sg.data.select_dtypes(include=["object"], exclude=["string"]).drop(columns=["scatterer"]).columns
+        cols = data.select_dtypes(include=["object"], exclude=["string"]).drop(columns=["scatterer"]).columns
         suffixes = ["_x", "_y", "_z"]
         new_cols = {}
         for col in cols:
-            stacked = np.stack(system.sg.data[col].to_numpy())  # shape (n_rows, 3)
+            stacked = np.stack(data[col].to_numpy())  # shape (n_rows, 3)
             for i, suf in enumerate(suffixes):
                 new_cols[f"{col}{suf}"] = stacked[:, i]
 
         # Recombine the expanded columns with the rest of the DataFrame
-        expanded = pd.DataFrame(new_cols, index=system.sg.data.index)
-        system.sg.data = pd.concat([system.sg.data.drop(columns=cols), expanded], axis=1)
+        expanded = pd.DataFrame(new_cols, index=data.index)
+        data = pd.concat([data.drop(columns=cols), expanded], axis=1)
 
         # Numerical columns
         dataframe_regression.check(
-            system.sg.data.select_dtypes(include=["number"]),
+            data.select_dtypes(include=["number"]),
             default_tolerance=self.TOL,
             basename="spangler_data_numeric_df",
         )
 
         # String columns with rows containing non-empty strings (ignoring the 'name' column)
-        df = system.sg.data.select_dtypes(include="string")
+        df = data.select_dtypes(include="string")
         other_cols = [c for c in df.columns if c != "name"]
         mask = (df[other_cols] != "").any(axis=1)
         file_regression.check(df[mask].to_csv(), extension=".csv", basename="spangler_data_string_df")
