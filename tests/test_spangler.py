@@ -1,4 +1,7 @@
+import pickle
+
 import numpy as np
+import pandas as pd
 import pytest
 
 import pryngles as pr
@@ -240,6 +243,129 @@ def test_set_luz_name_filter():
     sgj.set_luz(nvec=[1, 0, 0], name="A")
     assert sgj.data.loc[sgj.data.name == "A", "illuminated"].any()
     assert not sgj.data.loc[sgj.data.name == "B", "illuminated"].any()
+
+
+# ---------------------------------------------------------------------------
+# Storage: the spangle data is kept as one numpy array per column, and
+# Spangler.data builds a pandas DataFrame on every access.
+# ---------------------------------------------------------------------------
+
+
+def _sphere_spangler(name="A", nspangles=20, seed=1):
+    sg = pr.Spangler(name=name, nspangles=nspangles)
+    sg.populate_spangler(shape="sphere", scale=1, seed=seed)
+    sg.set_positions()
+    return sg
+
+
+def test_data_is_a_snapshot():
+    """Modifying the DataFrame returned by .data does not change the spangler."""
+    sg = _sphere_spangler()
+    data = sg.data
+    data["Tem"] = 1234.0
+    data.loc[0, "visible"] = True
+    assert (sg.data["Tem"] != 1234.0).all()
+    assert not sg.data.loc[0, "visible"]
+    assert sg.data is not sg.data
+
+
+def test_data_setter_replaces_the_storage():
+    """Assigning a whole DataFrame replaces the data, keeping its dtypes."""
+    sg = _sphere_spangler()
+    data = sg.data
+    data["Tem"] = 1234.0
+    sg.data = data
+    np.testing.assert_array_equal(sg._get_cols("Tem"), np.full(sg.nspangles, 1234.0))
+    assert (sg.data.dtypes == data.dtypes).all()
+
+
+def test_data_round_trip_is_identical():
+    """Rebuilding the DataFrame from the arrays gives back the same table (values, dtypes, index)."""
+    sg = _sphere_spangler()
+    before = sg.data
+    sg.data = before
+    pd.testing.assert_frame_equal(sg.data, before, check_exact=True)
+    assert isinstance(sg.data.index, pd.RangeIndex)
+
+
+def test_get_cols_without_mask_is_read_only():
+    """Unmasked reads are views of the stored arrays and cannot be written to; masked reads are copies."""
+    sg = _sphere_spangler()
+    with pytest.raises(ValueError):
+        sg._get_cols("Tem")[0] = 0.0
+    masked = sg._get_cols("Tem", np.ones(sg.nspangles, dtype=bool))
+    masked[0] = 0.0
+    assert sg._get_cols("Tem")[0] != 0.0
+
+
+def test_add_col():
+    """_add_col adds a filled column with the dtype pandas would infer; existing names are rejected."""
+    sg = _sphere_spangler()
+    sg._add_col("extra", 0.5)
+    assert sg._columns()[-1] == "extra"
+    np.testing.assert_array_equal(sg._get_cols("extra"), np.full(sg.nspangles, 0.5))
+    assert sg.data["extra"].dtype == np.float64
+    with pytest.raises(ValueError):
+        sg._add_col("extra", 1.0)
+
+
+def test_astype():
+    """_astype converts one column with pandas' rules and records the new dtype."""
+    sg = _sphere_spangler()
+    sg._astype("scatterer", object)
+    assert sg._column_dtypes()["scatterer"] == np.dtype(object)
+    assert sg.data["scatterer"].dtype == np.dtype(object)
+    assert (sg.data["scatterer"] == "").all()
+
+
+def test_join_spanglers_matches_pandas_concat():
+    """Joining spanglers array by array gives the same table as pandas.concat of their data."""
+    sg1 = _sphere_spangler("A", seed=1)
+    sg2 = _sphere_spangler("B", seed=2)
+    expected = pd.concat([sg1.data, sg2.data], ignore_index=True)
+    sgj = pr.Spangler(spanglers=[sg1, sg2])
+    pd.testing.assert_frame_equal(sgj.data, expected, check_exact=True)
+    assert sgj.nspangles == sg1.nspangles + sg2.nspangles
+
+
+def test_join_spanglers_with_different_dtypes_uses_pandas_concat():
+    """When column dtypes differ between spanglers, the join falls back to pandas.concat (type promotion)."""
+    sg1 = _sphere_spangler("A", seed=1)
+    sg2 = _sphere_spangler("B", seed=2)
+    sg2._astype("scatterer", object)
+    expected = pd.concat([sg1.data, sg2.data], ignore_index=True)
+    sgj = pr.Spangler(spanglers=[sg1, sg2])
+    pd.testing.assert_frame_equal(sgj.data, expected, check_exact=True)
+    assert sgj.data["scatterer"].dtype == np.dtype(object)
+
+
+def test_unpickle_spangler_saved_with_a_dataframe():
+    """Spanglers pickled before the numpy storage (table in a "data" DataFrame) are converted on load."""
+    sg = _sphere_spangler()
+    expected = sg.data
+    old_state = {k: v for k, v in sg.__dict__.items() if k not in ("_cols", "_dtypes")}
+    old_state["data"] = expected
+    loaded = pr.Spangler.__new__(pr.Spangler)
+    loaded.__setstate__(old_state)
+    assert "data" not in loaded.__dict__
+    pd.testing.assert_frame_equal(loaded.data, expected, check_exact=True)
+    loaded._set_cols("visible", True)
+    assert loaded.data.visible.all()
+
+
+def test_pickle_round_trip():
+    """A spangler survives pickling with the numpy storage."""
+    sg = _sphere_spangler()
+    loaded = pickle.loads(pickle.dumps(sg))
+    pd.testing.assert_frame_equal(loaded.data, sg.data, check_exact=True)
+
+
+def test_body_bit():
+    """body_bit gives one bit per body, in the order of the spangler's names."""
+    sgj = pr.Spangler(spanglers=[_sphere_spangler("A"), _sphere_spangler("B"), _sphere_spangler("C")])
+    assert [sgj.body_bit(n) for n in ("A", "B", "C")] == [1, 2, 4]
+    with pytest.raises(ValueError):
+        sgj.body_bit("D")
 
 
 # ---------------------------------------------------------------------------

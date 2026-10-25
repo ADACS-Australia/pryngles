@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pytest
 
 import pryngles as pr
@@ -319,3 +320,52 @@ def test_update_illumination_state():
     # update_illumination_state, and assert that shadowed spangles have
     # illuminated == False and shadow == True.
     pass
+
+
+def _star_planet_system():
+    sys = pr.System()
+    S = sys.add("Star", name="Star", nspangles=200, m=9, radius=1)
+    sys.add("Planet", parent=S, name="Planet", nspangles=200, radius=0.2, a=2)
+    sys.initialize_simulation()
+    sys.spangle_system()
+    return sys
+
+
+def test_data_is_a_read_only_alias():
+    """System.data is the system spangler's table; it cannot be assigned."""
+    sys = _star_planet_system()
+    pd.testing.assert_frame_equal(sys.data, sys.sg.data)
+    with pytest.raises(AttributeError):
+        sys.data = sys.sg.data
+
+
+def test_mask_columns_mark_a_transit():
+    """With the planet between the observer and the star, the masks record the transit and the occulted star."""
+    sys = _star_planet_system()
+    sys.update_perspective(n_obs=[1, 0, 0])
+    data = sys.data
+    star_bit, planet_bit = sys.sg.body_bit("Star"), sys.sg.body_bit("Planet")
+
+    # Planet spangles transit over the star (and nothing else), within one planet radius of its centre
+    transiting = (data.name == "Planet") & (data.transit_mask_obs == star_bit)
+    assert transiting.any()
+    assert ((data.loc[transiting, "transit_rho_obs"] >= 0) & (data.loc[transiting, "transit_rho_obs"] <= 0.2)).all()
+    assert data.loc[data.transit_mask_obs == 0, "transit_rho_obs"].isna().all()
+
+    # Star spangles behind the planet are hidden by it and not visible
+    hidden = (data.name == "Star") & ((data.hidden_mask_obs & planet_bit) != 0)
+    assert hidden.any()
+    assert not data.loc[hidden, "visible"].any()
+
+
+def test_mask_columns_mark_an_occultation():
+    """With the planet behind the star, the masks record the star hiding the planet."""
+    sys = _star_planet_system()
+    sys.update_perspective(n_obs=[-1, 0, 0])
+    data = sys.data
+    star_bit, planet_bit = sys.sg.body_bit("Star"), sys.sg.body_bit("Planet")
+
+    hidden = (data.name == "Planet") & (data.hidden_mask_obs == star_bit)
+    assert hidden.any()
+    assert not data.loc[hidden, "visible"].any()
+    assert ((data.name == "Star") & (data.transit_mask_obs == planet_bit)).any()
