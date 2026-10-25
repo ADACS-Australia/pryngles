@@ -425,13 +425,11 @@ class System(PrynglesCommon):
         Setup only: afterwards update_perspective can copy values into the bodies' tables
         without dtype conversions.
         """
-        system_dtypes = self.data.dtypes
+        system_dtypes = self.sg._column_dtypes()
         for body in self.bodies.values():
-            data = body.sg.data
-            for col in data.columns:
-                if data[col].dtype != system_dtypes[col]:
-                    data[col] = data[col].astype(system_dtypes[col])
-            body.sg.data = data
+            for col, dtype in body.sg._column_dtypes().items():
+                if dtype != system_dtypes[col]:
+                    body.sg._astype(col, system_dtypes[col])
 
     def _update_albedos(self):
         """

@@ -307,16 +307,19 @@ class Spangler(PrynglesCommon):
         DataFrame. Modifying the returned DataFrame does not change the spangler: write
         with ``_set_cols``, or assign a whole DataFrame (``self.data = df``).
         """
-        nrows = len(next(iter(self._cols.values()))) if self._cols else 0
         return pd.DataFrame(
             {col: pd.Series(arr, dtype=self._dtypes[col], copy=True) for col, arr in self._cols.items()},
-            index=pd.RangeIndex(nrows),
+            index=pd.RangeIndex(self._nrows()),
         )
 
     @data.setter
     def data(self, df):
         self._cols = {col: df[col].to_numpy(copy=True) for col in df.columns}
         self._dtypes = {col: df[col].dtype for col in df.columns}
+
+    def _nrows(self):
+        """Returns the number of rows (spangles) in the stored data."""
+        return len(next(iter(self._cols.values()))) if self._cols else 0
 
     def __setstate__(self, state):
         # Spanglers saved before the numpy storage keep their table as a DataFrame in "data"
@@ -424,10 +427,19 @@ class Spangler(PrynglesCommon):
         """
         if name in self._cols:
             raise ValueError(f"Column '{name}' already exists.")
-        nrows = len(next(iter(self._cols.values()))) if self._cols else 0
-        column = pd.Series(value, index=pd.RangeIndex(nrows))
+        column = pd.Series(value, index=pd.RangeIndex(self._nrows()))
         self._cols[name] = column.to_numpy(copy=True)
         self._dtypes[name] = column.dtype
+
+    def _column_dtypes(self):
+        """Returns the pandas dtype of each column, as a dict."""
+        return dict(self._dtypes)
+
+    def _astype(self, col, dtype):
+        """Converts column `col` to `dtype`, with the same rules as ``pandas.Series.astype`` (setup only)."""
+        column = pd.Series(self._cols[col], dtype=self._dtypes[col]).astype(dtype)
+        self._cols[col] = column.to_numpy(copy=True)
+        self._dtypes[col] = column.dtype
 
     def set_scale(self, scale):
         """
@@ -499,16 +511,21 @@ class Spangler(PrynglesCommon):
         # Set of spanglers
         self.spanglers = spanglers
 
-        # Concatenate data
-        datas = [spangler.data for spangler in spanglers]
-        self.data = pd.concat(datas, ignore_index=True)
+        # Concatenate data: array by array when all spanglers have the same columns and dtypes
+        columns = spanglers[0]._columns()
+        dtypes = spanglers[0]._column_dtypes()
+        if all(sg._columns() == columns and sg._column_dtypes() == dtypes for sg in spanglers):
+            self._cols = {col: np.concatenate([sg._get_cols(col) for sg in spanglers]) for col in columns}
+            self._dtypes = dtypes
+        else:
+            self.data = pd.concat([spangler.data for spangler in spanglers], ignore_index=True)
 
         self.M_equ2ecl = dict()
         for spangler in spanglers:
             self.M_equ2ecl.update(spangler.M_equ2ecl)
 
         # Join properties
-        self.nspangles = len(self.data)
+        self.nspangles = self._nrows()
 
     def get_mem_usage(self, info=False):
         """
