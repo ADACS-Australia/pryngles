@@ -295,6 +295,36 @@ class Spangler(PrynglesCommon):
             self._set_cols(["hidden_mask_" + coords, "transit_mask_" + coords], 0)
             self._set_cols("transit_rho_" + coords, np.nan)
 
+    # --------------------------------------------------
+    # Storage of the spangle data: one numpy array per column
+    # --------------------------------------------------
+    @property
+    def data(self):
+        """
+        The spangle data as a pandas DataFrame.
+
+        The data is stored as one numpy array per column; every access builds a new
+        DataFrame. Modifying the returned DataFrame does not change the spangler: write
+        with ``_set_cols``, or assign a whole DataFrame (``self.data = df``).
+        """
+        nrows = len(next(iter(self._cols.values()))) if self._cols else 0
+        return pd.DataFrame(
+            {col: pd.Series(arr, dtype=self._dtypes[col], copy=True) for col, arr in self._cols.items()},
+            index=pd.RangeIndex(nrows),
+        )
+
+    @data.setter
+    def data(self, df):
+        self._cols = {col: df[col].to_numpy(copy=True) for col in df.columns}
+        self._dtypes = {col: df[col].dtype for col in df.columns}
+
+    def __setstate__(self, state):
+        # Spanglers saved before the numpy storage keep their table as a DataFrame in "data"
+        data = state.pop("data", None)
+        self.__dict__.update(state)
+        if data is not None:
+            self.data = data
+
     def _body_bit(self, name):
         """
         Returns the bit that represents body `name` in the hidden/transit mask columns.
@@ -324,10 +354,17 @@ class Spangler(PrynglesCommon):
         -----
         Treat the result as read-only; use `_set_cols` to modify the data.
         """
-        rows = slice(None) if mask is None else np.asarray(mask, dtype=bool)
+        if mask is None:
+            arrays = [self._cols[col].view() for col in ([cols] if isinstance(cols, str) else cols)]
+            for arr in arrays:
+                # Views of the stored columns: read-only, so callers cannot modify the data by accident
+                arr.flags.writeable = False
+        else:
+            rows = np.asarray(mask, dtype=bool)
+            arrays = [self._cols[col][rows] for col in ([cols] if isinstance(cols, str) else cols)]
         if isinstance(cols, str):
-            return self.data[cols].to_numpy()[rows]
-        return np.column_stack([self.data[col].to_numpy()[rows] for col in cols])
+            return arrays[0]
+        return np.column_stack(arrays)
 
     def _set_cols(self, cols, values, mask=None):
         """
@@ -365,17 +402,16 @@ class Spangler(PrynglesCommon):
                 col_values = values[i]
             else:
                 col_values = values[:, i]
-            arr = self.data[col].to_numpy(copy=True)
+            arr = self._cols[col]
             if not np.can_cast(np.asarray(col_values).dtype, arr.dtype, casting="same_kind"):
                 raise TypeError(
                     f"Cannot assign {np.asarray(col_values).dtype} values to column '{col}' of dtype {arr.dtype}"
                 )
             arr[rows] = col_values
-            self.data.loc[:, col] = arr
 
     def _columns(self):
         """Returns the names of the spangle data columns, in order."""
-        return list(self.data.columns)
+        return list(self._cols)
 
     def _add_col(self, name, value):
         """
@@ -386,9 +422,12 @@ class Spangler(PrynglesCommon):
         ValueError
             If the column already exists.
         """
-        if name in self._columns():
+        if name in self._cols:
             raise ValueError(f"Column '{name}' already exists.")
-        self.data[name] = value
+        nrows = len(next(iter(self._cols.values()))) if self._cols else 0
+        column = pd.Series(value, index=pd.RangeIndex(nrows))
+        self._cols[name] = column.to_numpy(copy=True)
+        self._dtypes[name] = column.dtype
 
     def set_scale(self, scale):
         """
@@ -683,8 +722,11 @@ class Spangler(PrynglesCommon):
             getattr(self.sample, f"gen_{shape}")(**shape_args)
 
         self.shape = shape
-        self.data["geometry"] = self.sample.geometry
-        self.data["spangle_type"] = spangle_type
+
+        # Modify the full table and assign it back
+        data = self.data
+        data["geometry"] = self.sample.geometry
+        data["spangle_type"] = spangle_type
 
         if self.sample.geometry in [SAMPLER_GEOMETRY_SPHERE]:
             # Purge sample if it is in 3d
@@ -731,33 +773,35 @@ class Spangler(PrynglesCommon):
                 # Add spangles
                 verbose(VERB_SYSTEM, f"Adding {dif} entries to DataFrame")
                 for _ in range(dif):
-                    df = pd.DataFrame([self.data.iloc[-1]])
-                    self.data = pd.concat([self.data, df], ignore_index=True)
+                    df = pd.DataFrame([data.iloc[-1]])
+                    data = pd.concat([data, df], ignore_index=True)
             else:
                 # Remove spangles
                 verbose(VERB_SYSTEM, f"Removing {-dif} entries to DataFrame")
-                self.data.drop(range(self.nspangles + dif, self.nspangles), inplace=True)
+                data.drop(range(self.nspangles + dif, self.nspangles), inplace=True)
 
             self.nspangles = self.sample.N
 
         # Area
-        self.data["asp"] = self.sample.aes * scale**2
-        self.data["dsp"] = 2 * (self.data["asp"] / np.pi) ** 0.5
+        data["asp"] = self.sample.aes * scale**2
+        data["dsp"] = 2 * (data["asp"] / np.pi) ** 0.5
 
         # Update scale
-        self.data["scale"] = scale
+        data["scale"] = scale
 
         # Store positions in DataFrame
-        self.data[["x_equ", "y_equ", "z_equ"]] = self.sample.ss * scale
-        self.data[["r_equ", "q_equ", "f_equ"]] = self.sample.pp
-        self.data["r_equ"] *= scale
+        data[["x_equ", "y_equ", "z_equ"]] = self.sample.ss * scale
+        data[["r_equ", "q_equ", "f_equ"]] = self.sample.pp
+        data["r_equ"] *= scale
 
         # Update normal vectors
-        self.data[SPANGLER_VEC_GROUPS["ns_equ"]] = self.sample.ns
+        data[SPANGLER_VEC_GROUPS["ns_equ"]] = self.sample.ns
 
         # Hide border points in case of ring
         if shape == "ring":
-            self.data.loc[self.nspangles - self.nhidden : self.nspangles, "hidden"] = True
+            data.loc[self.nspangles - self.nhidden : self.nspangles, "hidden"] = True
+
+        self.data = data
 
         # Update positions
         # self.set_positions()
@@ -828,13 +872,17 @@ class Spangler(PrynglesCommon):
         -----
         Sets the `fig3d` and `ax3d` attributes. Spangle colors reflect their illumination and visibility states.
         """
+
+        # Build the DataFrame once (the data is stored as numpy arrays)
+        table = self.data
+
         if not_plot is None:
             not_plot = []
         bgcolor = "k"
 
         # Plot only a given object
         if only:
-            not_plot = list(self.data.name.unique())
+            not_plot = list(table.name.unique())
             if only not in not_plot:
                 raise ValueError(f"Spangler '{only}' not among available spanglers ({not_plot})")
             else:
@@ -850,8 +898,8 @@ class Spangler(PrynglesCommon):
         coords = [f"x_{scoords}", f"y_{scoords}", f"z_{scoords}"]
 
         # Center
-        cond = self.data.name == center_at
-        x_cen, y_cen, z_cen = self.data[cond][coords].mean() if sum(cond) > 0 else np.array([0, 0, 0])
+        cond = table.name == center_at
+        x_cen, y_cen, z_cen = table[cond][coords].mean() if sum(cond) > 0 else np.array([0, 0, 0])
 
         # Figure
         fig = plt.figure(figsize=(fsize, fsize))
@@ -862,7 +910,7 @@ class Spangler(PrynglesCommon):
         # Spangles
         for i in range(self.nspangles):
             # Avoid plotting
-            name = self.data.loc[i, "name"]
+            name = table.loc[i, "name"]
             if name in not_plot:
                 continue
 
@@ -870,38 +918,38 @@ class Spangler(PrynglesCommon):
             alpha_base = 0.5
 
             # Avoid hidden spangles
-            if self.data.loc[i, "hidden"]:
+            if table.loc[i, "hidden"]:
                 continue
 
-            spangle_type = self.data.loc[i, "spangle_type"]
+            spangle_type = table.loc[i, "spangle_type"]
 
             # Define the color according to illumination or shadow
             state = ""
             color_hls = SPANGLES_DARKNESS_COLOR  # Default color: gray
 
             # Define color according to illumination or shadow
-            if self.data.loc[i, "shadow"]:
+            if table.loc[i, "shadow"]:
                 # Inside a shadow
                 state += "S."
                 color_hls = SHADOW_COLOR_LUZ  # Gray
 
-            if self.data.loc[i, "illuminated"]:
+            if table.loc[i, "illuminated"]:
                 # Illuminated
                 state += "I."
                 color_hls = SPANGLE_COLORS[spangle_type]  # Planet color
 
             # Modify color according to visibility, transmission or darkness
-            if not self.data.loc[i, "illuminated"]:
+            if not table.loc[i, "illuminated"]:
                 # In darkness
                 state += "D."
                 color = Plot.rgb(color_hls)  # No color modification
 
-            if self.data.loc[i, "transmit"]:
+            if table.loc[i, "transmit"]:
                 # Transmitting
                 state += "T."
                 color = Plot.rgb(color_hls)  # No color modification
 
-            if not self.data.loc[i, "visible"]:
+            if not table.loc[i, "visible"]:
                 # Not visible
                 state += "N."
                 color = Plot.rgb(
@@ -916,16 +964,16 @@ class Spangler(PrynglesCommon):
                 state += "V."
                 color = Plot.rgb(color_hls)  # No color modification
 
-            if self.data.loc[i, "unset"]:
+            if table.loc[i, "unset"]:
                 state += "U."
                 color = Plot.rgb([0, 0.5, 0])
 
             # Define alpha according to albedo
-            alpha = alpha_base * self.data.albedo_gray_normal[i]
+            alpha = alpha_base * table.albedo_gray_normal[i]
 
-            center = [self.data[coords[0]][i] - x_cen, self.data[coords[1]][i] - y_cen, self.data[coords[2]][i] - z_cen]
-            radius = self.data.dsp[i] / 2
-            zDir = self.data[f"ns_{scoords}"][i]
+            center = [table[coords[0]][i] - x_cen, table[coords[1]][i] - y_cen, table[coords[2]][i] - z_cen]
+            radius = table.dsp[i] / 2
+            zDir = table[f"ns_{scoords}"][i]
 
             # verbose(VERB_DEEP,i,center,radius,zDir)
             Plot.circle3d(ax, center=center, radius=radius, zDir=zDir, color=color, alpha=alpha, lw=0)
@@ -937,14 +985,14 @@ class Spangler(PrynglesCommon):
         ax.set_box_aspect([1, 1, 1])
 
         # Zoom around center
-        cond = self.data.name == center_at
+        cond = table.name == center_at
         cond = cond if sum(cond) > 0 else np.full(self.nspangles, True)
 
         # Not
-        cond = cond & (~self.data.name.isin(not_plot))
+        cond = cond & (~table.name.isin(not_plot))
 
         # Range
-        maxval = 1.0 * np.abs(self.data[cond][coords].to_numpy() - [x_cen, y_cen, z_cen]).max()
+        maxval = 1.0 * np.abs(table[cond][coords].to_numpy() - [x_cen, y_cen, z_cen]).max()
         ax.set_xlim(-maxval, maxval)
         ax.set_ylim(-maxval, maxval)
         ax.set_zlim(-maxval, maxval)
@@ -1014,7 +1062,7 @@ class Spangler(PrynglesCommon):
 
         # Show vectors
         if show_directions:
-            cond = cond & (~self.data.hidden)
+            cond = cond & (~table.hidden)
 
             if scoords == "ecl":
                 nstr = "n_int_" + scoords
@@ -1022,22 +1070,22 @@ class Spangler(PrynglesCommon):
                 nstr = "n_" + scoords
 
             # It is important to stress that "vectors" should be directed towards the light-source
-            vectors = np.array(list(self.data.loc[cond, nstr]))
+            vectors = np.array(list(table.loc[cond, nstr]))
 
-            normals = np.array(list(self.data.loc[cond, "ns_" + scoords]))
+            normals = np.array(list(table.loc[cond, "ns_" + scoords]))
 
             ax.scatter(
-                self.data.loc[cond, "x_" + scoords],
-                self.data.loc[cond, "y_" + scoords],
-                self.data.loc[cond, "z_" + scoords],
+                table.loc[cond, "x_" + scoords],
+                table.loc[cond, "y_" + scoords],
+                table.loc[cond, "z_" + scoords],
                 marker="*",
                 c="w",
                 s=10,
             )
             ax.quiver(
-                self.data.loc[cond, "x_" + scoords],
-                self.data.loc[cond, "y_" + scoords],
-                self.data.loc[cond, "z_" + scoords],
+                table.loc[cond, "x_" + scoords],
+                table.loc[cond, "y_" + scoords],
+                table.loc[cond, "z_" + scoords],
                 vectors[:, 0],
                 vectors[:, 1],
                 vectors[:, 2],
@@ -1045,9 +1093,9 @@ class Spangler(PrynglesCommon):
                 label="From intersection",
             )
             ax.quiver(
-                self.data.loc[cond, "x_" + scoords],
-                self.data.loc[cond, "y_" + scoords],
-                self.data.loc[cond, "z_" + scoords],
+                table.loc[cond, "x_" + scoords],
+                table.loc[cond, "y_" + scoords],
+                table.loc[cond, "z_" + scoords],
                 normals[:, 0],
                 normals[:, 1],
                 normals[:, 2],
@@ -1616,6 +1664,9 @@ class Spangler(PrynglesCommon):
         Sets the `fig2d` and `ax2d` attributes. Spangle colors and sizes reflect their states.
         """
 
+        # Build the DataFrame once (the data is stored as numpy arrays)
+        table = self.data
+
         # Global properties of the plot
         if exclude is None:
             exclude = []
@@ -1663,7 +1714,7 @@ class Spangler(PrynglesCommon):
         # Plot only a set of objects
         if len(include) > 0:
             # List of spanglers names
-            exclude = list(self.data.name.unique())
+            exclude = list(table.name.unique())
 
             for name in include:
                 if name not in exclude:
@@ -1675,19 +1726,17 @@ class Spangler(PrynglesCommon):
             center_at = include[0]
 
         # Center of plot
-        cond = self.data.name == center_at
+        cond = table.name == center_at
         x_cen, y_cen, z_cen = (
-            self.data[cond][[f"x_{coords}", f"y_{coords}", f"z_{coords}"]].mean()
-            if sum(cond) > 0
-            else np.array([0, 0, 0])
+            table[cond][[f"x_{coords}", f"y_{coords}", f"z_{coords}"]].mean() if sum(cond) > 0 else np.array([0, 0, 0])
         )
 
         # Select plotting bodies
-        cond_included = (~self.data.hidden) & (~self.data.name.isin(exclude))
+        cond_included = (~table.hidden) & (~table.name.isin(exclude))
         num_included = sum(cond_included)
         if num_included == 0:
             raise AssertionError(f"No body remain after removing {exclude}")
-        data = self.data[cond_included]
+        data = table[cond_included]
 
         # Calculate range of plot
         cond_maxval = (~data.hidden) & (~data.name.isin(exclude))
@@ -1797,22 +1846,22 @@ class Spangler(PrynglesCommon):
         if show_azim:
             # Choose which directions to show
             cond = (
-                (self.data["cos_" + coords] >= 0)
-                & (~self.data.hidden)
+                (table["cos_" + coords] >= 0)
+                & (~table.hidden)
                 & (cond_included)
-                & (self.data["spangle_type"] != SPANGLE_STELLAR)
+                & (table["spangle_type"] != SPANGLE_STELLAR)
             )
 
             # Options of arrows showing direction
             quiver_args = dict(scale=15, scale_units="width", width=0.005, alpha=0.6, zorder=+1000, headwidth=0)
 
             # Quiver plot of azimuth for light
-            azx = [np.cos(x) for x in self.data[cond].azim_luz]
-            azy = [np.sin(x) for x in self.data[cond].azim_luz]
+            azx = [np.cos(x) for x in table[cond].azim_luz]
+            azy = [np.sin(x) for x in table[cond].azim_luz]
 
             self.ax2d.quiver(
-                self.data[cond]["x_" + coords] - x_cen,
-                self.data[cond]["y_" + coords] - y_cen,
+                table[cond]["x_" + coords] - x_cen,
+                table[cond]["y_" + coords] - y_cen,
                 azx,
                 azy,
                 color="m",
@@ -1821,11 +1870,11 @@ class Spangler(PrynglesCommon):
             )
 
             # Quiver plot of azimuth for observer
-            azx = [np.cos(x) for x in self.data[cond].azim_luz]
-            azy = [np.sin(x) for x in self.data[cond].azim_luz]
+            azx = [np.cos(x) for x in table[cond].azim_luz]
+            azy = [np.sin(x) for x in table[cond].azim_luz]
             self.ax2d.quiver(
-                self.data[cond]["x_" + coords] - x_cen,
-                self.data[cond]["y_" + coords] - y_cen,
+                table[cond]["x_" + coords] - x_cen,
+                table[cond]["y_" + coords] - y_cen,
                 azx,
                 azy,
                 color="y",
@@ -1834,11 +1883,11 @@ class Spangler(PrynglesCommon):
             )
 
             # Quiver plot of elevation for light
-            tx = np.sqrt(1 - self.data[cond].cos_int ** 2).values
-            ty = self.data[cond].cos_int.values
+            tx = np.sqrt(1 - table[cond].cos_int ** 2).values
+            ty = table[cond].cos_int.values
             self.ax2d.quiver(
-                self.data[cond]["x_" + coords] - x_cen,
-                self.data[cond]["y_" + coords] - y_cen,
+                table[cond]["x_" + coords] - x_cen,
+                table[cond]["y_" + coords] - y_cen,
                 tx,
                 ty,
                 color="c",
@@ -1867,8 +1916,8 @@ class Spangler(PrynglesCommon):
             cond_highlight, args_scatter = highlight
             def_args_scatter.update(args_scatter)
             self.ax2d.scatter(
-                self.data[cond_highlight & cond_included]["x_" + coords] - x_cen,
-                self.data[cond_highlight & cond_included]["y_" + coords] - y_cen,
+                table[cond_highlight & cond_included]["x_" + coords] - x_cen,
+                table[cond_highlight & cond_included]["y_" + coords] - y_cen,
                 **def_args_scatter,
             )
 
