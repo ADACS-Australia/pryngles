@@ -31,13 +31,27 @@ static double *xcalloc(int n, size_t size) {
   return p;
 }
 
-static double *zeros1d(int n) { return xcalloc(n, sizeof(double)); }
+static double *zeros1d(int n) {
+  if (n < 1) {
+    fprintf(stderr, "zeros1d: invalid size %d\n", n);
+    abort();
+  }
+  return xcalloc(n, sizeof(double));
+}
 
 static double *zeros2d(int n, int m) {
+  if (n < 1 || m < 1) {
+    fprintf(stderr, "zeros2d: invalid size %d x %d\n", n, m);
+    abort();
+  }
   return xcalloc(n, (size_t)m * sizeof(double));
 }
 
 static double *zeros3d(int n, int m, int k) {
+  if (n < 1 || m < 1 || k < 1) {
+    fprintf(stderr, "zeros3d: invalid size %d x %d x %d\n", n, m, k);
+    abort();
+  }
   return xcalloc(n, (size_t)m * (size_t)k * sizeof(double));
 }
 
