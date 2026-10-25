@@ -20,7 +20,7 @@
  *
  * Memory is zero-initialised by calloc, so callers need no fill loop.
  */
-static void *xcalloc(int n, size_t size) {
+static double *xcalloc(int n, size_t size) {
   if (n <= 0)
     n = 1; /* avoid calloc(0) ambiguity */
   void *p = calloc((size_t)n, size);
@@ -31,13 +31,13 @@ static void *xcalloc(int n, size_t size) {
   return p;
 }
 
-static void *zeros1d(int n) { return xcalloc(n, sizeof(double)); }
+static double *zeros1d(int n) { return xcalloc(n, sizeof(double)); }
 
-static void *zeros2d(int n, int m) {
+static double *zeros2d(int n, int m) {
   return xcalloc(n, (size_t)m * sizeof(double));
 }
 
-static void *zeros3d(int n, int m, int k) {
+static double *zeros3d(int n, int m, int k) {
   return xcalloc(n, (size_t)m * (size_t)k * sizeof(double));
 }
 
@@ -238,9 +238,9 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
-  double (*ddf)[nmugs][nmugs] = zeros3d(nmat, nmugs, nmugs);
-  double (*f_mu0)[nmugs] = zeros2d(nmat, nmugs);
-  double (*RM)[nmat] = zeros2d(npix, nmat);
+  double (*ddf)[nmugs][nmugs] = (double (*)[nmugs][nmugs]) zeros3d(nmat, nmugs, nmugs);
+  double (*f_mu0)[nmugs] = (double (*)[nmugs]) zeros2d(nmat, nmugs);
+  double (*RM)[nmat] = (double (*)[nmat]) zeros2d(npix, nmat);
   double *ddf_mu0 = zeros1d(nmugs);
 
   // nmat is small, these can go on the stack
