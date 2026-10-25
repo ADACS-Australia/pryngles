@@ -238,9 +238,10 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
-  double (*ddf)[nmugs][nmugs] = (double (*)[nmugs][nmugs]) zeros3d(nmat, nmugs, nmugs);
-  double (*f_mu0)[nmugs] = (double (*)[nmugs]) zeros2d(nmat, nmugs);
-  double (*RM)[nmat] = (double (*)[nmat]) zeros2d(npix, nmat);
+  double (*ddf)[nmugs][nmugs] =
+      (double (*)[nmugs][nmugs])zeros3d(nmat, nmugs, nmugs);
+  double (*f_mu0)[nmugs] = (double (*)[nmugs])zeros2d(nmat, nmugs);
+  double (*RM)[nmat] = (double (*)[nmat])zeros2d(npix, nmat);
   double *ddf_mu0 = zeros1d(nmugs);
 
   // nmat is small, these can go on the stack
