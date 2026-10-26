@@ -26,7 +26,6 @@ from numpy.ctypeslib import ndpointer
 from pryngles.common import VERB_SIMPLE, verbose
 
 f64_1d = ndpointer(np.float64, ndim=1, flags="C_CONTIGUOUS")
-f64_2d = ndpointer(np.float64, ndim=2, flags="C_CONTIGUOUS")  # Sarr
 f64_4d = ndpointer(np.float64, ndim=4, flags="C_CONTIGUOUS")  # rfou, rtra
 
 
@@ -35,27 +34,6 @@ _spec = find_spec("pryngles.cpixx")
 if _spec is None or _spec.origin is None:
     raise ImportError("pryngles.cpixx extension not built; reinstall pryngles")
 cpixx_ext = ctypes.CDLL(_spec.origin)
-
-
-# Define the argument and return types for the reflection function
-cpixx_ext.reflection.restype = ctypes.c_int
-cpixx_ext.reflection.argtypes = [
-    ctypes.c_int,
-    ctypes.c_int,
-    ctypes.c_int,
-    f64_1d,
-    f64_4d,
-    f64_4d,
-    f64_4d,
-    f64_4d,
-    ctypes.c_int,
-    f64_1d,
-    f64_1d,
-    f64_1d,
-    f64_1d,
-    f64_1d,
-    f64_2d,
-]
 
 cpixx_ext.get_spline_derivs.restype = ctypes.c_int
 cpixx_ext.get_spline_derivs.argtypes = [
@@ -81,6 +59,77 @@ def calculate_spline_derivs(xmu, fou):
     if ret != 0:
         raise RuntimeError(f"Error in get_spline_derivs: {ret}")
     return {"j": ddf_j, "i": ddf_i, "ij": ddddf_ij}
+
+
+def get_bracket_and_weights(x, xi):
+    """Bracketing indices and spline weights for each xi."""
+    lo = np.clip(np.searchsorted(x, xi, side="right") - 1, 0, len(x) - 2)
+    hi = lo + 1
+    h = x[hi] - x[lo]
+    if np.any(np.abs(h) < 1e-10):
+        raise RuntimeError("bad xmu grid")
+    weights = ((x[hi] - xi) / h, (xi - x[lo]) / h, h)
+    return lo, hi, weights
+
+
+def spline_interp(yleft, yright, ddy_left, ddy_right, a, b, h):
+    return a * yleft + b * yright + ((a**3 - a) * ddy_left + (b**3 - b) * ddy_right) * (h * h) / 6
+
+
+def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
+    """fou and the three tables have shape (nfou, nmat, nmugs, nmugs); returns (npix, nmat+1)."""
+    nfou, nmat = fou.shape[:2]
+    npix = len(phi)
+
+    # Aliases to match naming in old C code
+    mu, mu0 = theta, theta0
+
+    ileft, iright, iweights = get_bracket_and_weights(xmu, mu)  # along i at mu
+    jleft, jright, jweights = get_bracket_and_weights(xmu, mu0)  # along j at mu0
+
+    # Interpolate a table along j at mu0, on row i (one row per pixel).
+    # fou[:, :, i, j] with i, j of shape (npix,) gives shape (nfou, nmat, npix).
+    def spline_interp_on_rowi(T, ddT, i):
+        return spline_interp(
+            T[:, :, i, jleft], T[:, :, i, jright], ddT[:, :, i, jleft], ddT[:, :, i, jright], *jweights
+        )
+
+    # f and d2f/di2 at mu0, for the two rows bracketing mu
+    f_ileft = spline_interp_on_rowi(fou, ddf_j, ileft)
+    f_iright = spline_interp_on_rowi(fou, ddf_j, iright)
+    ddf_ileft = spline_interp_on_rowi(ddf_i, ddddf_ij, ileft)
+    ddf_iright = spline_interp_on_rowi(ddf_i, ddddf_ij, iright)
+
+    # Then along i at mu
+    f = spline_interp(f_ileft, f_iright, ddf_ileft, ddf_iright, *iweights)  # (nfou, nmat, npix)
+
+    # Sum over Fourier terms: RM = 2 * sum_m fac_m * B_k(m*phi) * f   (fac = 0.5 for m = 0)
+    m = np.arange(nfou)[:, None]
+    cos_m, sin_m = np.cos(m * phi), np.sin(m * phi)  # (nfou, npix)
+    cos_m[0] *= 0.5  # the m = 0 fourier term only contributes half
+    sin_m[0] *= 0.5
+    Bplus = [cos_m, cos_m, sin_m, sin_m]
+
+    RM = np.empty((npix, nmat))
+    for k in range(nmat):
+        RM[:, k] = 2 * (Bplus[k] * f[:, k]).sum(axis=0)
+
+    # Locally reflected Stokes vector, rotated to the reference plane (assumes nmat == 3)
+    SvR = mu0[:, None] * RM
+    cb, sb = np.cos(2 * beta), np.sin(2 * beta)
+    SvR[:, 1], SvR[:, 2] = (cb * SvR[:, 1] + sb * SvR[:, 2], -sb * SvR[:, 1] + cb * SvR[:, 2])
+
+    # Degree of polarisation
+    S0, S1, S2 = SvR[:, 0], SvR[:, 1], SvR[:, 2]
+    zero0 = np.abs(S0) < 1e-6
+    S0 = np.where(zero0, 1.0, S0)  # avoid dividing by ~0
+    P = np.where(np.abs(S2) < 1e-6, -S1 / S0, np.hypot(S1, S2) / S0)
+    P = np.where(zero0 | (np.abs(P) < 1e-6), 0.0, P)
+
+    stokes = np.empty((npix, nmat + 1))
+    stokes[:, :nmat] = SvR * (mu * apix)[:, None]
+    stokes[:, nmat] = P
+    return stokes
 
 
 class StokesScatterer:
@@ -181,25 +230,17 @@ class StokesScatterer:
             fourier_coefficients = self.rtra
             fourier_derivs = self.rtra_derivs
 
-        ret = cpixx_ext.reflection(
-            self.nmat,
-            self.nmugs,
-            self.nfou,
+        stokes = reflection(
             self.xmu,
             fourier_coefficients,
             fourier_derivs["j"],
             fourier_derivs["i"],
             fourier_derivs["ij"],
-            npix,
             phi,
             beta,
             theta0,
             theta,
             apix,
-            stokes,
         )
-
-        if ret != 0:
-            raise RuntimeError(f"Error in reflection calculation: {ret}")
 
         return stokes
