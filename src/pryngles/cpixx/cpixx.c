@@ -9,6 +9,8 @@
 #define MAX_NSTOKES 4
 #define MAX_NMAT (MAX_NSTOKES - 1)
 
+#define REFLECTION_TOLERANCE 1.0e-6
+
 /*
  * Checked calloc wrapper for the zeros_* allocators.
  *
@@ -20,7 +22,7 @@
  *
  * Memory is zero-initialised by calloc, so callers need no fill loop.
  */
-static void *xcalloc(int n, size_t size) {
+static double *xcalloc(int n, size_t size) {
   if (n <= 0)
     n = 1; /* avoid calloc(0) ambiguity */
   void *p = calloc((size_t)n, size);
@@ -31,13 +33,27 @@ static void *xcalloc(int n, size_t size) {
   return p;
 }
 
-static void *zeros1d(int n) { return xcalloc(n, sizeof(double)); }
+static double *zeros1d(int n) {
+  if (n < 1) {
+    fprintf(stderr, "zeros1d: invalid size %d\n", n);
+    abort();
+  }
+  return xcalloc(n, sizeof(double));
+}
 
-static void *zeros2d(int n, int m) {
+static double *zeros2d(int n, int m) {
+  if (n < 1 || m < 1) {
+    fprintf(stderr, "zeros2d: invalid size %d x %d\n", n, m);
+    abort();
+  }
   return xcalloc(n, (size_t)m * sizeof(double));
 }
 
-static void *zeros3d(int n, int m, int k) {
+static double *zeros3d(int n, int m, int k) {
+  if (n < 1 || m < 1 || k < 1) {
+    fprintf(stderr, "zeros3d: invalid size %d x %d x %d\n", n, m, k);
+    abort();
+  }
   return xcalloc(n, (size_t)m * (size_t)k * sizeof(double));
 }
 
@@ -167,10 +183,9 @@ int spline_coefficients(const double x[], int n, double xi, int *klo_out,
  */
 double interp(const double y[], const double ddy[], int klo, int khi, double a,
               double b, double h) {
-  double yi =
-      a * y[klo] + b * y[khi] +
-      ((a * a * a - a) * ddy[klo] + (b * b * b - b) * ddy[khi]) * (h * h) / 6;
-  return yi;
+  return a * y[klo] + b * y[khi] +
+         ((a * a * a - a) * ddy[klo] + (b * b * b - b) * ddy[khi]) * (h * h) /
+             6;
 }
 
 /*
@@ -238,13 +253,13 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
-  double (*ddf)[nmugs][nmugs] =
-      zeros3d(nmat, nmugs, nmugs); // ddf[k][i][:]    d2f/dj2
-  double (*ddf_i)[nmugs][nmugs] =
-      zeros3d(nmat, nmugs, nmugs); // ddf_i[k][i][j]  d2f/di2
-  double (*ddf_ij)[nmugs][nmugs] =
-      zeros3d(nmat, nmugs, nmugs); // ddf_ij[k][i][:] d2(ddf_i)/dj2
-  double (*RM)[nmat] = zeros2d(npix, nmat);
+  double (*ddf)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
+      nmat, nmugs, nmugs); // ddf[k][i][:]    d2f/dj2
+  double (*ddf_i)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
+      nmat, nmugs, nmugs); // ddf_i[k][i][j]  d2f/di2
+  double (*ddf_ij)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
+      nmat, nmugs, nmugs); // ddf_ij[k][i][:] d2(ddf_i)/dj2
+  double (*RM)[nmat] = (double (*)[nmat])zeros2d(npix, nmat);
   double *f_col = zeros1d(nmugs);
   double *ddf_col = zeros1d(nmugs);
 
@@ -305,8 +320,8 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
       Bplus[2] = sinmphi;
       Bplus[3] = sinmphi;
 
-      if ((n <= 0) || !(fabs(mu - muold) < 1e-6) ||
-          !(fabs(mu0 - mu0old) < 1e-6)) {
+      if ((n <= 0) || !(fabs(mu - muold) < REFLECTION_TOLERANCE) ||
+          !(fabs(mu0 - mu0old) < REFLECTION_TOLERANCE)) {
         // Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip and
         // reuse previous cached value
 
