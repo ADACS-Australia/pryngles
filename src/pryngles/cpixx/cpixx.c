@@ -253,12 +253,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
-  double (*ddf)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
-      nmat, nmugs, nmugs); // ddf[k][i][:]    d2f/dj2
+  double (*ddf_j)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
+      nmat, nmugs, nmugs); // ddf_j[k][i][:]    d2f/dj2
   double (*ddf_i)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
       nmat, nmugs, nmugs); // ddf_i[k][i][j]  d2f/di2
-  double (*ddf_ij)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
-      nmat, nmugs, nmugs); // ddf_ij[k][i][:] d2(ddf_i)/dj2
+  double (*ddddf_ij)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
+      nmat, nmugs, nmugs); // ddddf_ij[k][i][:] d2(ddf_i)/dj2
   double (*RM)[nmat] = (double (*)[nmat])zeros2d(npix, nmat);
   double *f_col = zeros1d(nmugs);
   double *ddf_col = zeros1d(nmugs);
@@ -279,9 +279,9 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
     for (int k = 0; k < nmat; k++) {
 
       // d2f/dj2 along each row fou[m][k][i][:], which is contiguous: no copy
-      // needed. Write directly into corresponding ddf row.
+      // needed. Write directly into corresponding ddf_j row.
       for (int i = 0; i < nmugs; i++)
-        dderiv(xmu, fou[m][k][i], nmugs, ddf[k][i]);
+        dderiv(xmu, fou[m][k][i], nmugs, ddf_j[k][i]);
 
       // d2f/di2 along each column fou[m][k][:][j]
       for (int j = 0; j < nmugs; j++) {
@@ -294,7 +294,7 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
       // d2(d2f/di2)/dj2, so that d2f/di2 can itself be interpolated along j
       for (int i = 0; i < nmugs; i++)
-        dderiv(xmu, ddf_i[k][i], nmugs, ddf_ij[k][i]);
+        dderiv(xmu, ddf_i[k][i], nmugs, ddddf_ij[k][i]);
 
     } // End loop over stokes parameters
 
@@ -346,12 +346,12 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
           // interpolate f and d2f/di2 along j at mu0, given the coefficients
           // ja,jb,jh
           double f_mu0[2], ddf_mu0[2];
-          f_mu0[0] = interp(fou[m][k][ilo], ddf[k][ilo], jlo, jhi, ja, jb, jh);
-          f_mu0[1] = interp(fou[m][k][ihi], ddf[k][ihi], jlo, jhi, ja, jb, jh);
+          f_mu0[0] = interp(fou[m][k][ilo], ddf_j[k][ilo], jlo, jhi, ja, jb, jh);
+          f_mu0[1] = interp(fou[m][k][ihi], ddf_j[k][ihi], jlo, jhi, ja, jb, jh);
           ddf_mu0[0] =
-              interp(ddf_i[k][ilo], ddf_ij[k][ilo], jlo, jhi, ja, jb, jh);
+              interp(ddf_i[k][ilo], ddddf_ij[k][ilo], jlo, jhi, ja, jb, jh);
           ddf_mu0[1] =
-              interp(ddf_i[k][ihi], ddf_ij[k][ihi], jlo, jhi, ja, jb, jh);
+              interp(ddf_i[k][ihi], ddddf_ij[k][ihi], jlo, jhi, ja, jb, jh);
 
           // Do the spline interpolation along i between the two rows, given
           // the coefficients ia,ib,ih
@@ -412,9 +412,9 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
 cleanup:
   // Free temporary arrays
-  free(ddf);
+  free(ddf_j);
   free(ddf_i);
-  free(ddf_ij);
+  free(ddddf_ij);
   free(RM);
   free(f_col);
   free(ddf_col);
