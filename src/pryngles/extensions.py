@@ -45,6 +45,9 @@ cpixx_ext.reflection.argtypes = [
     ctypes.c_int,
     f64_1d,
     f64_4d,
+    f64_4d,
+    f64_4d,
+    f64_4d,
     ctypes.c_int,
     f64_1d,
     f64_1d,
@@ -54,15 +57,36 @@ cpixx_ext.reflection.argtypes = [
     f64_2d,
 ]
 
+cpixx_ext.get_spline_derivs.restype = ctypes.c_int
+cpixx_ext.get_spline_derivs.argtypes = [
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int,
+    f64_1d,
+    f64_4d,
+    f64_4d,
+    f64_4d,
+    f64_4d,
+]
+
+
+def calculate_spline_derivs(xmu, fou):
+    nfou, nmat, nmugs, nmugs2 = fou.shape
+    if nmugs != nmugs2:
+        raise RuntimeError("fourier array not square")
+    ddf_j = np.zeros_like(fou)
+    ddf_i = np.zeros_like(fou)
+    ddddf_ij = np.zeros_like(fou)
+    ret = cpixx_ext.get_spline_derivs(nmat, nmugs, nfou, xmu, fou, ddf_j, ddf_i, ddddf_ij)
+    if ret != 0:
+        raise RuntimeError(f"Error in get_spline_derivs: {ret}")
+    return {"j": ddf_j, "i": ddf_i, "ij": ddddf_ij}
+
 
 class StokesScatterer:
     """Stokes scatterer"""
 
     def __init__(self, filename):
-        self.filename = filename
-        self.read_fourier()
-
-    def read_fourier(self):
         """
         Read a file containing fourier coefficients produced by PyMieDAP
 
@@ -87,9 +111,10 @@ class StokesScatterer:
             rtra: array (nmugs*nmat,nmugs,nfou):
                Matrix for the fourier coefficients for transmission
         """
+        self.filename = filename
 
         # Drop comments and blank lines
-        with open(self.filename) as f:
+        with open(filename) as f:
             lines = [line for line in f if "#" not in line and line.strip()]
 
         # Read header:
@@ -124,17 +149,21 @@ class StokesScatterer:
 
         # Get reflection coefficients
         rfou = fill(data[:, 3 : 3 + nmat])
+        rfou_derivs = calculate_spline_derivs(xmu, rfou)
 
         # Get transmission coefficients if they exist, otherwise fill with zeros
         if data.shape[1] > 3 + nmat:
             rtra = fill(data[:, 3 + nmat : 3 + 2 * nmat])
+            rtra_derivs = calculate_spline_derivs(xmu, rtra)
         else:
             rtra = np.zeros_like(rfou)
+            rtra_derivs = {k: np.zeros_like(rfou) for k in ("i", "j", "ij")}
 
-        verbose(VERB_SIMPLE, f"Checksum '{self.filename}': {rfou.sum() + rtra.sum():.16e}")
+        verbose(VERB_SIMPLE, f"Checksum '{filename}': {rfou.sum() + rtra.sum():.16e}")
 
         self.nmat, self.nmugs, self.nfou = nmat, nmugs, nfou
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
+        self.rfou_derivs, self.rtra_derivs = rfou_derivs, rtra_derivs
 
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
         """ """
@@ -145,13 +174,22 @@ class StokesScatterer:
         if npix == 0:
             return stokes
 
-        fourier_coefficients = self.rfou if qreflection else self.rtra
+        if qreflection:
+            fourier_coefficients = self.rfou
+            fourier_derivs = self.rfou_derivs
+        else:
+            fourier_coefficients = self.rtra
+            fourier_derivs = self.rtra_derivs
+
         ret = cpixx_ext.reflection(
             self.nmat,
             self.nmugs,
             self.nfou,
             self.xmu,
             fourier_coefficients,
+            fourier_derivs["j"],
+            fourier_derivs["i"],
+            fourier_derivs["ij"],
             npix,
             phi,
             beta,

@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Maximum number of tabulated points dderiv() can handle (size of its
-// scratch array), and maximum number of Stokes elements reflection() supports
-// (size of Bplus).
+// Maximum number of tabulated points dderiv() and get_spline_derivs() can
+// handle (size of their scratch arrays), and maximum number of Stokes
+// elements reflection() supports (size of Bplus).
 #define MAX_SPLINE_N 1000
 #define MAX_NSTOKES 4
 #define MAX_NMAT (MAX_NSTOKES - 1)
@@ -173,7 +173,7 @@ int spline_coefficients(const double x[], int n, double xi, int *klo_out,
  *
  *     Given the arrays x and y of length n, which tabulate a function
  *     (with the x(i)'s in order), and given the array ddy, which is
- *     the output from SPLINE above, and given a specific xi, this
+ *     the output from dderiv above, and given a specific xi, this
  *     routine returns a cubic-spline interpolated value yi.
  *
  *     NOTE: for computational efficiency, we pre-compute lower and upper
@@ -189,6 +189,72 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
 }
 
 /*
+ * Precompute the spline second-derivative tables used by reflection().
+ * They depend only on xmu and fou, so call this once after reading the
+ * Fourier file. All arrays are flat, shape (nfou, nmat, nmugs, nmugs);
+ * the three outputs are allocated by the caller.
+ *
+ *   ddf_j     d2f/dj2        (along the last axis)
+ *   ddf_i     d2f/di2        (along the second-to-last axis)
+ *   ddddf_ij  d2(ddf_i)/dj2
+ *
+ * Returns 0 on success, -1 on invalid sizes.
+ */
+int get_spline_derivs(int nmat, int nmugs, int nfou, const double *xmu,
+                      const double *fou_flat, double *ddf_j_flat,
+                      double *ddf_i_flat, double *ddddf_ij_flat) {
+  if (nmat < 1 || nmat > MAX_NMAT) {
+    fprintf(stderr, "Error in get_spline_derivs: nmat=%d outside [1, %d].\n",
+            nmat, MAX_NMAT);
+    return -1;
+  }
+  if (nmugs < 2 || nmugs > MAX_SPLINE_N) {
+    fprintf(stderr, "Error in get_spline_derivs: nmugs=%d outside [2, %d].\n",
+            nmugs, MAX_SPLINE_N);
+    return -1;
+  }
+  if (nfou < 1) {
+    fprintf(stderr, "Error in get_spline_derivs: nfou=%d is < 1.\n", nfou);
+    return -1;
+  }
+
+  const double (*fou)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])fou_flat;
+  double (*ddf_j)[nmat][nmugs][nmugs] =
+      (double (*)[nmat][nmugs][nmugs])ddf_j_flat;
+  double (*ddf_i)[nmat][nmugs][nmugs] =
+      (double (*)[nmat][nmugs][nmugs])ddf_i_flat;
+  double (*ddddf_ij)[nmat][nmugs][nmugs] =
+      (double (*)[nmat][nmugs][nmugs])ddddf_ij_flat;
+
+  double f_col[MAX_SPLINE_N], ddf_col[MAX_SPLINE_N];
+
+  // nmugs was validated above, so dderiv() cannot fail here.
+  for (int m = 0; m < nfou; m++) {
+    for (int k = 0; k < nmat; k++) {
+      // d2f/dj2 along each (contiguous) row
+      for (int i = 0; i < nmugs; i++)
+        dderiv(xmu, fou[m][k][i], nmugs, ddf_j[m][k][i]);
+
+      // d2f/di2 along each column
+      for (int j = 0; j < nmugs; j++) {
+        for (int i = 0; i < nmugs; i++)
+          f_col[i] = fou[m][k][i][j];
+        dderiv(xmu, f_col, nmugs, ddf_col);
+        for (int i = 0; i < nmugs; i++)
+          ddf_i[m][k][i][j] = ddf_col[i];
+      }
+
+      // d2(d2f/di2)/dj2
+      for (int i = 0; i < nmugs; i++)
+        dderiv(xmu, ddf_i[m][k][i], nmugs, ddddf_ij[m][k][i]);
+    }
+  }
+
+  return 0;
+}
+
+/*
  *----------------------------------------------------------------------------
  *     Calculate the Stokes vector for a given geometry (given a table of
  *     Fourier coefficients read from a file).
@@ -199,6 +265,10 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
  *
  *     phi and beta are assumed to be in radian
  *     theta0 and theta are given as cos(theta0) and cos(theta) respectively
+ *
+ *     The spline second-derivative tables (ddf_j, ddf_i, ddddf_ij) must be
+ *     precomputed with get_spline_derivs() from the same xmu and fou_flat.
+ *     reflection() does not check this.
  *
  *     Returns 0 on success, -1 on invalid sizes (nmat outside [1, MAX_NMAT],
  *     nmugs outside [2, MAX_SPLINE_N]) or a degenerate xmu grid. On failure
@@ -211,13 +281,16 @@ double interp(const double y[], const double ddy[], int klo, int khi, double a,
  *----------------------------------------------------------------------------
  */
 int reflection(int nmat, int nmugs, int nfou, const double *xmu,
-               const double *fou_flat, int npix, const double *phi,
-               const double *beta, const double *theta0, const double *theta,
-               const double *apix, double *stokes_flat) {
+               const double *fou_flat, const double *ddf_j_flat,
+               const double *ddf_i_flat, const double *ddddf_ij_flat, int npix,
+               const double *phi, const double *beta, const double *theta0,
+               const double *theta, const double *apix, double *stokes_flat) {
 
   // xmu is a 1D array of length nmugs
   // phi, beta, theta0, theta, and apix are 1D arrays of length npix
-  // fou_flat is a flattened 4D array with shape (nfou, nmat, nmugs, nmugs)
+  // fou_flat, ddf_j_flat, ddf_i_flat, ddddf_ij_flat are flattened 4D arrays
+  // with shape (nfou, nmat, nmugs, nmugs); the last three come from
+  // get_spline_derivs()
   // stokes_flat is a flattened 2D array with shape (npix, nmat + 1)
 
   double muold = 1, mu0old = 1;
@@ -249,19 +322,17 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   // The bounds are evaluated here after being validated (above)
   const double (*fou)[nmat][nmugs][nmugs] =
       (const double (*)[nmat][nmugs][nmugs])fou_flat;
+  const double (*ddf_j)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])ddf_j_flat;
+  const double (*ddf_i)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])ddf_i_flat;
+  const double (*ddddf_ij)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])ddddf_ij_flat;
   double (*stokes)[nmat + 1] = (double (*)[nmat + 1]) stokes_flat;
 
   // Allocate temporary arrays with VLA pointers,
   // using calloc (so that they're on the heap)
-  double (*ddf_j)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
-      nmat, nmugs, nmugs); // ddf_j[k][i][:]    d2f/dj2
-  double (*ddf_i)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
-      nmat, nmugs, nmugs); // ddf_i[k][i][j]  d2f/di2
-  double (*ddddf_ij)[nmugs][nmugs] = (double (*)[nmugs][nmugs])zeros3d(
-      nmat, nmugs, nmugs); // ddddf_ij[k][i][:] d2(ddf_i)/dj2
   double (*RM)[nmat] = (double (*)[nmat])zeros2d(npix, nmat);
-  double *f_col = zeros1d(nmugs);
-  double *ddf_col = zeros1d(nmugs);
 
   // nmat is small, these can go on the stack
   double f_mu0_mu[MAX_NSTOKES] = {0};
@@ -270,44 +341,19 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
   // Loop over the Fourier coefficients:
   for (int m = 0; m < nfou; m++) {
 
-    double fac = 1.0;
-    if (m == 0)
-      fac = 0.5;
-
-    // Initialize the interpolation matrices for the current fourier
-    // coefficient. nmugs was validated above, so dderiv() cannot fail here.
-    for (int k = 0; k < nmat; k++) {
-
-      // d2f/dj2 along each row fou[m][k][i][:], which is contiguous: no copy
-      // needed. Write directly into corresponding ddf_j row.
-      for (int i = 0; i < nmugs; i++)
-        dderiv(xmu, fou[m][k][i], nmugs, ddf_j[k][i]);
-
-      // d2f/di2 along each column fou[m][k][:][j]
-      for (int j = 0; j < nmugs; j++) {
-        for (int i = 0; i < nmugs; i++)
-          f_col[i] = fou[m][k][i][j];
-        dderiv(xmu, f_col, nmugs, ddf_col);
-        for (int i = 0; i < nmugs; i++)
-          ddf_i[k][i][j] = ddf_col[i];
-      }
-
-      // d2(d2f/di2)/dj2, so that d2f/di2 can itself be interpolated along j
-      for (int i = 0; i < nmugs; i++)
-        dderiv(xmu, ddf_i[k][i], nmugs, ddddf_ij[k][i]);
-
-    } // End loop over stokes parameters
-
+    double fac = (m == 0) ? 0.5 : 1.0;
     /*
      *----------------------------------------------------------------------------
-     *     Loop over the pixels:
+     *     Loop over the pixels.
+     *
      *     If the input angles are (very) similar to a previously calculated
-     *     case use those values. To obtain the fourier coefficient at
-     *     (mu,mu0) it is interpolated along j at mu0 and then along i at mu.
-     *     The second pass needs d2f/di2 at the rows that bracket mu: these
-     *     are interpolated along j from the precomputed ddf_i (spline
-     *     construction along i and interpolation along j commute), so no
-     *     spline has to be solved per pixel.
+     *     case, reuse those values.
+     *
+     *     To get the fourier coefficient at (mu, mu0), interpolate along j at
+     *     mu0 for the two rows bracketing mu, then along i at mu. The second
+     *     pass needs d2f/di2 at those rows; it comes from interpolating the
+     *     precomputed ddf_i along j (spline construction along i and
+     *     interpolation along j commute), so no spline is solved per pixel.
      *----------------------------------------------------------------------------
      */
     for (int n = 0; n < npix; n++) {
@@ -346,26 +392,26 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
           // interpolate f and d2f/di2 along j at mu0, given the coefficients
           // ja,jb,jh
           double f_mu0[2], ddf_mu0[2];
-          f_mu0[0] = interp(fou[m][k][ilo], ddf_j[k][ilo], jlo, jhi, ja, jb, jh);
-          f_mu0[1] = interp(fou[m][k][ihi], ddf_j[k][ihi], jlo, jhi, ja, jb, jh);
-          ddf_mu0[0] =
-              interp(ddf_i[k][ilo], ddddf_ij[k][ilo], jlo, jhi, ja, jb, jh);
-          ddf_mu0[1] =
-              interp(ddf_i[k][ihi], ddddf_ij[k][ihi], jlo, jhi, ja, jb, jh);
-
+          f_mu0[0] =
+              interp(fou[m][k][ilo], ddf_j[m][k][ilo], jlo, jhi, ja, jb, jh);
+          f_mu0[1] =
+              interp(fou[m][k][ihi], ddf_j[m][k][ihi], jlo, jhi, ja, jb, jh);
+          ddf_mu0[0] = interp(ddf_i[m][k][ilo], ddddf_ij[m][k][ilo], jlo, jhi,
+                              ja, jb, jh);
+          ddf_mu0[1] = interp(ddf_i[m][k][ihi], ddddf_ij[m][k][ihi], jlo, jhi,
+                              ja, jb, jh);
           // Do the spline interpolation along i between the two rows, given
           // the coefficients ia,ib,ih
           f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, 1, ia, ib, ih);
-          muold = mu;
-          mu0old = mu0;
         }
+        muold = mu;
+        mu0old = mu0;
       }
 
       // Compute the reflection matrix at pixel n and stokes parameter k,
       // summing over fourier terms m
-      for (int k = 0; k < nmat; k++) {
-        RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * f_mu0_mu[k];
-      }
+      for (int k = 0; k < nmat; k++)
+        RM[n][k] += 2 * Bplus[k] * fac * f_mu0_mu[k];
 
     } // End loop over pixels
   } // End loop over fourier coefficients
@@ -412,12 +458,6 @@ int reflection(int nmat, int nmugs, int nfou, const double *xmu,
 
 cleanup:
   // Free temporary arrays
-  free(ddf_j);
-  free(ddf_i);
-  free(ddddf_ij);
   free(RM);
-  free(f_col);
-  free(ddf_col);
-
   return ret;
 }
