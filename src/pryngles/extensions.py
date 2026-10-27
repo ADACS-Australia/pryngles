@@ -61,47 +61,57 @@ def calculate_spline_derivs(xmu, fou):
     return {"j": ddf_j, "i": ddf_i, "ij": ddddf_ij}
 
 
-def get_bracket_and_weights(x, xi):
-    """Bracketing indices and spline weights for each xi."""
-    lo = np.clip(np.searchsorted(x, xi, side="right") - 1, 0, len(x) - 2)
-    hi = lo + 1
-    h = x[hi] - x[lo]
+def get_index_and_weights(x, xval):
+    # Find the closest index that's less than xval
+    i = np.clip(np.searchsorted(x, xval, side="right") - 1, 0, len(x) - 2)
+    h = x[i + 1] - x[i]
     if np.any(np.abs(h) < 1e-10):
         raise RuntimeError("bad xmu grid")
-    weights = ((x[hi] - xi) / h, (xi - x[lo]) / h, h)
-    return lo, hi, weights
+
+    # Compute the corresponding spline weights for xval, given the closest index on the left
+    a = (x[i + 1] - xval) / h
+    b = (xval - x[i]) / h
+    c = (a**3 - a) * h**2 / 6
+    d = (b**3 - b) * h**2 / 6
+    return i, a, b, c, d
 
 
-def spline_interp(yleft, yright, ddy_left, ddy_right, a, b, h):
-    return a * yleft + b * yright + ((a**3 - a) * ddy_left + (b**3 - b) * ddy_right) * (h * h) / 6
+def spline_interp(yleft, yright, ddy_left, ddy_right, a, b, c, d):
+    return a * yleft + b * yright + c * ddy_left + d * ddy_right
 
 
 def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
-    """fou and the three tables have shape (nfou, nmat, nmugs, nmugs); returns (npix, nmat+1)."""
+    # fou and the three tables have shape (nfou, nmat, nmugs, nmugs); returns (npix, nmat+1)
     nfou, nmat = fou.shape[:2]
     npix = len(phi)
 
     # Aliases to match naming in old C code
     mu, mu0 = theta, theta0
 
-    ileft, iright, iweights = get_bracket_and_weights(xmu, mu)  # along i at mu
-    jleft, jright, jweights = get_bracket_and_weights(xmu, mu0)  # along j at mu0
-
-    # Interpolate a table along j at mu0, on row i (one row per pixel).
-    # fou[:, :, i, j] with i, j of shape (npix,) gives shape (nfou, nmat, npix).
-    def spline_interp_on_rowi(T, ddT, i):
-        return spline_interp(
-            T[:, :, i, jleft], T[:, :, i, jright], ddT[:, :, i, jleft], ddT[:, :, i, jright], *jweights
-        )
+    # Closest index on the left to mu and mu0, and the associated spline weights
+    i, ia, ib, ic, id = get_index_and_weights(xmu, mu)
+    j, ja, jb, jc, jd = get_index_and_weights(xmu, mu0)
 
     # f and d2f/di2 at mu0, for the two rows bracketing mu
-    f_ileft = spline_interp_on_rowi(fou, ddf_j, ileft)
-    f_iright = spline_interp_on_rowi(fou, ddf_j, iright)
-    ddf_ileft = spline_interp_on_rowi(ddf_i, ddddf_ij, ileft)
-    ddf_iright = spline_interp_on_rowi(ddf_i, ddddf_ij, iright)
+    f_ileft = ja * fou[:, :, i, j] + jb * fou[:, :, i, j + 1] + jc * ddf_j[:, :, i, j] + jd * ddf_j[:, :, i, j + 1]
+    f_iright = (
+        ja * fou[:, :, i + 1, j]
+        + jb * fou[:, :, i + 1, j + 1]
+        + jc * ddf_j[:, :, i + 1, j]
+        + jd * ddf_j[:, :, i + 1, j + 1]
+    )
+    ddf_ileft = (
+        ja * ddf_i[:, :, i, j] + jb * ddf_i[:, :, i, j + 1] + jc * ddddf_ij[:, :, i, j] + jd * ddddf_ij[:, :, i, j + 1]
+    )
+    ddf_iright = (
+        ja * ddf_i[:, :, i + 1, j]
+        + jb * ddf_i[:, :, i + 1, j + 1]
+        + jc * ddddf_ij[:, :, i + 1, j]
+        + jd * ddddf_ij[:, :, i + 1, j + 1]
+    )
 
     # Then along i at mu
-    f = spline_interp(f_ileft, f_iright, ddf_ileft, ddf_iright, *iweights)  # (nfou, nmat, npix)
+    f = ia * f_ileft + ib * f_iright + ic * ddf_ileft + id * ddf_iright  # (nfou, nmat, npix)
 
     # Sum over Fourier terms: RM = 2 * sum_m fac_m * B_k(m*phi) * f   (fac = 0.5 for m = 0)
     m = np.arange(nfou)[:, None]
