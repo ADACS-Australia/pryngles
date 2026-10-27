@@ -76,23 +76,12 @@ def get_index_and_weights(x, xval):
     return i, a, b, c, d
 
 
-def spline_interp(yleft, yright, ddy_left, ddy_right, a, b, c, d):
-    return a * yleft + b * yright + c * ddy_left + d * ddy_right
-
-
-def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
-    # fou and the three tables have shape (nfou, nmat, nmugs, nmugs); returns (npix, nmat+1)
-    nfou, nmat = fou.shape[:2]
-    npix = len(phi)
-
-    # Aliases to match naming in old C code
-    mu, mu0 = theta, theta0
-
+def interpolate_fourier(xmu, fou, ddf_j, ddf_i, ddddf_ij, mu0, mu):
     # Closest index on the left to mu and mu0, and the associated spline weights
     i, ia, ib, ic, id = get_index_and_weights(xmu, mu)
     j, ja, jb, jc, jd = get_index_and_weights(xmu, mu0)
 
-    # f and d2f/di2 at mu0, for the two rows bracketing mu
+    # interpolate f and d2f/di2 at mu0, for the two rows (j and j+1) bracketing mu
     f_ileft = ja * fou[:, :, i, j] + jb * fou[:, :, i, j + 1] + jc * ddf_j[:, :, i, j] + jd * ddf_j[:, :, i, j + 1]
     f_iright = (
         ja * fou[:, :, i + 1, j]
@@ -110,8 +99,16 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
         + jd * ddddf_ij[:, :, i + 1, j + 1]
     )
 
-    # Then along i at mu
-    f = ia * f_ileft + ib * f_iright + ic * ddf_ileft + id * ddf_iright  # (nfou, nmat, npix)
+    # Then interpolate f along i at mu
+    return ia * f_ileft + ib * f_iright + ic * ddf_ileft + id * ddf_iright  # (nfou, nmat, npix)
+
+
+def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
+    # fou and the three tables have shape (nfou, nmat, nmugs, nmugs); returns (npix, nmat+1)
+    nfou, nmat = fou.shape[:2]
+    npix = len(phi)
+
+    f = interpolate_fourier(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta)
 
     # Sum over Fourier terms: RM = 2 * sum_m fac_m * B_k(m*phi) * f   (fac = 0.5 for m = 0)
     m = np.arange(nfou)[:, None]
@@ -125,7 +122,7 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
         RM[:, k] = 2 * (Bplus[k] * f[:, k]).sum(axis=0)
 
     # Locally reflected Stokes vector, rotated to the reference plane (assumes nmat == 3)
-    SvR = mu0[:, None] * RM
+    SvR = theta0[:, None] * RM
     cb, sb = np.cos(2 * beta), np.sin(2 * beta)
     SvR[:, 1], SvR[:, 2] = (cb * SvR[:, 1] + sb * SvR[:, 2], -sb * SvR[:, 1] + cb * SvR[:, 2])
 
@@ -137,7 +134,7 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     P = np.where(zero0 | (np.abs(P) < 1e-6), 0.0, P)
 
     stokes = np.empty((npix, nmat + 1))
-    stokes[:, :nmat] = SvR * (mu * apix)[:, None]
+    stokes[:, :nmat] = SvR * (theta * apix)[:, None]
     stokes[:, nmat] = P
     return stokes
 
