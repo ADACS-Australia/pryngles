@@ -1,33 +1,15 @@
-//////////////////////////////////////////////////////////////
-// DEPENDENCIES
-//////////////////////////////////////////////////////////////
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-//////////////////////////////////////////////////////////////
-// MACROS
-//////////////////////////////////////////////////////////////
-#define MAX_FOU 1000
-#define MAX_STRING 1000
-#define VERBOSITY 0
-
-// Maximum number of tabulated points spline() can handle (size of its
+// Maximum number of tabulated points dderiv() can handle (size of its
 // scratch array), and maximum number of Stokes elements reflection() supports
 // (size of Bplus).
 #define MAX_SPLINE_N 1000
-#define MAX_NMAT 4
+#define MAX_NSTOKES 4
+#define MAX_NMAT (MAX_NSTOKES - 1)
 
-//////////////////////////////////////////////////////////////
-// ROUTINES
-//////////////////////////////////////////////////////////////
-struct FourierCoefficients {
-  int nmat, nmugs, nfou;
-  double *xmu;
-  double ***rfou;
-  double ***rtra;
-};
+#define REFLECTION_TOLERANCE 1.0e-6
 
 /*
  * Checked calloc wrapper for the zeros_* allocators.
@@ -40,7 +22,7 @@ struct FourierCoefficients {
  *
  * Memory is zero-initialised by calloc, so callers need no fill loop.
  */
-static void *xcalloc(int n, size_t size) {
+static double *xcalloc(int n, size_t size) {
   if (n <= 0)
     n = 1; /* avoid calloc(0) ambiguity */
   void *p = calloc((size_t)n, size);
@@ -51,40 +33,28 @@ static void *xcalloc(int n, size_t size) {
   return p;
 }
 
-double *zeros_vector(int n) {
-  return (double *)xcalloc(n, sizeof(double)); /* calloc already zeroes */
+static double *zeros1d(int n) {
+  if (n < 1) {
+    fprintf(stderr, "zeros1d: invalid size %d\n", n);
+    abort();
+  }
+  return xcalloc(n, sizeof(double));
 }
 
-double **zeros_matrix(int n, int m) {
-  double **M = (double **)xcalloc(n, sizeof(double *));
-  for (int i = 0; i < n; i++)
-    M[i] = zeros_vector(m);
-  return M;
+static double *zeros2d(int n, int m) {
+  if (n < 1 || m < 1) {
+    fprintf(stderr, "zeros2d: invalid size %d x %d\n", n, m);
+    abort();
+  }
+  return xcalloc(n, (size_t)m * sizeof(double));
 }
 
-double ***zeros_cube(int n, int m, int p) {
-  double ***C = (double ***)xcalloc(n, sizeof(double **));
-  for (int i = 0; i < n; i++)
-    C[i] = zeros_matrix(m, p);
-  return C;
-}
-
-// Free a matrix allocated with zeros_matrix(n, m)
-void free_matrix(double **M, int n) {
-  if (!M)
-    return;
-  for (int i = 0; i < n; i++)
-    free(M[i]);
-  free(M);
-}
-
-// Free a cube allocated with zeros_cube(n, m, p)
-void free_cube(double ***C, int n, int m) {
-  if (!C)
-    return;
-  for (int i = 0; i < n; i++)
-    free_matrix(C[i], m);
-  free(C);
+static double *zeros3d(int n, int m, int k) {
+  if (n < 1 || m < 1 || k < 1) {
+    fprintf(stderr, "zeros3d: invalid size %d x %d x %d\n", n, m, k);
+    abort();
+  }
+  return xcalloc(n, (size_t)m * (size_t)k * sizeof(double));
 }
 
 /*
@@ -94,7 +64,7 @@ void free_cube(double ***C, int n, int m) {
  *     Given arrays x and y of length n containing a tabulated function,
  *     i.e. y(i)=f(x(i)), with x(1)<x(2)<...<x(n), and given values yp1
  *     and ypn for the first derivative of the interpolating function at
- *     points 1 and n respectively, this routine returns an array y2 of
+ *     points 1 and n respectively, this routine returns an array ddy of
  *     length n which contains the second derivatives of the interpola-
  *     ting function at the tabulated points x(i).
  *
@@ -107,10 +77,9 @@ void free_cube(double ***C, int n, int m) {
  *     Returns 0 on success, -1 if n < 2 or n > MAX_SPLINE_N.
  *----------------------------------------------------------------------------
  */
-int spline(double x[], double y[], int n, double y2[]) {
-  int i, k;
+int dderiv(const double x[], const double y[], int n, double ddy[]) {
   double u[MAX_SPLINE_N];
-  double sig, p, qn, un;
+  double sig, p;
 
   if (n < 2 || n > MAX_SPLINE_N) {
     fprintf(stderr, "Error in spline: n=%d outside [2, %d].\n", n,
@@ -118,13 +87,13 @@ int spline(double x[], double y[], int n, double y2[]) {
     return -1;
   }
 
-  y2[0] = 0;
+  ddy[0] = 0;
   u[0] = 0;
 
-  for (i = 1; i < n - 1; i++) {
+  for (int i = 1; i < n - 1; i++) {
     sig = (x[i] - x[i - 1]) / (x[i + 1] - x[i - 1]);
-    p = sig * y2[i - 1] + 2;
-    y2[i] = (sig - 1) / p;
+    p = sig * ddy[i - 1] + 2;
+    ddy[i] = (sig - 1) / p;
     u[i] = (6 *
                 ((y[i + 1] - y[i]) / (x[i + 1] - x[i]) -
                  (y[i] - y[i - 1]) / (x[i] - x[i - 1])) /
@@ -133,25 +102,25 @@ int spline(double x[], double y[], int n, double y2[]) {
            p;
   }
 
-  qn = 0;
-  un = 0;
-  y2[n - 1] = (un - qn * u[n - 2]) / (qn * y2[n - 2] + 1);
+  double qn = 0;
+  double un = 0;
+  ddy[n - 1] = (un - qn * u[n - 2]) / (qn * ddy[n - 2] + 1);
 
-  for (k = n - 2; k >= 0; k--) {
-    y2[k] = y2[k] * y2[k + 1] + u[k];
+  for (int k = n - 2; k >= 0; k--) {
+    ddy[k] = ddy[k] * ddy[k + 1] + u[k];
   }
 
   return 0;
 }
 
-int bisect(double xa[], int n, double x) {
+int bisect(const double x[], int n, double xi) {
   int k;
   int klo = 0;
   int khi = n - 1;
 
   while ((khi - klo) > 1) {
     k = (klo + khi) / 2; // No need to floor() here, since it's integer division
-    if (xa[k] > x)
+    if (x[k] > xi)
       khi = k;
     else
       klo = k;
@@ -161,13 +130,13 @@ int bisect(double xa[], int n, double x) {
 }
 
 /*
- * Find the bracketing indices and interpolation coefficients for x in xa.
+ * Find the bracketing indices and interpolation coefficients for xi in x.
  *
  * Returns 0 on success, -1 if n < 2 or the bracketing interval is
- * degenerate (xa not strictly increasing). On failure the outputs are
+ * degenerate (x not strictly increasing). On failure the outputs are
  * left untouched.
  */
-int spline_coefficients(double xa[], int n, double x, int *klo_out,
+int spline_coefficients(const double x[], int n, double xi, int *klo_out,
                         int *khi_out, double *a_out, double *b_out,
                         double *h_out) {
   if (n < 2) {
@@ -176,19 +145,19 @@ int spline_coefficients(double xa[], int n, double x, int *klo_out,
   }
 
   // Find indices to interpolate between
-  int klo = bisect(xa, n, x);
+  int klo = bisect(x, n, xi);
   int khi = klo + 1;
 
-  double h = xa[khi] - xa[klo];
+  double h = x[khi] - x[klo];
 
   if (fabs(h) < 1e-10) {
-    fprintf(stderr, "Error in spline_coefficients: bad xa input.\n");
+    fprintf(stderr, "Error in spline_coefficients: bad x input.\n");
     return -1;
   }
 
   // Coefficients
-  *a_out = (xa[khi] - x) / h;
-  *b_out = (x - xa[klo]) / h;
+  *a_out = (x[khi] - xi) / h;
+  *b_out = (xi - x[klo]) / h;
   *h_out = h;
 
   // Indices
@@ -202,31 +171,27 @@ int spline_coefficients(double xa[], int n, double x, int *klo_out,
  *----------------------------------------------------------------------------
  *     Spline interpolation routine from Press et al. (1986, p.88).
  *
- *     Given the arrays xa and ya of length n, which tabulate a function
- *     (with the xa(i)'s in order), and given the array y2a, which is
- *     the output from SPLINE above, and given a value of x, this
- *     routine returns a cubic-spline interpolated value y.
+ *     Given the arrays x and y of length n, which tabulate a function
+ *     (with the x(i)'s in order), and given the array ddy, which is
+ *     the output from SPLINE above, and given a specific xi, this
+ *     routine returns a cubic-spline interpolated value yi.
  *
  *     NOTE: for computational efficiency, we pre-compute lower and upper
  *     indices as well as the spline coefficients (above), since they don't
  *     change for an individual pixel/spangle.
  *----------------------------------------------------------------------------
  */
-double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
-              double h) {
-  double y =
-      a * ya[klo] + b * ya[khi] +
-      ((a * a * a - a) * y2a[klo] + (b * b * b - b) * y2a[khi]) * (h * h) / 6;
-  return y;
+double interp(const double y[], const double ddy[], int klo, int khi, double a,
+              double b, double h) {
+  return a * y[klo] + b * y[khi] +
+         ((a * a * a - a) * ddy[klo] + (b * b * b - b) * ddy[khi]) * (h * h) /
+             6;
 }
 
-//////////////////////////////////////////////////////////////
-// PHYSICAL ROUTINES
-//////////////////////////////////////////////////////////////
 /*
  *----------------------------------------------------------------------------
- *     Read a Fourier coefficients file and calculate the Stokes vector
- *     for a given geometry.
+ *     Calculate the Stokes vector for a given geometry (given a table of
+ *     Fourier coefficients read from a file).
  *
  *     It is assumed that the Stokes vector of the incoming sunlight
  *     is [1,0,0,0], with the flux measured perpendicular to the direction
@@ -237,32 +202,30 @@ double splint(double ya[], double y2a[], int klo, int khi, double a, double b,
  *
  *     Returns 0 on success, -1 on invalid sizes (nmat outside [1, MAX_NMAT],
  *     nmugs outside [2, MAX_SPLINE_N]) or a degenerate xmu grid. On failure
- *     Sarr is not (fully) written.
+ *     stokes is not (fully) written.
  *
- *     Sarr must have npix rows of at least nmat + 1 elements.
+ *     stokes is a flat row-major buffer of npix * (nmat + 1) doubles: row n
+ *     holds the nmat Stokes elements of pixel n followed by the degree of
+ *     polarisation.
  *
- *     Author: Daphne M. Stam
- *     Date: September 2022
  *----------------------------------------------------------------------------
  */
-int reflection(struct FourierCoefficients F, int qreflection, int npix,
-               double *phi, double *beta, double *theta0, double *theta,
-               double *apix, double **Sarr) {
-  // Declarations
-  int i, j, k, m, n;
-  double be, SvR2, SvR3, P;
-  double mu, mu0, muold = 1, mu0old = 1;
-  int ki;
-  double fac;
+int reflection(int nmat, int nmugs, int nfou, const double *xmu,
+               const double *fou_flat, int npix, const double *phi,
+               const double *beta, const double *theta0, const double *theta,
+               const double *apix, double *stokes_flat) {
+
+  // xmu is a 1D array of length nmugs
+  // phi, beta, theta0, theta, and apix are 1D arrays of length npix
+  // fou_flat is a flattened 4D array with shape (nfou, nmat, nmugs, nmugs)
+  // stokes_flat is a flattened 2D array with shape (npix, nmat + 1)
+
+  double muold = 1, mu0old = 1;
   int ret = 0;
+  double Bplus[MAX_NSTOKES];
 
-  // Read sizes
-  int nmat = F.nmat;
-  int nmugs = F.nmugs;
-  int nfou = F.nfou;
+  // Validate sizes before allocating anything
 
-  // Validate sizes before allocating anything: Bplus has MAX_NMAT elements
-  // and spline() has a fixed-size scratch array.
   if (nmat < 1 || nmat > MAX_NMAT) {
     fprintf(stderr, "Error in reflection: nmat=%d outside [1, %d].\n", nmat,
             MAX_NMAT);
@@ -273,128 +236,135 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
             MAX_SPLINE_N);
     return -1;
   }
+  if (npix < 1) {
+    fprintf(stderr, "Error in reflection: npix=%d is < 1.\n", npix);
+    return -1;
+  }
+  if (nfou < 1) {
+    fprintf(stderr, "Error in reflection: nfou=%d is < 1.\n", nfou);
+    return -1;
+  }
 
-  double ***rf, ***rfsec;
-  double **RM, **rfmu0;
-  double *rfsecmu0;
-  double *SvR, *rf3save;
-  double Bplus[MAX_NMAT];
+  // VLA-pointer views of the flat buffers.
+  // The bounds are evaluated here after being validated (above)
+  const double (*fou)[nmat][nmugs][nmugs] =
+      (const double (*)[nmat][nmugs][nmugs])fou_flat;
+  double (*stokes)[nmat + 1] = (double (*)[nmat + 1]) stokes_flat;
 
-  // Allocate dynamically temporal matrices
-  // Cubes
-  rf = zeros_cube(nmat, nmugs, nmugs);
-  rfsec = zeros_cube(nmat, nmugs, nmugs);
-  // Matrices
-  rfmu0 = zeros_matrix(nmat, nmugs);
-  RM = zeros_matrix(npix, nmat);
-  // Vectos nmugs
-  rfsecmu0 = zeros_vector(nmugs);
-  // Vectos nmats
-  rf3save = zeros_vector(nmat);
-  SvR = zeros_vector(nmat);
+  // Allocate temporary arrays with VLA pointers,
+  // using calloc (so that they're on the heap)
+  double (*ddf)[nmugs][nmugs] =
+      (double (*)[nmugs][nmugs])zeros3d(nmat, nmugs, nmugs);
+  double (*f_mu0)[nmugs] = (double (*)[nmugs])zeros2d(nmat, nmugs);
+  double (*RM)[nmat] = (double (*)[nmat])zeros2d(npix, nmat);
+  double *ddf_mu0 = zeros1d(nmugs);
+
+  // nmat is small, these can go on the stack
+  double f_mu0_mu[MAX_NSTOKES] = {0};
+  double SvR[MAX_NSTOKES] = {0};
 
   // Loop over the Fourier coefficients:
-  for (m = 0; m < nfou; m++) {
+  for (int m = 0; m < nfou; m++) {
 
-    fac = 1.0;
+    double fac = 1.0;
     if (m == 0)
       fac = 0.5;
 
     // Initialize the interpolation matrix for the current fourier coefficient:
-    for (j = 0; j < nmugs; j++) {
-
-      for (k = 0; k < nmat; k++) {
-        ki = j * nmat + k;
-
-        for (n = 0; n < nmugs; n++) {
-          rf[k][j][n] = qreflection ? F.rfou[ki][n][m] : F.rtra[ki][n][m];
-        }
-
-        // Use slice rf(k,j,:), write directly into corresponding rfsec row.
-        // nmugs was validated above, so spline() cannot fail here.
-        spline(F.xmu, rf[k][j], nmugs, rfsec[k][j]);
-
-      } // End k
-
-    } // End j
+    for (int i = 0; i < nmugs; i++) {
+      for (int k = 0; k < nmat; k++) {
+        // Row fou[m][k][i][:] is contiguous: no copy needed.
+        // Write directly into corresponding ddf row.
+        // nmugs was validated above, so dderiv() cannot fail here.
+        dderiv(xmu, fou[m][k][i], nmugs, ddf[k][i]);
+      }
+    }
 
     /*
      *----------------------------------------------------------------------------
      *     Loop over the pixels:
-     *       If the input angles are (very) similar to a previously calculated
-     * case use those values. To obtain obtain the fourier coefficient at
-     * (mu,mu0) spline has to be called a second time.
+     *     If the input angles are (very) similar to a previously calculated
+     *     case use those values. To obtain obtain the fourier coefficient at
+     *     (mu,mu0) spline has to be called a second time.
      *----------------------------------------------------------------------------
      */
-    for (i = 0; i < npix; i++) {
-      mu = theta[i];
-      mu0 = theta0[i];
-      Bplus[0] = cos(m * phi[i]);
-      Bplus[1] = cos(m * phi[i]);
-      Bplus[2] = sin(m * phi[i]);
-      Bplus[3] = sin(m * phi[i]);
+    for (int n = 0; n < npix; n++) {
+      double mu = theta[n];
+      double mu0 = theta0[n];
+      double cosmphi = cos(m * phi[n]);
+      double sinmphi = sin(m * phi[n]);
+      Bplus[0] = cosmphi;
+      Bplus[1] = cosmphi;
+      Bplus[2] = sinmphi;
+      Bplus[3] = sinmphi;
 
-      if ((i > 0) && ((fabs(mu - muold) < 1e-6)) &&
-          (fabs(mu0 - mu0old) < 1e-6)) {
-
-        for (k = 0; k < nmat; k++)
-          RM[i][k] = RM[i][k] + 2 * Bplus[k] * fac * rf3save[k];
-
-      } else {
+      if ((n <= 0) || !(fabs(mu - muold) < REFLECTION_TOLERANCE) ||
+          !(fabs(mu0 - mu0old) < REFLECTION_TOLERANCE)) {
+        // Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip and
+        // reuse previous cached value
 
         // Get indices and coefficients to work with (at mu0)
         int klo, khi;
         double a, b, h;
-        if (spline_coefficients(F.xmu, nmugs, mu0, &klo, &khi, &a, &b, &h)) {
+        if (spline_coefficients(xmu, nmugs, mu0, &klo, &khi, &a, &b, &h)) {
           ret = -1;
           goto cleanup;
         }
 
-        for (j = 0; j < nmugs; j++) {
-          for (k = 0; k < nmat; k++) {
-            // Use rf(k,j,:) and rfsec(k,j,:) slices directly, and write
-            // straight into rmu0(k,j,:) Do the spline interpolation between klo
+        for (int i = 0; i < nmugs; i++) {
+          for (int k = 0; k < nmat; k++) {
+            // Use fou(m,k,i,:) and ddf(k,i,:) slices directly, and write
+            // straight into rmu0(k,i,:) Do the spline interpolation between klo
             // and khi, given the coefficients a,b,h
-            rfmu0[k][j] = splint(rf[k][j], rfsec[k][j], klo, khi, a, b, h);
+            f_mu0[k][i] = interp(fou[m][k][i], ddf[k][i], klo, khi, a, b, h);
           }
         }
 
         // Get indices and coefficients to work with (now at mu)
-        if (spline_coefficients(F.xmu, nmugs, mu, &klo, &khi, &a, &b, &h)) {
+        if (spline_coefficients(xmu, nmugs, mu, &klo, &khi, &a, &b, &h)) {
           ret = -1;
           goto cleanup;
         }
 
-        for (k = 0; k < nmat; k++) {
-          spline(F.xmu, rfmu0[k], nmugs, rfsecmu0);
+        for (int k = 0; k < nmat; k++) {
+          dderiv(xmu, f_mu0[k], nmugs, ddf_mu0);
           // Do the spline interpolation between klo and khi, given the
           // coefficients a,b,h
-          rf3save[k] = splint(rfmu0[k], rfsecmu0, klo, khi, a, b, h);
+          f_mu0_mu[k] = interp(f_mu0[k], ddf_mu0, klo, khi, a, b, h);
           muold = mu;
           mu0old = mu0;
-          RM[i][k] = RM[i][k] + 2 * Bplus[k] * fac * rf3save[k];
         }
-      } // End else
-    } // End i (pix)
-  } // End loop fourier coefficients
+      }
 
-  // Loop again over the pixels to rotate Stokes vector:
-  for (i = 0; i < npix; i++) {
-    mu = theta[i];
-    mu0 = theta0[i];
+      // Compute the reflection matrix at pixel n and stokes parameter k,
+      // summing over fourier terms m
+      for (int k = 0; k < nmat; k++) {
+        RM[n][k] = RM[n][k] + 2 * Bplus[k] * fac * f_mu0_mu[k];
+      }
+
+    } // End loop over pixels
+  } // End loop over fourier coefficients
+
+  // Loop again over the pixels to rotate the Stokes vector
+  for (int n = 0; n < npix; n++) {
+    double mu = theta[n];
+    double mu0 = theta0[n];
 
     // Calculate the locally reflected Stokes vector:
-    for (k = 0; k < nmat; k++)
-      SvR[k] = mu0 * RM[i][k];
+    for (int k = 0; k < nmat; k++)
+      SvR[k] = mu0 * RM[n][k];
 
-    // Rotate Stokes elements Q and U to the actual reference plane:
-    be = 2 * beta[i];
-    SvR2 = cos(be) * SvR[1] + sin(be) * SvR[2];
-    SvR3 = -sin(be) * SvR[1] + cos(be) * SvR[2];
+    // Rotate Stokes elements Q and U to the actual reference plane.
+    // Note: does this implicitly assume nmat=3 ?
+    double cosb2 = cos(2 * beta[n]);
+    double sinb2 = sin(2 * beta[n]);
+    double SvR2 = cosb2 * SvR[1] + sinb2 * SvR[2];
+    double SvR3 = -sinb2 * SvR[1] + cosb2 * SvR[2];
     SvR[1] = SvR2;
     SvR[2] = SvR3;
 
     // Compute the local degree of polarisation P:
+    double P;
     if (fabs(SvR[0]) < 1e-6)
       P = 0;
     else if (fabs(SvR[2]) < 1e-6)
@@ -404,37 +374,23 @@ int reflection(struct FourierCoefficients F, int qreflection, int npix,
     if (fabs(P) < 1e-6)
       P = 0;
 
-    /*
-     *----------------------------------------------------------------------------
-     *       Add the Stokes elements of the pixel to an array:
-     *       Multiply with mu and the actual pixel area to obtain stokes
-     * elements
-     *----------------------------------------------------------------------------
-     */
-    for (k = 0; k < nmat; k++) {
-      Sarr[i][k] = SvR[k] * mu * apix[i];
+    // Multiply with mu and the actual pixel area to obtain the stokes
+    // element k for each pixel n.
+    for (int k = 0; k < nmat; k++) {
+      stokes[n][k] = SvR[k] * mu * apix[n];
     }
 
-    // The value of the degree of polarization
-    Sarr[i][nmat] = P;
-  } // End i (pix)
+    // The value of the degree of polarization (last index)
+    stokes[n][nmat] = P;
+
+  } // End loop over pixels
 
 cleanup:
-  // Free temporal arrays (every level, bottom-up)
-  free_cube(rf, nmat, nmugs);
-  free_cube(rfsec, nmat, nmugs);
-  // Matrices
-  free_matrix(rfmu0, nmat);
-  free_matrix(RM, npix);
-  // Vectos nmugs
-  free(rfsecmu0);
-  // Vectos nmats
-  free(rf3save);
-  free(SvR);
+  // Free temporary arrays
+  free(ddf);
+  free(f_mu0);
+  free(RM);
+  free(ddf_mu0);
 
   return ret;
-}
-
-size_t fourier_coefficients_size(void) {
-  return sizeof(struct FourierCoefficients);
 }
