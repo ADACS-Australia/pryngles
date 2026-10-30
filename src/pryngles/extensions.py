@@ -22,6 +22,8 @@ from importlib.util import find_spec
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
+from scipy.interpolate import CubicSpline
+
 
 from pryngles.common import VERB_SIMPLE, verbose
 
@@ -57,30 +59,17 @@ cpixx_ext.reflection.argtypes = [
     f64_2d,
 ]
 
-cpixx_ext.get_spline_derivs.restype = ctypes.c_int
-cpixx_ext.get_spline_derivs.argtypes = [
-    ctypes.c_int,
-    ctypes.c_int,
-    ctypes.c_int,
-    f64_1d,
-    f64_4d,
-    f64_4d,
-    f64_4d,
-    f64_4d,
-]
-
 
 def calculate_spline_derivs(xmu, fou):
-    nfou, nmat, nmugs, nmugs2 = fou.shape
-    if nmugs != nmugs2:
-        raise RuntimeError("fourier array not square")
-    ddf_j = np.zeros_like(fou)
-    ddf_i = np.zeros_like(fou)
-    ddddf_ij = np.zeros_like(fou)
-    ret = cpixx_ext.get_spline_derivs(nmat, nmugs, nfou, xmu, fou, ddf_j, ddf_i, ddddf_ij)
-    if ret != 0:
-        raise RuntimeError(f"Error in get_spline_derivs: {ret}")
-    return {"j": ddf_j, "i": ddf_i, "ij": ddddf_ij}
+
+    def d2(y, axis):
+        s = CubicSpline(xmu, y, axis=axis, bc_type="natural")
+        return np.ascontiguousarray(s(xmu, 2))
+
+    ddf_j = d2(fou, 3)
+    ddf_i = d2(fou, 2)
+
+    return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 3)}
 
 
 class StokesScatterer:
