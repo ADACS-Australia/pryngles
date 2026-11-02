@@ -46,18 +46,7 @@ def calculate_spline_derivs(xmu, fou):
 
 @njit(i64(f64_arr1, f64), cache=True)
 def bisect(x, xi):
-    klo = 0
-    khi = len(x) - 1
-
-    while (khi - klo) > 1:
-        k = (klo + khi) // 2
-        if x[k] > xi:
-            khi = k
-        else:
-            klo = k
-
-    return klo
-
+    return min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
 
 #
 # Find the bracketing indices and interpolation coefficients for xi in x.
