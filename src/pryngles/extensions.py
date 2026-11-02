@@ -196,10 +196,10 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
                     # Only the two rows i=ilo,ihi that bracket mu are needed. For
                     # each, interpolate f and d2f/di2 along j at mu0, given the
                     # coefficients ja,jb,jh
-                    f_mu0[0] = interp(fou[m, k, ilo], ddf_j[m, k, ilo], jlo, jhi, ja, jb, jh)
-                    f_mu0[1] = interp(fou[m, k, ihi], ddf_j[m, k, ihi], jlo, jhi, ja, jb, jh)
-                    ddf_mu0[0] = interp(ddf_i[m, k, ilo], ddddf_ij[m, k, ilo], jlo, jhi, ja, jb, jh)
-                    ddf_mu0[1] = interp(ddf_i[m, k, ihi], ddddf_ij[m, k, ihi], jlo, jhi, ja, jb, jh)
+                    f_mu0[0] = interp(fou[m, k, ilo, :], ddf_j[m, k, ilo, :], jlo, jhi, ja, jb, jh)
+                    f_mu0[1] = interp(fou[m, k, ihi, :], ddf_j[m, k, ihi, :], jlo, jhi, ja, jb, jh)
+                    ddf_mu0[0] = interp(ddf_i[m, k, ilo, :], ddddf_ij[m, k, ilo, :], jlo, jhi, ja, jb, jh)
+                    ddf_mu0[1] = interp(ddf_i[m, k, ihi, :], ddddf_ij[m, k, ihi, :], jlo, jhi, ja, jb, jh)
                     # Do the spline interpolation along i between the two rows,
                     # given the coefficients ia,ib,ih
                     f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, 1, ia, ib, ih)
