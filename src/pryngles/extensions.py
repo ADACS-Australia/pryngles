@@ -31,6 +31,12 @@ i64 = types.int64
 f64_arr1 = types.Array(f64, 1, "C", readonly=True)
 f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 
+# Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
+MAX_NSTOKES = 4
+
+# Tolerance for reusing previously calculated reflection values when the input angles are very similar
+REFLECTION_TOLERANCE = 1.0e-6
+
 
 def calculate_spline_derivs(xmu, fou):
 
@@ -44,48 +50,30 @@ def calculate_spline_derivs(xmu, fou):
     return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 3)}
 
 
-@njit(i64(f64_arr1, f64), cache=True)
-def bisect(x, xi):
-    return min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
+@njit(types.Tuple((i64, f64, f64, f64, f64))(f64_arr1, f64), cache=True)
+def spline_weights(x, xi):
+    # Find the closest index that's less than xval
+    i = min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
 
-#
-# Find the bracketing indices and interpolation coefficients for xi in x.
-# x must be strictly increasing with at least 2 points.
-#
-@njit(types.Tuple((i64, f64_arr1))(f64_arr1, f64), cache=True)
-def spline_coefficients(x, xi):
-    # Find indices to interpolate between
-    klo = bisect(x, xi)
-    h = x[klo + 1] - x[klo]
-    # Coefficients
-    a = (x[klo + 1] - xi) / h
-    b = (xi - x[klo]) / h
+    h = x[i + 1] - x[i]
+
+    # Compute the corresponding spline weights for xval, given the closest index on the left
+    # where the interpolation will be of the form:
+    #  f(x) = a * f(x0) + b * f(x1) + c * d2f(x0)/dx2 + d * d2f(x1)/dx2
+    a = (x[i + 1] - xi) / h
+    b = (xi - x[i]) / h
     c = (a**3 - a) * (h**2 / 6)
     d = (b**3 - b) * (h**2 / 6)
-    return klo, np.array([a, b, c, d])
+
+    return i, a, b, c, d
 
 
-#
-# ----------------------------------------------------------------------------
-#     Spline interpolation routine from Press et al. (1986, p.88).
-#
-#     Given the arrays y and ddy (second derivatives of y), the precomputed
-#     lower and upper indices klo/khi and spline coefficients a, b, h (from
-#     spline_coefficients), returns the cubic-spline interpolated value.
-# ----------------------------------------------------------------------------
-#
 @njit(f64(f64_arr1, f64_arr1, i64, f64_arr1), cache=True)
 def interp(y, ddy, klo, coeffs):
     a, b, c, d = coeffs
     return a * y[klo] + b * y[klo + 1] + c * ddy[klo] + d * ddy[klo + 1]
 
 
-# Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
-MAX_NSTOKES = 4
-REFLECTION_TOLERANCE = 1.0e-6
-
-
-#
 # ----------------------------------------------------------------------------
 #     Calculate the Stokes vector for a given geometry (given a table of
 #     Fourier coefficients read from a file).
@@ -104,7 +92,6 @@ REFLECTION_TOLERANCE = 1.0e-6
 #     Returns stokes with shape (npix, nmat + 1): row n holds the nmat Stokes
 #     elements of pixel n followed by the degree of polarisation.
 # ----------------------------------------------------------------------------
-#
 @njit(
     types.Array(f64, 2, "C")(
         f64_arr1,  # xmu
@@ -139,10 +126,8 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     # once up front, including the two-element scratch arrays used by interp)
     RM = np.zeros((npix, nmat))
     Bplus = np.zeros(MAX_NSTOKES)
-    f_mu0_mu = np.zeros(MAX_NSTOKES)
+    f_ij = np.zeros(MAX_NSTOKES)
     SvR = np.zeros(MAX_NSTOKES)
-    f_mu0 = np.zeros(2)
-    ddf_mu0 = np.zeros(2)
 
     # Loop over the Fourier coefficients:
     for m in range(nfou):
@@ -154,15 +139,13 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
         #     If the input angles are (very) similar to a previously calculated
         #     case, reuse those values.
         #
-        #     To get the fourier coefficient at (mu, mu0), interpolate along j at
-        #     mu0 for the two rows bracketing mu, then along i at mu. The second
+        #     To get the fourier coefficient at (theta[n], theta0[n]), interpolate along j at
+        #     theta0[n] for the two rows bracketing theta[n], then along i at theta[n]. The second
         #     pass needs d2f/di2 at those rows; it comes from interpolating the
         #     precomputed ddf_i along j (spline construction along i and
         #     interpolation along j commute), so no spline is solved per pixel.
         # ----------------------------------------------------------------------
         for n in range(npix):
-            mu = theta[n]
-            mu0 = theta0[n]
             cosmphi = np.cos(m * phi[n])
             sinmphi = np.sin(m * phi[n])
             Bplus[0] = cosmphi
@@ -170,43 +153,65 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
             Bplus[2] = sinmphi
             Bplus[3] = sinmphi
 
-            if n <= 0 or not (abs(mu - muold) < REFLECTION_TOLERANCE) or not (abs(mu0 - mu0old) < REFLECTION_TOLERANCE):
-                # Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip
+            if (
+                n <= 0
+                or not (abs(theta[n] - muold) < REFLECTION_TOLERANCE)
+                or not (abs(theta0[n] - mu0old) < REFLECTION_TOLERANCE)
+            ):
+                # Interpolate the fourier terms at j=theta0[n] and i=theta[n], otherwise skip
                 # and reuse previous cached value
 
-                # Get indices and coefficients to work with (at mu0, along j)
-                jlo, j_coeffs = spline_coefficients(xmu, mu0)
+                # Get indices and coefficients to work with (at theta0[n], along j)
+                j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0[n])
 
-                # Get indices and coefficients to work with (now at mu, along i)
-                ilo, i_coeffs = spline_coefficients(xmu, mu)
+                # Get indices and coefficients to work with (now at theta[n], along i)
+                i, wia, wib, wic, wid = spline_weights(xmu, theta[n])
 
                 for k in range(nmat):
-                    # Only the two rows i=ilo,ihi that bracket mu are needed. For
-                    # each, interpolate f and d2f/di2 along j at mu0, given the
-                    # coefficients ja,jb,jh
-                    f_mu0[0] = interp(fou[m, k, ilo, :], ddf_j[m, k, ilo, :], jlo, j_coeffs)
-                    f_mu0[1] = interp(fou[m, k, ilo + 1, :], ddf_j[m, k, ilo + 1, :], jlo, j_coeffs)
-                    ddf_mu0[0] = interp(ddf_i[m, k, ilo, :], ddddf_ij[m, k, ilo, :], jlo, j_coeffs)
-                    ddf_mu0[1] = interp(ddf_i[m, k, ilo + 1, :], ddddf_ij[m, k, ilo + 1, :], jlo, j_coeffs)
-                    # Do the spline interpolation along i between the two rows,
-                    # given the coefficients ia,ib,ih
-                    f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, i_coeffs)
-                muold = mu
-                mu0old = mu0
+                    # Interpolate f and d2f/di2 at theta0[n], for the two rows (i and i+1) bracketing theta[n]
+                    f_ileft = (
+                        wja * fou[m, k, i, j]
+                        + wjb * fou[m, k, i, j + 1]
+                        + wjc * ddf_j[m, k, i, j]
+                        + wjd * ddf_j[m, k, i, j + 1]
+                    )
+                    f_iright = (
+                        wja * fou[m, k, i + 1, j]
+                        + wjb * fou[m, k, i + 1, j + 1]
+                        + wjc * ddf_j[m, k, i + 1, j]
+                        + wjd * ddf_j[m, k, i + 1, j + 1]
+                    )
+                    ddf_ileft = (
+                        wja * ddf_i[m, k, i, j]
+                        + wjb * ddf_i[m, k, i, j + 1]
+                        + wjc * ddddf_ij[m, k, i, j]
+                        + wjd * ddddf_ij[m, k, i, j + 1]
+                    )
+                    ddf_iright = (
+                        wja * ddf_i[m, k, i + 1, j]
+                        + wjb * ddf_i[m, k, i + 1, j + 1]
+                        + wjc * ddddf_ij[m, k, i + 1, j]
+                        + wjd * ddddf_ij[m, k, i + 1, j + 1]
+                    )
+
+                    # Then interpolate f along i at theta[n] to get the Fourier coefficient (m, k)
+                    # at the point whose closest grid nodes on the left are (i, j)
+                    f_ij[k] = wia * f_ileft + wib * f_iright + wic * ddf_ileft + wid * ddf_iright
+
+                # Save the current angles to compare them with the next pixel's angles
+                muold = theta[n]
+                mu0old = theta0[n]
 
             # Compute the reflection matrix at pixel n and stokes parameter k,
             # summing over fourier terms m
             for k in range(nmat):
-                RM[n, k] += 2 * Bplus[k] * fac * f_mu0_mu[k]
+                RM[n, k] += 2 * Bplus[k] * fac * f_ij[k]
 
     # Loop again over the pixels to rotate the Stokes vector
     for n in range(npix):
-        mu = theta[n]
-        mu0 = theta0[n]
-
-        # Calculate the locally reflected Stokes vector:
+        # Calculate the locally reflected Stokes vector
         for k in range(nmat):
-            SvR[k] = mu0 * RM[n, k]
+            SvR[k] = theta0[n] * RM[n, k]
 
         # Rotate Stokes elements Q and U to the actual reference plane.
         # Note: does this implicitly assume nmat=3 ?
@@ -224,13 +229,14 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
             P = -SvR[1] / SvR[0]
         else:
             P = np.sqrt(SvR[1] * SvR[1] + SvR[2] * SvR[2]) / SvR[0]
+
         if abs(P) < 1e-6:
             P = 0.0
 
-        # Multiply with mu and the actual pixel area to obtain the stokes
+        # Multiply with theta[n] (theta(n)) and the actual pixel area to obtain the stokes
         # element k for each pixel n.
         for k in range(nmat):
-            stokes[n, k] = SvR[k] * mu * apix[n]
+            stokes[n, k] = SvR[k] * theta[n] * apix[n]
 
         # The value of the degree of polarization (last index)
         stokes[n, nmat] = P
