@@ -89,9 +89,7 @@ def spline_coefficients(x, xi):
 #
 @njit(f64(f64_arr1, f64_arr1, i64, i64, f64, f64, f64), cache=True)
 def interp(y, ddy, klo, khi, a, b, h):
-    return a * y[klo] + b * y[khi] + (
-        (a * a * a - a) * ddy[klo] + (b * b * b - b) * ddy[khi]
-    ) * (h * h) / 6
+    return a * y[klo] + b * y[khi] + ((a**3 - a) * ddy[klo] + (b**3 - b) * ddy[khi]) * h**2 / 6
 
 
 # Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
