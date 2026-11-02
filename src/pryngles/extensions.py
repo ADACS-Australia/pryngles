@@ -68,12 +68,6 @@ def spline_weights(x, xi):
     return i, a, b, c, d
 
 
-@njit(f64(f64_arr1, f64_arr1, i64, f64_arr1), cache=True)
-def interp(y, ddy, klo, coeffs):
-    a, b, c, d = coeffs
-    return a * y[klo] + b * y[klo + 1] + c * ddy[klo] + d * ddy[klo + 1]
-
-
 # ----------------------------------------------------------------------------
 #     Calculate the Stokes vector for a given geometry (given a table of
 #     Fourier coefficients read from a file).
