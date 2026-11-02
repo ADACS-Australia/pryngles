@@ -124,6 +124,12 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     nfou, nmat = fou.shape[:2]
     npix = len(phi)
 
+    # Note, this function assumes:
+    #   - xmu is strictly increasing, with at least 2 points
+    #   - fou, ddf_j, ddf_i and ddddf_ij all have the same shape (nfou, nmat, nmugs, nmugs)
+    #   - phi, beta, theta0, theta and apix all have the same length (npix)
+    #   - nfou > 1, npix > 1, and 0 < nmat < MAX_NSTOKES
+
     muold = 1.0
     mu0old = 1.0
 
@@ -314,10 +320,17 @@ class StokesScatterer:
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
         self.rfou_derivs, self.rtra_derivs = rfou_derivs, rtra_derivs
 
+        # Check array dimensions
+        if nfou < 1 or nmat < 1 or not (0 < nmat < MAX_NSTOKES):
+            raise RuntimeError("Invalid array sizes in reflection()")
+
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
         """ """
         npix = len(phi)
         stokes = np.zeros((npix, self.nmat + 1))
+
+        if len(beta) != npix or len(theta0) != npix or len(theta) != npix or len(apix) != npix:
+            raise RuntimeError("Input arrays must have the same length")
 
         # Don't rely on C extension safely handling zero-length arrays
         if npix == 0:
