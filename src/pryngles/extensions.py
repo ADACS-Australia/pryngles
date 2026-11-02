@@ -63,19 +63,17 @@ def bisect(x, xi):
 # Find the bracketing indices and interpolation coefficients for xi in x.
 # x must be strictly increasing with at least 2 points.
 #
-@njit(types.Tuple((i64, i64, f64, f64, f64))(f64_arr1, f64), cache=True)
+@njit(types.Tuple((i64, f64_arr1))(f64_arr1, f64), cache=True)
 def spline_coefficients(x, xi):
     # Find indices to interpolate between
     klo = bisect(x, xi)
-    khi = klo + 1
-
-    h = x[khi] - x[klo]
-
+    h = x[klo + 1] - x[klo]
     # Coefficients
-    a = (x[khi] - xi) / h
+    a = (x[klo + 1] - xi) / h
     b = (xi - x[klo]) / h
-
-    return klo, khi, a, b, h
+    c = (a**3 - a) * (h**2 / 6)
+    d = (b**3 - b) * (h**2 / 6)
+    return klo, np.array([a, b, c, d])
 
 
 #
@@ -87,9 +85,10 @@ def spline_coefficients(x, xi):
 #     spline_coefficients), returns the cubic-spline interpolated value.
 # ----------------------------------------------------------------------------
 #
-@njit(f64(f64_arr1, f64_arr1, i64, i64, f64, f64, f64), cache=True)
-def interp(y, ddy, klo, khi, a, b, h):
-    return a * y[klo] + b * y[khi] + ((a**3 - a) * ddy[klo] + (b**3 - b) * ddy[khi]) * h**2 / 6
+@njit(f64(f64_arr1, f64_arr1, i64, f64_arr1), cache=True)
+def interp(y, ddy, klo, coeffs):
+    a, b, c, d = coeffs
+    return a * y[klo] + b * y[klo + 1] + c * ddy[klo] + d * ddy[klo + 1]
 
 
 # Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
@@ -181,22 +180,22 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
                 # and reuse previous cached value
 
                 # Get indices and coefficients to work with (at mu0, along j)
-                jlo, jhi, ja, jb, jh = spline_coefficients(xmu, mu0)
+                jlo, j_coeffs = spline_coefficients(xmu, mu0)
 
                 # Get indices and coefficients to work with (now at mu, along i)
-                ilo, ihi, ia, ib, ih = spline_coefficients(xmu, mu)
+                ilo, i_coeffs = spline_coefficients(xmu, mu)
 
                 for k in range(nmat):
                     # Only the two rows i=ilo,ihi that bracket mu are needed. For
                     # each, interpolate f and d2f/di2 along j at mu0, given the
                     # coefficients ja,jb,jh
-                    f_mu0[0] = interp(fou[m, k, ilo, :], ddf_j[m, k, ilo, :], jlo, jhi, ja, jb, jh)
-                    f_mu0[1] = interp(fou[m, k, ihi, :], ddf_j[m, k, ihi, :], jlo, jhi, ja, jb, jh)
-                    ddf_mu0[0] = interp(ddf_i[m, k, ilo, :], ddddf_ij[m, k, ilo, :], jlo, jhi, ja, jb, jh)
-                    ddf_mu0[1] = interp(ddf_i[m, k, ihi, :], ddddf_ij[m, k, ihi, :], jlo, jhi, ja, jb, jh)
+                    f_mu0[0] = interp(fou[m, k, ilo, :], ddf_j[m, k, ilo, :], jlo, j_coeffs)
+                    f_mu0[1] = interp(fou[m, k, ilo + 1, :], ddf_j[m, k, ilo + 1, :], jlo, j_coeffs)
+                    ddf_mu0[0] = interp(ddf_i[m, k, ilo, :], ddddf_ij[m, k, ilo, :], jlo, j_coeffs)
+                    ddf_mu0[1] = interp(ddf_i[m, k, ilo + 1, :], ddddf_ij[m, k, ilo + 1, :], jlo, j_coeffs)
                     # Do the spline interpolation along i between the two rows,
                     # given the coefficients ia,ib,ih
-                    f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, 1, ia, ib, ih)
+                    f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, i_coeffs)
                 muold = mu
                 mu0old = mu0
 
