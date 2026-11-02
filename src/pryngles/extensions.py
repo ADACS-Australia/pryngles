@@ -98,6 +98,7 @@ def interp(y, ddy, klo, khi, a, b, h):
 MAX_NSTOKES = 4
 REFLECTION_TOLERANCE = 1.0e-6
 
+
 #
 # ----------------------------------------------------------------------------
 #     Calculate the Stokes vector for a given geometry (given a table of
@@ -153,7 +154,6 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
 
     # Loop over the Fourier coefficients:
     for m in range(nfou):
-
         fac = 0.5 if m == 0 else 1.0
 
         # ----------------------------------------------------------------------
@@ -178,11 +178,7 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
             Bplus[2] = sinmphi
             Bplus[3] = sinmphi
 
-            if (
-                n <= 0
-                or not (abs(mu - muold) < REFLECTION_TOLERANCE)
-                or not (abs(mu0 - mu0old) < REFLECTION_TOLERANCE)
-            ):
+            if n <= 0 or not (abs(mu - muold) < REFLECTION_TOLERANCE) or not (abs(mu0 - mu0old) < REFLECTION_TOLERANCE):
                 # Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip
                 # and reuse previous cached value
 
