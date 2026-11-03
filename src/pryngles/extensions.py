@@ -18,7 +18,7 @@
 # --------------------------------------------------
 
 import numpy as np
-from numba import njit, types
+from numba import njit, prange, types
 from scipy.interpolate import CubicSpline
 
 from pryngles.common import VERB_SIMPLE, verbose
@@ -33,9 +33,6 @@ f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 
 # Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
 MAX_NSTOKES = 4
-
-# Tolerance for reusing previously calculated reflection values when the input angles are very similar
-REFLECTION_TOLERANCE = 1.0e-6
 
 
 def calculate_spline_derivs(xmu, fou):
@@ -100,6 +97,7 @@ def spline_weights(x, xi):
         f64_arr1,  # apix
     ),
     cache=True,
+    parallel=True,
 )
 def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
     nfou, nmat = fou.shape[:2]
@@ -111,27 +109,33 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     #   - phi, beta, theta0, theta and apix all have the same length (npix)
     #   - nfou > 1, npix > 1, and 0 < nmat < MAX_NSTOKES
 
-    muold = 1.0
-    mu0old = 1.0
-
     stokes = np.zeros((npix, nmat + 1))
 
     # Temporary arrays (numba has no stack arrays, so everything is allocated
-    # once up front, including the two-element scratch arrays used by interp)
-    RM = np.zeros((npix, nmat))
-    Bplus = np.zeros(MAX_NSTOKES)
-    f_ij = np.zeros(MAX_NSTOKES)
-    SvR = np.zeros(MAX_NSTOKES)
+    # once up front)
+    # RM = np.zeros(nmat)
+    # Bplus = np.zeros(MAX_NSTOKES)
+    # SvR = np.zeros(MAX_NSTOKES)
 
-    # Loop over the Fourier coefficients:
-    for m in range(nfou):
-        fac = 0.5 if m == 0 else 1.0
+    # The grid cell and spline weights of each pixel depend only on its angles,
+    # not on the Fourier term m, so look them up once per pixel here rather than
+    # once per (pixel, m) inside the Fourier loop below.
+    #   iidx, jidx: index of the grid node to the left of theta[n] (along i) and theta0[n] (along j)
+    #   iw, jw:     the corresponding (a, b, c, d) spline weights
+
+    for n in prange(npix):
+        # RM [:] = 0.0
+        RM = np.zeros(nmat)
+        Bplus = np.zeros(MAX_NSTOKES)
+        SvR = np.zeros(MAX_NSTOKES)
+        # Get indices and coefficients to work with (at theta0[n], along j)
+        j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0[n])
+
+        # Get indices and coefficients to work with (now at theta[n], along i)
+        i, wia, wib, wic, wid = spline_weights(xmu, theta[n])
 
         # ----------------------------------------------------------------------
         #     Loop over the pixels.
-        #
-        #     If the input angles are (very) similar to a previously calculated
-        #     case, reuse those values.
         #
         #     To get the fourier coefficient at (theta[n], theta0[n]), interpolate along j at
         #     theta0[n] for the two rows bracketing theta[n], then along i at theta[n]. The second
@@ -139,7 +143,10 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
         #     precomputed ddf_i along j (spline construction along i and
         #     interpolation along j commute), so no spline is solved per pixel.
         # ----------------------------------------------------------------------
-        for n in range(npix):
+
+        # Loop over the Fourier coefficients:
+        for m in range(nfou):
+            fac = 0.5 if m == 0 else 1.0
             cosmphi = np.cos(m * phi[n])
             sinmphi = np.sin(m * phi[n])
             Bplus[0] = cosmphi
@@ -147,65 +154,46 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
             Bplus[2] = sinmphi
             Bplus[3] = sinmphi
 
-            if (
-                n <= 0
-                or not (abs(theta[n] - muold) < REFLECTION_TOLERANCE)
-                or not (abs(theta0[n] - mu0old) < REFLECTION_TOLERANCE)
-            ):
-                # Interpolate the fourier terms at j=theta0[n] and i=theta[n], otherwise skip
-                # and reuse previous cached value
-
-                # Get indices and coefficients to work with (at theta0[n], along j)
-                j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0[n])
-
-                # Get indices and coefficients to work with (now at theta[n], along i)
-                i, wia, wib, wic, wid = spline_weights(xmu, theta[n])
-
-                for k in range(nmat):
-                    # Interpolate f and d2f/di2 at theta0[n], for the two rows (i and i+1) bracketing theta[n]
-                    f_ileft = (
-                        wja * fou[m, k, i, j]
-                        + wjb * fou[m, k, i, j + 1]
-                        + wjc * ddf_j[m, k, i, j]
-                        + wjd * ddf_j[m, k, i, j + 1]
-                    )
-                    f_iright = (
-                        wja * fou[m, k, i + 1, j]
-                        + wjb * fou[m, k, i + 1, j + 1]
-                        + wjc * ddf_j[m, k, i + 1, j]
-                        + wjd * ddf_j[m, k, i + 1, j + 1]
-                    )
-                    ddf_ileft = (
-                        wja * ddf_i[m, k, i, j]
-                        + wjb * ddf_i[m, k, i, j + 1]
-                        + wjc * ddddf_ij[m, k, i, j]
-                        + wjd * ddddf_ij[m, k, i, j + 1]
-                    )
-                    ddf_iright = (
-                        wja * ddf_i[m, k, i + 1, j]
-                        + wjb * ddf_i[m, k, i + 1, j + 1]
-                        + wjc * ddddf_ij[m, k, i + 1, j]
-                        + wjd * ddddf_ij[m, k, i + 1, j + 1]
-                    )
-
-                    # Then interpolate f along i at theta[n] to get the Fourier coefficient (m, k)
-                    # at the point whose closest grid nodes on the left are (i, j)
-                    f_ij[k] = wia * f_ileft + wib * f_iright + wic * ddf_ileft + wid * ddf_iright
-
-                # Save the current angles to compare them with the next pixel's angles
-                muold = theta[n]
-                mu0old = theta0[n]
-
-            # Compute the reflection matrix at pixel n and stokes parameter k,
-            # summing over fourier terms m
             for k in range(nmat):
-                RM[n, k] += 2 * Bplus[k] * fac * f_ij[k]
+                # Interpolate f and d2f/di2 at theta0[n], for the two rows (i and i+1) bracketing theta[n]
+                f_ileft = (
+                    wja * fou[m, k, i, j]
+                    + wjb * fou[m, k, i, j + 1]
+                    + wjc * ddf_j[m, k, i, j]
+                    + wjd * ddf_j[m, k, i, j + 1]
+                )
+                f_iright = (
+                    wja * fou[m, k, i + 1, j]
+                    + wjb * fou[m, k, i + 1, j + 1]
+                    + wjc * ddf_j[m, k, i + 1, j]
+                    + wjd * ddf_j[m, k, i + 1, j + 1]
+                )
+                ddf_ileft = (
+                    wja * ddf_i[m, k, i, j]
+                    + wjb * ddf_i[m, k, i, j + 1]
+                    + wjc * ddddf_ij[m, k, i, j]
+                    + wjd * ddddf_ij[m, k, i, j + 1]
+                )
+                ddf_iright = (
+                    wja * ddf_i[m, k, i + 1, j]
+                    + wjb * ddf_i[m, k, i + 1, j + 1]
+                    + wjc * ddddf_ij[m, k, i + 1, j]
+                    + wjd * ddddf_ij[m, k, i + 1, j + 1]
+                )
 
-    # Loop again over the pixels to rotate the Stokes vector
-    for n in range(npix):
+                # Then interpolate f along i at theta[n] to get the Fourier coefficient (m, k)
+                # at the point whose closest grid nodes on the left are (i, j)
+                f_ij = wia * f_ileft + wib * f_iright + wic * ddf_ileft + wid * ddf_iright
+
+                # Compute the reflection matrix at pixel n and stokes parameter k,
+                # summing over fourier terms m
+                RM[k] += 2 * Bplus[k] * fac * f_ij
+
+        # Loop again over the pixels to rotate the Stokes vector
+
         # Calculate the locally reflected Stokes vector
         for k in range(nmat):
-            SvR[k] = theta0[n] * RM[n, k]
+            SvR[k] = theta0[n] * RM[k]
 
         # Rotate Stokes elements Q and U to the actual reference plane.
         # Note: does this implicitly assume nmat=3 ?
