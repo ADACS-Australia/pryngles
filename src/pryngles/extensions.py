@@ -332,7 +332,7 @@ class StokesScatterer:
         if len(beta) != npix or len(theta0) != npix or len(theta) != npix or len(apix) != npix:
             raise RuntimeError("Input arrays must have the same length")
 
-        # Don't rely on C extension safely handling zero-length arrays
+        # Return early if there are no pixels to process (i.e. zero-length arrays)
         if npix == 0:
             return stokes
 
