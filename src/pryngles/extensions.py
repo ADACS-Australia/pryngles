@@ -290,6 +290,13 @@ class StokesScatterer:
                 f"but got {len(data)} rows instead of {nfou * nmugs * nmugs}"
             )
 
+        # Check the sizes are supported by reflection()
+        if nfou < 1 or not (0 < nmat < MAX_NSTOKES):
+            raise RuntimeError(
+                f"Invalid array sizes in '{filename}': nfou={nfou}, nmat={nmat} "
+                f"(need nfou >= 1 and 0 < nmat < {MAX_NSTOKES})"
+            )
+
         # Index columns
         m, i, j = (data[:, c].astype(int) for c in range(3))
 
@@ -319,10 +326,6 @@ class StokesScatterer:
         self.nmat, self.nmugs, self.nfou = nmat, nmugs, nfou
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
         self.rfou_derivs, self.rtra_derivs = rfou_derivs, rtra_derivs
-
-        # Check array dimensions
-        if nfou < 1 or nmat < 1 or not (0 < nmat < MAX_NSTOKES):
-            raise RuntimeError("Invalid array sizes in reflection()")
 
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
         """ """
