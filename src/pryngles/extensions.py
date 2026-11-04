@@ -17,47 +17,19 @@
 # External required packages
 # --------------------------------------------------
 
-import ctypes
-from importlib.util import find_spec
-
 import numpy as np
-from numpy.ctypeslib import ndpointer
+from numba import njit, types
 from scipy.interpolate import CubicSpline
-
 
 from pryngles.common import VERB_SIMPLE, verbose
 
-f64_1d = ndpointer(np.float64, ndim=1, flags="C_CONTIGUOUS")
-f64_2d = ndpointer(np.float64, ndim=2, flags="C_CONTIGUOUS")  # Sarr
-f64_4d = ndpointer(np.float64, ndim=4, flags="C_CONTIGUOUS")  # rfou, rtra
+# Plain numba types
+f64 = types.float64
+i64 = types.int64
 
-
-# Load library
-_spec = find_spec("pryngles.cpixx")
-if _spec is None or _spec.origin is None:
-    raise ImportError("pryngles.cpixx extension not built; reinstall pryngles")
-cpixx_ext = ctypes.CDLL(_spec.origin)
-
-
-# Define the argument and return types for the reflection function
-cpixx_ext.reflection.restype = ctypes.c_int
-cpixx_ext.reflection.argtypes = [
-    ctypes.c_int,
-    ctypes.c_int,
-    ctypes.c_int,
-    f64_1d,
-    f64_4d,
-    f64_4d,
-    f64_4d,
-    f64_4d,
-    ctypes.c_int,
-    f64_1d,
-    f64_1d,
-    f64_1d,
-    f64_1d,
-    f64_1d,
-    f64_2d,
-]
+# Read-only C-contiguous float64 numba array types
+f64_arr1 = types.Array(f64, 1, "C", readonly=True)
+f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 
 
 def calculate_spline_derivs(xmu, fou):
@@ -70,6 +42,211 @@ def calculate_spline_derivs(xmu, fou):
     ddf_i = d2(fou, 2)
 
     return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 3)}
+
+
+#
+# Find the index klo of the interval [x[klo], x[klo + 1]] that brackets xi.
+# Values outside the range of x are clamped to the first/last interval.
+# x must be strictly increasing with at least 2 points.
+#
+@njit(i64(f64_arr1, f64), cache=True)
+def bisect(x, xi):
+    return min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
+
+
+#
+# Find the bracketing index and interpolation coefficients for xi in x.
+# x must be strictly increasing with at least 2 points.
+#
+# Returns klo and the array [a, b, c, d], where
+#     a, b: linear interpolation weights of x[klo] and x[klo + 1]
+#     c, d: cubic spline weights of the second derivatives at x[klo] and
+#           x[klo + 1] (with the h**2 / 6 factor already included)
+#
+@njit(types.Tuple((i64, f64_arr1))(f64_arr1, f64), cache=True)
+def spline_coefficients(x, xi):
+    # Find indices to interpolate between
+    klo = bisect(x, xi)
+    h = x[klo + 1] - x[klo]
+    # Coefficients
+    a = (x[klo + 1] - xi) / h
+    b = (xi - x[klo]) / h
+    c = (a**3 - a) * (h**2 / 6)
+    d = (b**3 - b) * (h**2 / 6)
+    return klo, np.array([a, b, c, d])
+
+
+#
+# ----------------------------------------------------------------------------
+#     Spline interpolation routine from Press et al. (1986, p.88).
+#
+#     Given the arrays y and ddy (second derivatives of y), the lower index
+#     klo and the spline coefficients coeffs = [a, b, c, d] (both from
+#     spline_coefficients), returns the cubic-spline interpolated value.
+# ----------------------------------------------------------------------------
+#
+@njit(f64(f64_arr1, f64_arr1, i64, f64_arr1), cache=True)
+def interp(y, ddy, klo, coeffs):
+    a, b, c, d = coeffs
+    return a * y[klo] + b * y[klo + 1] + c * ddy[klo] + d * ddy[klo + 1]
+
+
+# Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
+MAX_NSTOKES = 4
+REFLECTION_TOLERANCE = 1.0e-6
+
+
+#
+# ----------------------------------------------------------------------------
+#     Calculate the Stokes vector for a given geometry (given a table of
+#     Fourier coefficients read from a file).
+#
+#     It is assumed that the Stokes vector of the incoming sunlight
+#     is [1,0,0,0], with the flux measured perpendicular to the direction
+#     of incidence equal to pi.
+#
+#     phi and beta are assumed to be in radian
+#     theta0 and theta are given as cos(theta0) and cos(theta) respectively
+#
+#     fou, ddf_j, ddf_i and ddddf_ij have shape (nfou, nmat, nmugs, nmugs);
+#     the last three are the precomputed spline second-derivative tables for
+#     fou on the xmu grid. reflection() does not check this.
+#
+#     Returns stokes with shape (npix, nmat + 1): row n holds the nmat Stokes
+#     elements of pixel n followed by the degree of polarisation.
+# ----------------------------------------------------------------------------
+#
+@njit(
+    types.Array(f64, 2, "C")(
+        f64_arr1,  # xmu
+        f64_arr4,  # fou
+        f64_arr4,  # ddf_j
+        f64_arr4,  # ddf_i
+        f64_arr4,  # ddddf_ij
+        f64_arr1,  # phi
+        f64_arr1,  # beta
+        f64_arr1,  # theta0
+        f64_arr1,  # theta
+        f64_arr1,  # apix
+    ),
+    cache=True,
+)
+def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
+    nfou, nmat = fou.shape[:2]
+    npix = len(phi)
+
+    # Note, this function assumes (and does not check):
+    #   - xmu is strictly increasing, with at least 2 points
+    #   - fou, ddf_j, ddf_i and ddddf_ij all have the same shape (nfou, nmat, nmugs, nmugs)
+    #   - phi, beta, theta0, theta and apix all have the same length (npix)
+    #   - nfou >= 1, npix >= 1, and 0 < nmat < MAX_NSTOKES
+
+    muold = 1.0
+    mu0old = 1.0
+
+    stokes = np.zeros((npix, nmat + 1))
+
+    # Temporary arrays (numba has no stack arrays, so everything is allocated
+    # once up front, including the two-element scratch arrays used by interp)
+    RM = np.zeros((npix, nmat))
+    Bplus = np.zeros(MAX_NSTOKES)
+    f_mu0_mu = np.zeros(MAX_NSTOKES)
+    SvR = np.zeros(MAX_NSTOKES)
+    f_mu0 = np.zeros(2)
+    ddf_mu0 = np.zeros(2)
+
+    # Loop over the Fourier coefficients:
+    for m in range(nfou):
+        fac = 0.5 if m == 0 else 1.0
+
+        # ----------------------------------------------------------------------
+        #     Loop over the pixels.
+        #
+        #     If the input angles are (very) similar to a previously calculated
+        #     case, reuse those values.
+        #
+        #     To get the fourier coefficient at (mu, mu0), interpolate along j at
+        #     mu0 for the two rows bracketing mu, then along i at mu. The second
+        #     pass needs d2f/di2 at those rows; it comes from interpolating the
+        #     precomputed ddf_i along j (spline construction along i and
+        #     interpolation along j commute), so no spline is solved per pixel.
+        # ----------------------------------------------------------------------
+        for n in range(npix):
+            mu = theta[n]
+            mu0 = theta0[n]
+            cosmphi = np.cos(m * phi[n])
+            sinmphi = np.sin(m * phi[n])
+            Bplus[0] = cosmphi
+            Bplus[1] = cosmphi
+            Bplus[2] = sinmphi
+            Bplus[3] = sinmphi
+
+            if n <= 0 or not (abs(mu - muold) < REFLECTION_TOLERANCE) or not (abs(mu0 - mu0old) < REFLECTION_TOLERANCE):
+                # Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip
+                # and reuse previous cached value
+
+                # Get index and coefficients to work with (at mu0, along j)
+                jlo, j_coeffs = spline_coefficients(xmu, mu0)
+
+                # Get index and coefficients to work with (now at mu, along i)
+                ilo, i_coeffs = spline_coefficients(xmu, mu)
+
+                for k in range(nmat):
+                    # Only the two rows i=ilo and i=ilo+1 that bracket mu are
+                    # needed. For each, interpolate f and d2f/di2 along j at
+                    # mu0, using jlo and j_coeffs
+                    f_mu0[0] = interp(fou[m, k, ilo, :], ddf_j[m, k, ilo, :], jlo, j_coeffs)
+                    f_mu0[1] = interp(fou[m, k, ilo + 1, :], ddf_j[m, k, ilo + 1, :], jlo, j_coeffs)
+                    ddf_mu0[0] = interp(ddf_i[m, k, ilo, :], ddddf_ij[m, k, ilo, :], jlo, j_coeffs)
+                    ddf_mu0[1] = interp(ddf_i[m, k, ilo + 1, :], ddddf_ij[m, k, ilo + 1, :], jlo, j_coeffs)
+                    # Do the spline interpolation along i between the two rows
+                    # (index 0 of the two-element arrays), using i_coeffs
+                    f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, i_coeffs)
+                muold = mu
+                mu0old = mu0
+
+            # Compute the reflection matrix at pixel n and stokes parameter k,
+            # summing over fourier terms m
+            for k in range(nmat):
+                RM[n, k] += 2 * Bplus[k] * fac * f_mu0_mu[k]
+
+    # Loop again over the pixels to rotate the Stokes vector
+    for n in range(npix):
+        mu = theta[n]
+        mu0 = theta0[n]
+
+        # Calculate the locally reflected Stokes vector:
+        for k in range(nmat):
+            SvR[k] = mu0 * RM[n, k]
+
+        # Rotate Stokes elements Q and U to the actual reference plane.
+        # Note: does this implicitly assume nmat=3 ?
+        cosb2 = np.cos(2 * beta[n])
+        sinb2 = np.sin(2 * beta[n])
+        SvR2 = cosb2 * SvR[1] + sinb2 * SvR[2]
+        SvR3 = -sinb2 * SvR[1] + cosb2 * SvR[2]
+        SvR[1] = SvR2
+        SvR[2] = SvR3
+
+        # Compute the local degree of polarisation P:
+        if abs(SvR[0]) < 1e-6:
+            P = 0.0
+        elif abs(SvR[2]) < 1e-6:
+            P = -SvR[1] / SvR[0]
+        else:
+            P = np.sqrt(SvR[1] * SvR[1] + SvR[2] * SvR[2]) / SvR[0]
+        if abs(P) < 1e-6:
+            P = 0.0
+
+        # Multiply with mu and the actual pixel area to obtain the stokes
+        # element k for each pixel n.
+        for k in range(nmat):
+            stokes[n, k] = SvR[k] * mu * apix[n]
+
+        # The value of the degree of polarization (last index)
+        stokes[n, nmat] = P
+
+    return stokes
 
 
 class StokesScatterer:
@@ -124,6 +301,13 @@ class StokesScatterer:
                 f"but got {len(data)} rows instead of {nfou * nmugs * nmugs}"
             )
 
+        # Check the sizes are supported by reflection()
+        if nfou < 1 or not (0 < nmat < MAX_NSTOKES):
+            raise RuntimeError(
+                f"Invalid array sizes in '{filename}': nfou={nfou}, nmat={nmat} "
+                f"(need nfou >= 1 and 0 < nmat < {MAX_NSTOKES})"
+            )
+
         # Index columns
         m, i, j = (data[:, c].astype(int) for c in range(3))
 
@@ -159,7 +343,10 @@ class StokesScatterer:
         npix = len(phi)
         stokes = np.zeros((npix, self.nmat + 1))
 
-        # Don't rely on C extension safely handling zero-length arrays
+        if len(beta) != npix or len(theta0) != npix or len(theta) != npix or len(apix) != npix:
+            raise RuntimeError("Input arrays must have the same length")
+
+        # Return early if there are no pixels to process (i.e. zero-length arrays)
         if npix == 0:
             return stokes
 
@@ -170,25 +357,17 @@ class StokesScatterer:
             fourier_coefficients = self.rtra
             fourier_derivs = self.rtra_derivs
 
-        ret = cpixx_ext.reflection(
-            self.nmat,
-            self.nmugs,
-            self.nfou,
+        stokes = reflection(
             self.xmu,
             fourier_coefficients,
             fourier_derivs["j"],
             fourier_derivs["i"],
             fourier_derivs["ij"],
-            npix,
             phi,
             beta,
             theta0,
             theta,
             apix,
-            stokes,
         )
-
-        if ret != 0:
-            raise RuntimeError(f"Error in reflection calculation: {ret}")
 
         return stokes
