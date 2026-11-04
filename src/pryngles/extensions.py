@@ -44,13 +44,24 @@ def calculate_spline_derivs(xmu, fou):
     return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 3)}
 
 
+#
+# Find the index klo of the interval [x[klo], x[klo + 1]] that brackets xi.
+# Values outside the range of x are clamped to the first/last interval.
+# x must be strictly increasing with at least 2 points.
+#
 @njit(i64(f64_arr1, f64), cache=True)
 def bisect(x, xi):
     return min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
 
+
 #
-# Find the bracketing indices and interpolation coefficients for xi in x.
+# Find the bracketing index and interpolation coefficients for xi in x.
 # x must be strictly increasing with at least 2 points.
+#
+# Returns klo and the array [a, b, c, d], where
+#     a, b: linear interpolation weights of x[klo] and x[klo + 1]
+#     c, d: cubic spline weights of the second derivatives at x[klo] and
+#           x[klo + 1] (with the h**2 / 6 factor already included)
 #
 @njit(types.Tuple((i64, f64_arr1))(f64_arr1, f64), cache=True)
 def spline_coefficients(x, xi):
@@ -69,8 +80,8 @@ def spline_coefficients(x, xi):
 # ----------------------------------------------------------------------------
 #     Spline interpolation routine from Press et al. (1986, p.88).
 #
-#     Given the arrays y and ddy (second derivatives of y), the precomputed
-#     lower and upper indices klo/khi and spline coefficients a, b, h (from
+#     Given the arrays y and ddy (second derivatives of y), the lower index
+#     klo and the spline coefficients coeffs = [a, b, c, d] (both from
 #     spline_coefficients), returns the cubic-spline interpolated value.
 # ----------------------------------------------------------------------------
 #
@@ -124,11 +135,11 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     nfou, nmat = fou.shape[:2]
     npix = len(phi)
 
-    # Note, this function assumes:
+    # Note, this function assumes (and does not check):
     #   - xmu is strictly increasing, with at least 2 points
     #   - fou, ddf_j, ddf_i and ddddf_ij all have the same shape (nfou, nmat, nmugs, nmugs)
     #   - phi, beta, theta0, theta and apix all have the same length (npix)
-    #   - nfou > 1, npix > 1, and 0 < nmat < MAX_NSTOKES
+    #   - nfou >= 1, npix >= 1, and 0 < nmat < MAX_NSTOKES
 
     muold = 1.0
     mu0old = 1.0
@@ -174,22 +185,22 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
                 # Interpolate the fourier terms at j=mu0 and i=mu, otherwise skip
                 # and reuse previous cached value
 
-                # Get indices and coefficients to work with (at mu0, along j)
+                # Get index and coefficients to work with (at mu0, along j)
                 jlo, j_coeffs = spline_coefficients(xmu, mu0)
 
-                # Get indices and coefficients to work with (now at mu, along i)
+                # Get index and coefficients to work with (now at mu, along i)
                 ilo, i_coeffs = spline_coefficients(xmu, mu)
 
                 for k in range(nmat):
-                    # Only the two rows i=ilo,ihi that bracket mu are needed. For
-                    # each, interpolate f and d2f/di2 along j at mu0, given the
-                    # coefficients ja,jb,jh
+                    # Only the two rows i=ilo and i=ilo+1 that bracket mu are
+                    # needed. For each, interpolate f and d2f/di2 along j at
+                    # mu0, using jlo and j_coeffs
                     f_mu0[0] = interp(fou[m, k, ilo, :], ddf_j[m, k, ilo, :], jlo, j_coeffs)
                     f_mu0[1] = interp(fou[m, k, ilo + 1, :], ddf_j[m, k, ilo + 1, :], jlo, j_coeffs)
                     ddf_mu0[0] = interp(ddf_i[m, k, ilo, :], ddddf_ij[m, k, ilo, :], jlo, j_coeffs)
                     ddf_mu0[1] = interp(ddf_i[m, k, ilo + 1, :], ddddf_ij[m, k, ilo + 1, :], jlo, j_coeffs)
-                    # Do the spline interpolation along i between the two rows,
-                    # given the coefficients ia,ib,ih
+                    # Do the spline interpolation along i between the two rows
+                    # (index 0 of the two-element arrays), using i_coeffs
                     f_mu0_mu[k] = interp(f_mu0, ddf_mu0, 0, i_coeffs)
                 muold = mu
                 mu0old = mu0
