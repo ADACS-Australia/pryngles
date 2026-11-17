@@ -47,9 +47,12 @@ def calculate_spline_derivs(xmu, fou):
     return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 3)}
 
 
+# Find the bracketing index and interpolation coefficients for xi in x.
+# x must be strictly increasing with at least 2 points.
 @njit(types.Tuple((i64, f64, f64, f64, f64))(f64_arr1, f64), cache=True)
 def spline_weights(x, xi):
     # Find the closest index that's less than xval
+    # Values outside the range of x are clamped to the first/last interval.
     i = min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
 
     h = x[i + 1] - x[i]
@@ -103,11 +106,11 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     nfou, nmat = fou.shape[:2]
     npix = len(phi)
 
-    # Note, this function assumes:
+    # Note, this function assumes (and does not check):
     #   - xmu is strictly increasing, with at least 2 points
     #   - fou, ddf_j, ddf_i and ddddf_ij all have the same shape (nfou, nmat, nmugs, nmugs)
     #   - phi, beta, theta0, theta and apix all have the same length (npix)
-    #   - nfou > 1, npix > 1, and 0 < nmat < MAX_NSTOKES
+    #   - nfou >= 1, npix >= 1, and 0 < nmat < MAX_NSTOKES
 
     stokes = np.zeros((npix, nmat + 1))
 
@@ -278,6 +281,13 @@ class StokesScatterer:
                 f"but got {len(data)} rows instead of {nfou * nmugs * nmugs}"
             )
 
+        # Check the sizes are supported by reflection()
+        if nfou < 1 or not (0 < nmat < MAX_NSTOKES):
+            raise RuntimeError(
+                f"Invalid array sizes in '{filename}': nfou={nfou}, nmat={nmat} "
+                f"(need nfou >= 1 and 0 < nmat < {MAX_NSTOKES})"
+            )
+
         # Index columns
         m, i, j = (data[:, c].astype(int) for c in range(3))
 
@@ -308,10 +318,6 @@ class StokesScatterer:
         self.xmu, self.rfou, self.rtra = xmu, rfou, rtra
         self.rfou_derivs, self.rtra_derivs = rfou_derivs, rtra_derivs
 
-        # Check array dimensions
-        if nfou < 1 or nmat < 1 or not (0 < nmat < MAX_NSTOKES):
-            raise RuntimeError("Invalid array sizes in reflection()")
-
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
         """ """
         npix = len(phi)
@@ -320,7 +326,7 @@ class StokesScatterer:
         if len(beta) != npix or len(theta0) != npix or len(theta) != npix or len(apix) != npix:
             raise RuntimeError("Input arrays must have the same length")
 
-        # Don't rely on C extension safely handling zero-length arrays
+        # Return early if there are no pixels to process (i.e. zero-length arrays)
         if npix == 0:
             return stokes
 
