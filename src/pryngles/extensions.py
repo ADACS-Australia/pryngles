@@ -51,13 +51,13 @@ def calculate_spline_derivs(xmu, fou):
 # x must be strictly increasing with at least 2 points.
 @njit(types.Tuple((i64, f64, f64, f64, f64))(f64_arr1, f64), cache=True)
 def spline_weights(x, xi):
-    # Find the closest index that's less than xval
+    # Find the closest index that's less than xi
     # Values outside the range of x are clamped to the first/last interval.
     i = min(max(np.searchsorted(x, xi, side="right") - 1, 0), len(x) - 2)
 
     h = x[i + 1] - x[i]
 
-    # Compute the corresponding spline weights for xval, given the closest index on the left
+    # Compute the corresponding spline weights for xi, given the closest index on the left
     # where the interpolation will be of the form:
     #  f(x) = a * f(x0) + b * f(x1) + c * d2f(x0)/dx2 + d * d2f(x1)/dx2
     a = (x[i + 1] - xi) / h
@@ -85,6 +85,8 @@ def spline_weights(x, xi):
 #
 #     Returns stokes with shape (npix, nmat + 1): row n holds the nmat Stokes
 #     elements of pixel n followed by the degree of polarisation.
+#
+#     Pixels are independent, so the loop over them runs in parallel (prange).
 # ----------------------------------------------------------------------------
 @njit(
     types.Array(f64, 2, "C")(
@@ -114,40 +116,32 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
 
     stokes = np.zeros((npix, nmat + 1))
 
-    # Temporary arrays (numba has no stack arrays, so everything is allocated
-    # once up front)
-    # RM = np.zeros(nmat)
-    # Bplus = np.zeros(MAX_NSTOKES)
-    # SvR = np.zeros(MAX_NSTOKES)
-
-    # The grid cell and spline weights of each pixel depend only on its angles,
-    # not on the Fourier term m, so look them up once per pixel here rather than
-    # once per (pixel, m) inside the Fourier loop below.
-    #   iidx, jidx: index of the grid node to the left of theta[n] (along i) and theta0[n] (along j)
-    #   iw, jw:     the corresponding (a, b, c, d) spline weights
-
     for n in prange(npix):
-        # RM [:] = 0.0
+        # Per-pixel scratch arrays. They are allocated inside the loop body so
+        # that each parallel iteration has its own copy (no shared state).
         RM = np.zeros(nmat)
         Bplus = np.zeros(MAX_NSTOKES)
         SvR = np.zeros(MAX_NSTOKES)
-        # Get indices and coefficients to work with (at theta0[n], along j)
-        j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0[n])
 
-        # Get indices and coefficients to work with (now at theta[n], along i)
+        # The grid cell and spline weights depend only on the pixel's angles,
+        # not on the Fourier term m, so look them up once per pixel here rather
+        # than once per (pixel, m) inside the Fourier loop below.
+        #   j, wja..wjd: grid node to the left of theta0[n] (along j) and its spline weights
+        #   i, wia..wid: grid node to the left of theta[n] (along i) and its spline weights
+        j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0[n])
         i, wia, wib, wic, wid = spline_weights(xmu, theta[n])
 
         # ----------------------------------------------------------------------
-        #     Loop over the pixels.
+        #     Loop over the Fourier coefficients, summing their contributions
+        #     to the reflection matrix of pixel n.
         #
-        #     To get the fourier coefficient at (theta[n], theta0[n]), interpolate along j at
-        #     theta0[n] for the two rows bracketing theta[n], then along i at theta[n]. The second
-        #     pass needs d2f/di2 at those rows; it comes from interpolating the
-        #     precomputed ddf_i along j (spline construction along i and
-        #     interpolation along j commute), so no spline is solved per pixel.
+        #     To get the Fourier coefficient at (theta[n], theta0[n]), interpolate
+        #     along j at theta0[n] for the two rows bracketing theta[n], then along
+        #     i at theta[n]. The second pass needs d2f/di2 at those rows; it comes
+        #     from interpolating the precomputed ddf_i along j (spline construction
+        #     along i and interpolation along j commute), so no spline is solved
+        #     per pixel.
         # ----------------------------------------------------------------------
-
-        # Loop over the Fourier coefficients:
         for m in range(nfou):
             fac = 0.5 if m == 0 else 1.0
             cosmphi = np.cos(m * phi[n])
@@ -191,8 +185,6 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
                 # Compute the reflection matrix at pixel n and stokes parameter k,
                 # summing over fourier terms m
                 RM[k] += 2 * Bplus[k] * fac * f_ij
-
-        # Loop again over the pixels to rotate the Stokes vector
 
         # Calculate the locally reflected Stokes vector
         for k in range(nmat):
