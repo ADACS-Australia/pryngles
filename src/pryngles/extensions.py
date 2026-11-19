@@ -267,7 +267,7 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
         if abs(P) < 1e-6:
             P = 0.0
 
-        # Multiply with theta[n] (theta(n)) and the actual pixel area to obtain the stokes
+        # Multiply with theta[n] and the actual pixel area to obtain the stokes
         # element k for each pixel n.
         for k in range(nmat):
             stokes[n, k] = SvR[k] * theta[n] * apix[n]
