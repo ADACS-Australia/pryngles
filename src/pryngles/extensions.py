@@ -34,6 +34,11 @@ f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 # Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
 MAX_NSTOKES = 4
 
+# Maximum deviation (in cos(theta) and cos(theta0)) from the first pixel for all
+# pixels to be treated as sharing one angle pair in reflection(). Numba compiles
+# this value into reflection(), so reassigning it at runtime has no effect.
+SHARED_ANGLE_TOL = 1e-6
+
 
 def calculate_spline_derivs(xmu, fou):
 
@@ -69,6 +74,72 @@ def spline_weights(x, xi):
 
 
 # ----------------------------------------------------------------------------
+#     Return the Fourier coefficients f[m, k] (shape (nfou, nmat)) interpolated
+#     at (theta, theta0).
+#
+#     To get the coefficient at (theta, theta0), interpolate along j at theta0
+#     for the two rows bracketing theta, then along i at theta. The second pass
+#     needs d2f/di2 at those rows; it comes from interpolating the precomputed
+#     ddf_i along j (spline construction along i and interpolation along j
+#     commute), so no spline is solved per call.
+#
+#     The arrays are as for reflection().
+# ----------------------------------------------------------------------------
+@njit(
+    types.Array(f64, 2, "C")(
+        f64_arr1,  # xmu
+        f64_arr4,  # fou
+        f64_arr4,  # ddf_j
+        f64_arr4,  # ddf_i
+        f64_arr4,  # ddddf_ij
+        f64,  # theta0
+        f64,  # theta
+    ),
+    cache=True,
+)
+def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
+    nfou, nmat = fou.shape[:2]
+    f = np.empty((nfou, nmat))
+
+    # Grid node and spline weights at theta0 (along j) and theta (along i)
+    j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0)
+    i, wia, wib, wic, wid = spline_weights(xmu, theta)
+
+    for m in range(nfou):
+        for k in range(nmat):
+            # Interpolate f and d2f/di2 at theta0, for the two rows (i and i+1) bracketing theta
+            f_ileft = (
+                wja * fou[m, k, i, j]
+                + wjb * fou[m, k, i, j + 1]
+                + wjc * ddf_j[m, k, i, j]
+                + wjd * ddf_j[m, k, i, j + 1]
+            )
+            f_iright = (
+                wja * fou[m, k, i + 1, j]
+                + wjb * fou[m, k, i + 1, j + 1]
+                + wjc * ddf_j[m, k, i + 1, j]
+                + wjd * ddf_j[m, k, i + 1, j + 1]
+            )
+            ddf_ileft = (
+                wja * ddf_i[m, k, i, j]
+                + wjb * ddf_i[m, k, i, j + 1]
+                + wjc * ddddf_ij[m, k, i, j]
+                + wjd * ddddf_ij[m, k, i, j + 1]
+            )
+            ddf_iright = (
+                wja * ddf_i[m, k, i + 1, j]
+                + wjb * ddf_i[m, k, i + 1, j + 1]
+                + wjc * ddddf_ij[m, k, i + 1, j]
+                + wjd * ddddf_ij[m, k, i + 1, j + 1]
+            )
+
+            # Then interpolate along i at theta to get the Fourier coefficient (m, k)
+            f[m, k] = wia * f_ileft + wib * f_iright + wic * ddf_ileft + wid * ddf_iright
+
+    return f
+
+
+# ----------------------------------------------------------------------------
 #     Calculate the Stokes vector for a given geometry (given a table of
 #     Fourier coefficients read from a file).
 #
@@ -87,6 +158,9 @@ def spline_weights(x, xi):
 #     elements of pixel n followed by the degree of polarisation.
 #
 #     Pixels are independent, so the loop over them runs in parallel (prange).
+#     If all pixels share the same (theta, theta0), to within SHARED_ANGLE_TOL,
+#     the interpolated Fourier coefficients are computed only once (at the
+#     angles of the first pixel) and reused for every pixel.
 # ----------------------------------------------------------------------------
 @njit(
     types.Array(f64, 2, "C")(
@@ -116,6 +190,30 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
 
     stokes = np.zeros((npix, nmat + 1))
 
+    # The Fourier coefficients depend only on (theta, theta0), not on phi or
+    # beta, so if every pixel has the same angle pair they can be interpolated
+    # once here and reused below.
+    #
+    # Every pixel is compared against pixel 0 (not against its neighbour), so the
+    # deviation from the shared pair is bounded by SHARED_ANGLE_TOL and cannot
+    # drift along the array. The test is written as "not (|diff| <= tol)" rather
+    # than "|diff| > tol" on purpose: any comparison with NaN is False, so a NaN
+    # angle fails the "<=" test and correctly disables sharing, whereas
+    # "|diff| > tol" would be False for NaN and wrongly keep it.
+    shared = True
+    for n in range(1, npix):
+        if not (
+            abs(theta[n] - theta[0]) <= SHARED_ANGLE_TOL and abs(theta0[n] - theta0[0]) <= SHARED_ANGLE_TOL
+        ):
+            shared = False
+            break
+
+    # If every pixel shares one angle pair, interpolate once here (at pixel 0's
+    # angles) and reuse the result for all pixels. Otherwise f_shared is never
+    # assigned or read, and each pixel interpolates for itself in the loop below.
+    if shared:
+        f_shared = fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0[0], theta[0])
+
     for n in prange(npix):
         # Per-pixel scratch arrays. They are allocated inside the loop body so
         # that each parallel iteration has its own copy (no shared state).
@@ -123,25 +221,14 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
         Bplus = np.zeros(MAX_NSTOKES)
         SvR = np.zeros(MAX_NSTOKES)
 
-        # The grid cell and spline weights depend only on the pixel's angles,
-        # not on the Fourier term m, so look them up once per pixel here rather
-        # than once per (pixel, m) inside the Fourier loop below.
-        #   j, wja..wjd: grid node to the left of theta0[n] (along j) and its spline weights
-        #   i, wia..wid: grid node to the left of theta[n] (along i) and its spline weights
-        j, wja, wjb, wjc, wjd = spline_weights(xmu, theta0[n])
-        i, wia, wib, wic, wid = spline_weights(xmu, theta[n])
+        # Fourier coefficients (m, k) at this pixel's angles
+        if shared:
+            f = f_shared
+        else:
+            f = fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0[n], theta[n])
 
-        # ----------------------------------------------------------------------
-        #     Loop over the Fourier coefficients, summing their contributions
-        #     to the reflection matrix of pixel n.
-        #
-        #     To get the Fourier coefficient at (theta[n], theta0[n]), interpolate
-        #     along j at theta0[n] for the two rows bracketing theta[n], then along
-        #     i at theta[n]. The second pass needs d2f/di2 at those rows; it comes
-        #     from interpolating the precomputed ddf_i along j (spline construction
-        #     along i and interpolation along j commute), so no spline is solved
-        #     per pixel.
-        # ----------------------------------------------------------------------
+        # Loop over the Fourier coefficients, summing their contributions
+        # to the reflection matrix of pixel n.
         for m in range(nfou):
             fac = 0.5 if m == 0 else 1.0
             cosmphi = np.cos(m * phi[n])
@@ -152,39 +239,9 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
             Bplus[3] = sinmphi
 
             for k in range(nmat):
-                # Interpolate f and d2f/di2 at theta0[n], for the two rows (i and i+1) bracketing theta[n]
-                f_ileft = (
-                    wja * fou[m, k, i, j]
-                    + wjb * fou[m, k, i, j + 1]
-                    + wjc * ddf_j[m, k, i, j]
-                    + wjd * ddf_j[m, k, i, j + 1]
-                )
-                f_iright = (
-                    wja * fou[m, k, i + 1, j]
-                    + wjb * fou[m, k, i + 1, j + 1]
-                    + wjc * ddf_j[m, k, i + 1, j]
-                    + wjd * ddf_j[m, k, i + 1, j + 1]
-                )
-                ddf_ileft = (
-                    wja * ddf_i[m, k, i, j]
-                    + wjb * ddf_i[m, k, i, j + 1]
-                    + wjc * ddddf_ij[m, k, i, j]
-                    + wjd * ddddf_ij[m, k, i, j + 1]
-                )
-                ddf_iright = (
-                    wja * ddf_i[m, k, i + 1, j]
-                    + wjb * ddf_i[m, k, i + 1, j + 1]
-                    + wjc * ddddf_ij[m, k, i + 1, j]
-                    + wjd * ddddf_ij[m, k, i + 1, j + 1]
-                )
-
-                # Then interpolate f along i at theta[n] to get the Fourier coefficient (m, k)
-                # at the point whose closest grid nodes on the left are (i, j)
-                f_ij = wia * f_ileft + wib * f_iright + wic * ddf_ileft + wid * ddf_iright
-
                 # Compute the reflection matrix at pixel n and stokes parameter k,
                 # summing over fourier terms m
-                RM[k] += 2 * Bplus[k] * fac * f_ij
+                RM[k] += 2 * Bplus[k] * fac * f[m, k]
 
         # Calculate the locally reflected Stokes vector
         for k in range(nmat):
