@@ -31,6 +31,12 @@ i64 = types.int64
 f64_arr1 = types.Array(f64, 1, "C", readonly=True)
 f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 
+# The Fourier coefficient table (fou) and its spline second-derivative tables (ddf_j, ddf_i,
+# ddddf_ij) all have shape (nmugs, nmugs, nfou, nmat), with axes
+#   i: index along theta    j: index along theta0    m: Fourier term    k: matrix element
+# The two angle axes come first and (m, k) last, so that all the coefficients needed at one
+# grid point are contiguous in memory. That is what fourier_at() reads for every pixel.
+
 # Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
 MAX_NSTOKES = 4
 
@@ -41,15 +47,16 @@ SHARED_ANGLE_TOL = 1e-6
 
 
 def calculate_spline_derivs(xmu, fou):
+    # fou has axes (i, j, m, k), so the angle axes i and j are axes 0 and 1
 
     def d2(y, axis):
         s = CubicSpline(xmu, y, axis=axis, bc_type="natural")
         return np.ascontiguousarray(s(xmu, 2))
 
-    ddf_j = d2(fou, 3)
-    ddf_i = d2(fou, 2)
+    ddf_j = d2(fou, 1)
+    ddf_i = d2(fou, 0)
 
-    return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 3)}
+    return {"j": ddf_j, "i": ddf_i, "ij": d2(ddf_i, 1)}
 
 
 # Find the bracketing index and interpolation coefficients for xi in x.
@@ -98,7 +105,8 @@ def spline_weights(x, xi):
     cache=True,
 )
 def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
-    nfou, nmat = fou.shape[:2]
+    nfou = fou.shape[2]
+    nmat = fou.shape[3]
     f = np.empty((nfou, nmat))
 
     # Grid node and spline weights at theta0 (along j) and theta (along i)
@@ -109,28 +117,28 @@ def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
         for k in range(nmat):
             # Interpolate f and d2f/di2 at theta0, for the two rows (i and i+1) bracketing theta
             f_ileft = (
-                wja * fou[m, k, i, j]
-                + wjb * fou[m, k, i, j + 1]
-                + wjc * ddf_j[m, k, i, j]
-                + wjd * ddf_j[m, k, i, j + 1]
+                wja * fou[i, j, m, k]
+                + wjb * fou[i, j + 1, m, k]
+                + wjc * ddf_j[i, j, m, k]
+                + wjd * ddf_j[i, j + 1, m, k]
             )
             f_iright = (
-                wja * fou[m, k, i + 1, j]
-                + wjb * fou[m, k, i + 1, j + 1]
-                + wjc * ddf_j[m, k, i + 1, j]
-                + wjd * ddf_j[m, k, i + 1, j + 1]
+                wja * fou[i + 1, j, m, k]
+                + wjb * fou[i + 1, j + 1, m, k]
+                + wjc * ddf_j[i + 1, j, m, k]
+                + wjd * ddf_j[i + 1, j + 1, m, k]
             )
             ddf_ileft = (
-                wja * ddf_i[m, k, i, j]
-                + wjb * ddf_i[m, k, i, j + 1]
-                + wjc * ddddf_ij[m, k, i, j]
-                + wjd * ddddf_ij[m, k, i, j + 1]
+                wja * ddf_i[i, j, m, k]
+                + wjb * ddf_i[i, j + 1, m, k]
+                + wjc * ddddf_ij[i, j, m, k]
+                + wjd * ddddf_ij[i, j + 1, m, k]
             )
             ddf_iright = (
-                wja * ddf_i[m, k, i + 1, j]
-                + wjb * ddf_i[m, k, i + 1, j + 1]
-                + wjc * ddddf_ij[m, k, i + 1, j]
-                + wjd * ddddf_ij[m, k, i + 1, j + 1]
+                wja * ddf_i[i + 1, j, m, k]
+                + wjb * ddf_i[i + 1, j + 1, m, k]
+                + wjc * ddddf_ij[i + 1, j, m, k]
+                + wjd * ddddf_ij[i + 1, j + 1, m, k]
             )
 
             # Then interpolate along i at theta to get the Fourier coefficient (m, k)
@@ -150,7 +158,7 @@ def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
 #     phi and beta are assumed to be in radian
 #     theta0 and theta are given as cos(theta0) and cos(theta) respectively
 #
-#     fou, ddf_j, ddf_i and ddddf_ij have shape (nfou, nmat, nmugs, nmugs);
+#     fou, ddf_j, ddf_i and ddddf_ij have shape (nmugs, nmugs, nfou, nmat);
 #     the last three are the precomputed spline second-derivative tables for
 #     fou on the xmu grid. reflection() does not check this.
 #
@@ -179,12 +187,13 @@ def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
     parallel=True,
 )
 def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
-    nfou, nmat = fou.shape[:2]
+    nfou = fou.shape[2]
+    nmat = fou.shape[3]
     npix = len(phi)
 
     # Note, this function assumes (and does not check):
     #   - xmu is strictly increasing, with at least 2 points
-    #   - fou, ddf_j, ddf_i and ddddf_ij all have the same shape (nfou, nmat, nmugs, nmugs)
+    #   - fou, ddf_j, ddf_i and ddddf_ij all have the same shape (nmugs, nmugs, nfou, nmat)
     #   - phi, beta, theta0, theta and apix all have the same length (npix)
     #   - nfou >= 1, npix >= 1, and 0 < nmat < MAX_NSTOKES
 
@@ -300,11 +309,11 @@ class StokesScatterer:
             nfou: int:
                Number of coefficients.
 
-            rfout: array (nmugs*nmat,nmugs,nfou):
-               Matrix for the fourier coefficients for reflection.
+            rfou: array (nmugs,nmugs,nfou,nmat):
+               Fourier coefficients for reflection, with axes (i,j,m,k).
 
-            rtra: array (nmugs*nmat,nmugs,nfou):
-               Matrix for the fourier coefficients for transmission
+            rtra: array (nmugs,nmugs,nfou,nmat):
+               Fourier coefficients for transmission, with axes (i,j,m,k).
         """
         self.filename = filename
 
@@ -341,12 +350,14 @@ class StokesScatterer:
         m, i, j = (data[:, c].astype(int) for c in range(3))
 
         # Function which defines how to store the fourier coefficients, where
+        #   i,j: angle indices
         #     m: fourier coefficient index
         #     k: matrix element index
-        #   i,j: angle indices
+        # The angle axes come first so that, for a given pair of angles, the
+        # coefficients for all (m, k) are contiguous in memory.
         def fill(array):
-            out = np.zeros((nfou, nmat, nmugs, nmugs))  # axes: m, k, i, j
-            out[m, :, i - 1, j - 1] = array
+            out = np.zeros((nmugs, nmugs, nfou, nmat))  # axes: i, j, m, k
+            out[i - 1, j - 1, m, :] = array
             return out
 
         # Get reflection coefficients
