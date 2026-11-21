@@ -393,22 +393,43 @@ class System(PrynglesCommon):
         if not self._spangled:
             raise AssertionError("You need to spangle the system before updating the scatterers.")
 
+        # Setup only: modify the full table and assign it back
+        data = self.data
+
         # This column stores python objects; keep as object dtype.
-        if "scatterer" in self.data.columns and self.data["scatterer"].dtype != object:
-            self.data["scatterer"] = self.data["scatterer"].astype(object)
+        if "scatterer" in data.columns and data["scatterer"].dtype != object:
+            data["scatterer"] = data["scatterer"].astype(object)
 
         # Update scatterer only for the non-assigned one
-        cond = self.data.scatterer == ""
-        mask = self.data.loc[cond]
+        cond = data.scatterer == ""
+        mask = data.loc[cond]
         for spangle_type, group in mask.groupby("spangle_type"):
             # Get scatterer class and options description
             spangle_scatterer, spangle_options = self.spangle_scatterers[spangle_type]
             # Build options of scatterers from options description
             options = {key: group[value].iloc[0] for key, value in spangle_options.items()}
             # Instantiate object of scatterer and save hash into DataFrame data object
-            self.data.loc[group.index, "scatterer"] = pd.Series(
+            data.loc[group.index, "scatterer"] = pd.Series(
                 [spangle_scatterer(**options)] * len(group), dtype=object, index=group.index
             )
+
+        self.sg.data = data
+
+        # The bodies' tables receive these objects through update_perspective
+        self._align_body_dtypes()
+
+    def _align_body_dtypes(self):
+        """
+        Give each body's spangle table the same column dtypes as the system table.
+
+        Setup only: afterwards update_perspective can copy values into the bodies' tables
+        without dtype conversions.
+        """
+        system_dtypes = self.sg._column_dtypes()
+        for body in self.bodies.values():
+            for col, dtype in body.sg._column_dtypes().items():
+                if dtype != system_dtypes[col]:
+                    body.sg._astype(col, system_dtypes[col])
 
     def _update_albedos(self):
         """
@@ -422,29 +443,35 @@ class System(PrynglesCommon):
         """
 
         # Creating lambertian_albedo column for directional-dependent albedo for surface/atmosphere scattering
-        self.data["lambertian_albedo"] = 0.0
+        if "lambertian_albedo" not in self.sg._columns():
+            self.sg._add_col("lambertian_albedo", 0.0)
+        else:
+            self.sg._set_cols("lambertian_albedo", 0.0)
 
         # Only planetary surfaces are taken into account
-        cond = (self.data["spangle_type"] != 6) & (self.data["cos_luz"] >= 0)
+        cond = (self.sg._get_cols("spangle_type") != 6) & (self.sg._get_cols("cos_luz") >= 0)
 
         # Initialize Lambertian Albedo columns into de DataFrame
         def _as_float(x):
-            # Some scatterers may return numpy scalar/0-d arrays; normalize to Python float for pandas.
+            # Some scatterers may return numpy scalar/0-d arrays; normalize to Python float.
             return float(np.asarray(x).reshape(-1)[0])
 
-        self.data.loc[cond, "lambertian_albedo"] = self.data.loc[cond].apply(
-            lambda sp: _as_float(sp["scatterer"].get_albedo(eta=sp["cos_luz"], zeta=0, delta=0, lamb=0.55)),
-            axis=1,
-        )
+        albedos = [
+            _as_float(scatterer.get_albedo(eta=cos_luz, zeta=0, delta=0, lamb=0.55))
+            for scatterer, cos_luz in zip(
+                self.sg._get_cols("scatterer", cond), self.sg._get_cols("cos_luz", cond), strict=True
+            )
+        ]
+        self.sg._set_cols("lambertian_albedo", np.array(albedos, dtype=float), cond)
 
     def _update_optical_depth(self):
         """
         Update the optical depth of all bodies in the system by the user input.
         """
 
+        names = self.sg._get_cols("name")
         for name, body in self.bodies.items():
-            cond_body = self.data["name"] == name
-            self.data.loc[cond_body, "tau_gray_optical"] = body.tau_gray_optical
+            self.sg._set_cols("tau_gray_optical", body.tau_gray_optical, names == name)
 
     # --------------------------------------------------
     # Tested methods from module file system
@@ -720,8 +747,8 @@ class System(PrynglesCommon):
         # Join spanglers
         self.sg = Spangler(spanglers=list(self._spanglers.values()))
 
-        # An usefule alias
-        self.data = self.sg.data
+        # Same column dtypes in the system and body tables (see update_perspective)
+        self._align_body_dtypes()
 
         # Set default observer
         self.update_perspective(n_obs=self.n_obs, alpha_obs=self.alpha_obs)
@@ -786,7 +813,7 @@ class System(PrynglesCommon):
         """Set illumination in the system.
 
         Update:
-            States: illuminated, shadow, hidden_by_luz
+            States: illuminated, shadow, hidden_mask_luz
         """
         if self._is_spangled():
             if not self._observer_set:
@@ -822,10 +849,9 @@ class System(PrynglesCommon):
                         f"Parent body of ring, {body.parent.name} is a star. All spangles will be illuminated",
                     )
                     self.sg.set_luz(nvec=nluz, center=body.center_source, name=name)
-                    cond = self.sg.data.name == name
-                    self.sg.data.loc[cond, "unset"] = False
-                    self.sg.data.loc[cond, "illuminated"] = True
-                    self.sg.data.loc[cond, "shadow"] = False
+                    cond = self.sg._get_cols("name") == name
+                    self.sg._set_cols(["unset", "illuminated", "shadow"], [False, True, False], cond)
+
                 else:
                     verbose(verbosity, f"Illuminating body {name} and all its childs")
                     self._set_luz_recursive(name, nluz, verbosity)
@@ -835,6 +861,11 @@ class System(PrynglesCommon):
             self._luz_set = True
         else:
             raise AssertionError("You must first spangle system before setting light.")
+
+    @property
+    def data(self):
+        """The system's spangle table (an alias of ``self.sg.data``)."""
+        return self.sg.data
 
     def update_perspective(self, n_obs=None, alpha_obs=0, center_obs=None):
         """
@@ -863,23 +894,12 @@ class System(PrynglesCommon):
         self._set_observer(nvec=self.n_obs, alpha=self.alpha_obs, center=center_obs)
         self._set_luz()
 
-        # Update data of each Body instance
+        # Update data of each Body instance (dtypes were aligned in spangle_system / _update_scatterers)
+        names = self.sg._get_cols("name")
         for name, body in self.bodies.items():
-            cond = self.data.name == name
-
-            src = self.data.loc[cond, body.sg.data.columns]
-            # Ensure destination dtypes can hold source values (e.g. python objects like scatterers).
-            for col in body.sg.data.columns:
-                if col in src.columns and src[col].dtype == object and body.sg.data[col].dtype != object:
-                    body.sg.data[col] = body.sg.data[col].astype(object)
-                # Also handle numeric strictness: don't try to put floats into int columns.
-                if (
-                    col in src.columns
-                    and pd.api.types.is_float_dtype(src[col].dtype)
-                    and not pd.api.types.is_float_dtype(body.sg.data[col].dtype)
-                ):
-                    body.sg.data[col] = body.sg.data[col].astype(float)
-            body.sg.data.iloc[:, :] = src.to_numpy(copy=True)
+            cond = names == name
+            for col in body.sg._columns():
+                body.sg._set_cols(col, self.sg._get_cols(col, cond))
 
     def update_body(self, body, **props):
         """
@@ -958,15 +978,13 @@ class System(PrynglesCommon):
             self.sim.move_to_com()
 
             # Update positions
+            names = self.sg._get_cols("name")
             for name, body in self.bodies.items():
                 # Position of the body according
                 body.center_ecl = np.array(self.sim.particles[body.rbhash].xyz)
 
                 verbose(VERB_VERIFY, f"Updating center of body {name} @ {body.center_ecl}")
-                cond = self.sg.data.name == name
-                self.sg.data.loc[cond, ["center_ecl_x", "center_ecl_y", "center_ecl_z"]] = np.tile(
-                    body.center_ecl, (sum(cond), 1)
-                )
+                self.sg._set_cols(["center_ecl_x", "center_ecl_y", "center_ecl_z"], body.center_ecl, names == name)
 
             # Update positions (t = t) for rotation
             self.sg.set_positions()
@@ -1078,19 +1096,18 @@ class System(PrynglesCommon):
         # Considered Spangles
         body_names = [name for name, body in self.bodies.items() if body.kind != "Star"]
 
-        cond = self.data.name.isin(body_names) * self.data.illuminated
+        cond = np.isin(self.sg._get_cols("name"), body_names) & self.sg._get_cols("illuminated")
 
         # Creating stellar_flux attribute
-        self.data["stellar_flux"] = np.zeros(self.data.shape[0])
+        self.sg._set_cols("stellar_flux", 0.0)
 
         # Computing Incident Stellar Flux
-        # Avoid chained assignment (can be a no-op under pandas Copy-on-Write).
         incident = abs(
-            self.data.loc[cond, "asp_luz"].to_numpy(dtype=float)
-            * self.data.loc[cond, "cos_luz"].to_numpy(dtype=float)
-            / (4 * np.pi * self.data.loc[cond, "d_luz"].to_numpy(dtype=float) ** 2)
+            self.sg._get_cols("asp_luz", cond).astype(float)
+            * self.sg._get_cols("cos_luz", cond).astype(float)
+            / (4 * np.pi * self.sg._get_cols("d_luz", cond).astype(float) ** 2)
         )
-        self.data.loc[cond, "stellar_flux"] = incident
+        self.sg._set_cols("stellar_flux", incident, cond)
 
     def update_DiffuseReflection(self):
         """
@@ -1125,14 +1142,14 @@ class System(PrynglesCommon):
         """
         # Considered Spangles
         cond = (
-            self.data.illuminated
-            * self.data.visible
-            * (self.data.cos_obs * self.data.cos_luz > 0)
-            * (~self.data.hidden)
+            self.sg._get_cols("illuminated")
+            & self.sg._get_cols("visible")
+            & (self.sg._get_cols("cos_obs") * self.sg._get_cols("cos_luz") > 0)
+            & (~self.sg._get_cols("hidden"))
         )
 
         # Creating reflected_flux attribute
-        self.data["reflected_flux"] = np.zeros(self.data.shape[0])
+        self.sg._set_cols("reflected_flux", 0.0)
 
         # Compute incident stellar flux
         self.update_StellarFlux()
@@ -1141,13 +1158,12 @@ class System(PrynglesCommon):
         self._update_albedos()
 
         # Computing Diffuse Reflected Light
-        # Avoid chained assignment (can be a no-op under pandas Copy-on-Write).
         reflected = (
-            self.data.loc[cond, "stellar_flux"].to_numpy(dtype=float)
-            * self.data.loc[cond, "lambertian_albedo"].to_numpy(dtype=float)
-            * self.data.loc[cond, "cos_obs"].to_numpy(dtype=float)
+            self.sg._get_cols("stellar_flux", cond).astype(float)
+            * self.sg._get_cols("lambertian_albedo", cond).astype(float)
+            * self.sg._get_cols("cos_obs", cond).astype(float)
         )
-        self.data.loc[cond, "reflected_flux"] = reflected
+        self.sg._set_cols("reflected_flux", reflected, cond)
 
     def update_Transit(self):
         """
@@ -1190,36 +1206,36 @@ class System(PrynglesCommon):
 
         """
         # Creating transit_flux attribute
-        self.data["transit_flux"] = np.zeros(self.data.shape[0], dtype=float)
+        self.sg._set_cols("transit_flux", 0.0)
+
+        hidden = self.sg._get_cols("hidden")
+        transit_mask = self.sg._get_cols("transit_mask_obs")
 
         # Over all Stars
         for star in self.bodies:
             if self.bodies[star].kind == "Star":
-                # Considered Spangles
-                cond = self.data.transit_over_obs.str.fullmatch(rf"^{star}[^&]*&$") * (~self.data.hidden)
+                # Considered Spangles: transiting over this star and no other body
+                cond = (transit_mask == self.sg.body_bit(star)) & (~hidden)
 
                 # Source-Spangle Projected Distance
-                rhos = self.data.transit_over_obs[cond].str.extract(r":([^:]*)&", expand=False).astype(float)
+                rhos = self.sg._get_cols("transit_rho_obs", cond)
 
                 # Optical Parameters
                 limb_coeffs = self.bodies[star].limb_coeffs
                 norm_limb_coeff = self.bodies[star].norm_limb_darkening
 
-                beta_values = 1 - np.exp(-self.data.tau_gray_optical[cond] / abs(self.data.cos_obs[cond]))
+                cos_obs = abs(self.sg._get_cols("cos_obs", cond))
+                beta_values = 1 - np.exp(-self.sg._get_cols("tau_gray_optical", cond) / cos_obs)
 
-                asp = self.data.loc[cond, "asp_obs"]
-                cos_obs = abs(self.data.loc[cond, "cos_obs"])
+                asp = self.sg._get_cols("asp_obs", cond)
                 star_scale = self.bodies[star].radius
 
                 # limb_darkening = Util.limbDarkening(rhos, 1, limb_coeff, norm_limb_coeff)
                 limb_darkening = science.limb_darkening(rhos, cs=limb_coeffs, N=norm_limb_coeff)
 
                 # Computing Stellar Flux Drop
-                flux_drop = (beta_values * cos_obs * limb_darkening * (asp / star_scale**2)).to_numpy(dtype=float)
-                # Avoid chained assignment (can be a no-op under pandas Copy-on-Write).
-                self.data.loc[cond, "transit_flux"] = (
-                    self.data.loc[cond, "transit_flux"].to_numpy(dtype=float) + flux_drop
-                )
+                flux_drop = (beta_values * cos_obs * limb_darkening * (asp / star_scale**2)).astype(float)
+                self.sg._set_cols("transit_flux", self.sg._get_cols("transit_flux", cond) + flux_drop, cond)
 
     def update_ThermalEmission(self, bandwidth=(1.1e-6, 1.7e-6)):
         """
@@ -1271,6 +1287,7 @@ class System(PrynglesCommon):
         """
         # Considered Spangles
         body_names = [name for name, body in self.bodies.items() if (body.kind != "Star") and (body.kind != "Ring")]
+        names = self.sg._get_cols("name")
 
         # Updating Temperature Distribution for each body
         for body in body_names:
@@ -1283,26 +1300,26 @@ class System(PrynglesCommon):
                 )
 
             self.bodies[body].update_temperature()
-            self.data.loc[self.data.name == body, "Tem"] = self.bodies[body].sg.data["Tem"].values
+            self.sg._set_cols("Tem", self.bodies[body].sg._get_cols("Tem"), names == body)
 
-        cond = self.data.name.isin(body_names) * self.data.visible * (~self.data.hidden)
+        cond = np.isin(names, body_names) & self.sg._get_cols("visible") & (~self.sg._get_cols("hidden"))
 
         # Creating thermal_flux attribute
-        self.data["thermal_flux"] = np.zeros(self.data.shape[0])
+        self.sg._set_cols("thermal_flux", 0.0)
 
         # Star Parameters
         T_star = self.bodies[self.root.name].T_eff
         R_star = self.bodies[self.root.name].radius
 
         # Spangle Parameters
-        asp = self.data.loc[cond, "asp_obs"].values
-        cos_obs = self.data.loc[cond, "cos_obs"].values
+        asp = self.sg._get_cols("asp_obs", cond)
+        cos_obs = self.sg._get_cols("cos_obs", cond)
 
         # Spangle Emissivity
-        epsilon = self.data.loc[cond, "emmisivity"].values
+        epsilon = self.sg._get_cols("emmisivity", cond)
 
         #  Spangle Blackbody Temperature of Emission
-        T_emission = self.data.loc[cond, "Tem"].values
+        T_emission = self.sg._get_cols("Tem", cond)
 
         # Star Flux for Normalization
         lambda_min, lambda_max = bandwidth
@@ -1314,7 +1331,7 @@ class System(PrynglesCommon):
         for i, T in enumerate(T_emission):
             flux_thermal[i] = science.integrate_planck_flux(T, lambda_min, lambda_max)
 
-        self.data.loc[cond, "thermal_flux"] = epsilon * asp * cos_obs * flux_thermal / flux_star
+        self.sg._set_cols("thermal_flux", epsilon * asp * cos_obs * flux_thermal / flux_star, cond)
 
     def update_Polarization(self):
         """
@@ -1369,16 +1386,16 @@ class System(PrynglesCommon):
 
         # Set Stokes Parameters
         stokes_cols = ["stokes_F", "stokes_Q", "stokes_U", "stokes_V", "stokes_P"]
-        # Keep these as float columns; pandas is strict about int<-float assignment.
-        self.data[stokes_cols] = np.zeros((self.data.shape[0], 5), dtype=float)
+        self.sg._set_cols(stokes_cols, 0.0)
 
         # Star radius
         R_star = self.root.radius
 
         # Over each body
+        names = self.sg._get_cols("name")
         for name, body in self.bodies.items():
             # For storing attributes
-            cond_name = self.data.name == name
+            cond_name = names == name
 
             # Pass for Star
             if body.kind not in ["Planet", "Ring"]:
@@ -1402,8 +1419,8 @@ class System(PrynglesCommon):
 
                 # Optical Depth of Ring and Attenuation factors
                 tau_r = self.bodies[ring_name].taur
-                cos_obs_ring = ring_body.sg.data.cos_obs.mean()
-                cos_luz_ring = ring_body.sg.data.cos_luz.mean()
+                cos_obs_ring = ring_body.sg._get_cols("cos_obs").mean()
+                cos_luz_ring = ring_body.sg._get_cols("cos_luz").mean()
                 A_luz = np.exp(-tau_r / np.abs(cos_luz_ring))
                 A_obs = np.exp(-tau_r / np.abs(cos_obs_ring))
 
@@ -1414,20 +1431,24 @@ class System(PrynglesCommon):
                 # CONDITIONS
                 # ----------------------------------------------------
 
-                # Visible and Illuminated
-                cond_active = body.sg.data.visible & body.sg.data.illuminated
+                visible = body.sg._get_cols("visible")
+                illuminated = body.sg._get_cols("illuminated")
+                shadow = body.sg._get_cols("shadow")
 
-                # Hidden by Ring
-                cond_hidden = body.sg.data.hidden_by_obs.str.fullmatch(rf"^{ring_name}[^&]*&$")
+                # Visible and Illuminated
+                cond_active = visible & illuminated
+
+                # Hidden by the Ring and no other body
+                cond_hidden = body.sg._get_cols("hidden_mask_obs") == self.sg.body_bit(ring_name)
 
                 # Visible but Indirectly Illuminated (in Shadow)
-                cond_indirect = body.sg.data.visible & body.sg.data.shadow
+                cond_indirect = visible & shadow
 
                 # Illuminated but Hidden by Rings
-                cond_unseen = cond_hidden & body.sg.data.illuminated
+                cond_unseen = cond_hidden & illuminated
 
                 # Hidden and in Indirectly Illuminated (in Shadow)
-                cond_both = cond_hidden & body.sg.data.shadow
+                cond_both = cond_hidden & shadow
 
                 # (Visible or Hidden)&(Illuminated or Shadowed)
                 cond_full = cond_active | cond_indirect | cond_unseen | cond_both
@@ -1464,11 +1485,11 @@ class System(PrynglesCommon):
                 R_planet = body.parent.radius
 
                 # Visible and Illuminated (not Shadowed)
-                cond_full = body.sg.data.visible & body.sg.data.illuminated
+                cond_full = body.sg._get_cols("visible") & body.sg._get_cols("illuminated")
 
                 # Ring Parameters
-                cos_obs_ring = body.sg.data.cos_obs.mean()
-                cos_luz_ring = body.sg.data.cos_luz.mean()
+                cos_obs_ring = body.sg._get_cols("cos_obs").mean()
+                cos_luz_ring = body.sg._get_cols("cos_luz").mean()
 
                 # Non Attenuation
                 attenuation = np.ones(len(cond_full))
@@ -1493,11 +1514,11 @@ class System(PrynglesCommon):
             # ----------------------------------------------------
             # Geometrical Parameters
             # ----------------------------------------------------
-            azim_diff = body.sg.data.loc[cond_full, "azim_obs_luz"].to_numpy(dtype=np.float64)
-            betas_angle = body.sg.data.loc[cond_full, "beta_loc"].to_numpy(dtype=np.float64)
-            cos_obs_abs = abs(body.sg.data.loc[cond_full, "cos_obs"].to_numpy(dtype=np.float64))
-            cos_luz_abs = abs(body.sg.data.loc[cond_full, "cos_luz"].to_numpy(dtype=np.float64))
-            area_sp = body.sg.data.loc[cond_full, "asp"].to_numpy(dtype=np.float64) / R_star**2
+            azim_diff = body.sg._get_cols("azim_obs_luz", cond_full).astype(np.float64)
+            betas_angle = body.sg._get_cols("beta_loc", cond_full).astype(np.float64)
+            cos_obs_abs = abs(body.sg._get_cols("cos_obs", cond_full).astype(np.float64))
+            cos_luz_abs = abs(body.sg._get_cols("cos_luz", cond_full).astype(np.float64))
+            area_sp = body.sg._get_cols("asp", cond_full).astype(np.float64) / R_star**2
 
             # Numerical Sensivity of Stokes Method
             if cos_obs_abs.std() < 0.005:
@@ -1532,16 +1553,13 @@ class System(PrynglesCommon):
             Stokes = np.column_stack((Stokes / Consts.ppm, np.full(Stokes.shape[0], stokes_P / cond_full.sum())))
 
             # Update Spangle DataFrame
-            # Ensure destination dtype is float (Stokes values are continuous).
-            for col in stokes_cols:
-                if col not in body.sg.data.columns:
-                    body.sg.data[col] = 0.0
-                if not pd.api.types.is_float_dtype(body.sg.data[col].dtype):
-                    body.sg.data[col] = body.sg.data[col].astype(float)
-            body.sg.data.loc[:, stokes_cols] = 0.0
-            body.sg.data.loc[cond_full, stokes_cols] = Stokes[cond_full]
+            body.sg._set_cols(stokes_cols, 0.0)
+            body.sg._set_cols(stokes_cols, Stokes[cond_full], cond_full)
 
-            self.data.loc[self.data.index[cond_name][cond_full.values], stokes_cols] = Stokes[cond_full]
+            # Same rows in the system table: the body's rows, filtered by cond_full
+            rows = np.zeros(len(names), dtype=bool)
+            rows[np.flatnonzero(cond_name)[cond_full]] = True
+            self.sg._set_cols(stokes_cols, Stokes[cond_full], rows)
 
     def compute_lightcurve(
         self,
@@ -1629,10 +1647,16 @@ class System(PrynglesCommon):
             [bodies, list(effects_registry.keys()) + ["scattering"]], names=["body", "effect"]
         )
 
-        df_output = pd.DataFrame(index=pd.Index(times, name="time"), columns=columns, dtype=float)
+        # Accumulate in a numpy array (NaN = effect not computed); build the DataFrame once at the end
+        output = np.full((len(times), len(columns)), np.nan)
+        col_index = {key: j for j, key in enumerate(columns)}
+
+        # Spangles of each body (names do not change during the lightcurve)
+        names = self.sg._get_cols("name")
+        cond_bodies = {body: names == body for body in bodies}
 
         iterator = tqdm(times, total=len(times), desc="Computing Lightcurve ")
-        for t in iterator:
+        for i, t in enumerate(iterator):
             self.integrate_perspective(t)
 
             for effect in effects:
@@ -1640,17 +1664,20 @@ class System(PrynglesCommon):
                 func_effect()
 
                 for body in bodies:
-                    cond_body = self.data.name == body
-                    flux_val = np.sum(self.data.loc[cond_body, data_column].values, axis=0)
+                    cond_body = cond_bodies[body]
 
                     # Updates Polarized Flux and Degree of Polarization
                     if effect == "polarization":
-                        df_output.loc[t, (body, "reflection")] = 0
-                        df_output.loc[t, (body, "scattering")] = sgn * flux_val[0]
-                        df_output.loc[t, (body, effect)] = sgn * flux_val[1]
+                        flux_val = [np.sum(self.sg._get_cols(col, cond_body)) for col in data_column]
+                        output[i, col_index[(body, "reflection")]] = 0
+                        output[i, col_index[(body, "scattering")]] = sgn * flux_val[0]
+                        output[i, col_index[(body, effect)]] = sgn * flux_val[1]
 
                     else:
-                        df_output.loc[t, (body, effect)] = sgn * flux_val
+                        flux_val = np.sum(self.sg._get_cols(data_column, cond_body))
+                        output[i, col_index[(body, effect)]] = sgn * flux_val
+
+        df_output = pd.DataFrame(output, index=pd.Index(times, name="time"), columns=columns)
 
         total_flux = df_output.drop(columns="polarization", level="effect").sum(axis=1).values + 1.0  # Normalized Flux
 

@@ -272,7 +272,7 @@ class Body(Orbody):
 
         # Additional properties in the Spangler DataFrame
         if self.kind == "Star":
-            self.sg.data.source = True
+            self.sg._set_cols("source", True)
 
         self.sg.set_observer()
         self.sg.set_luz()
@@ -526,7 +526,7 @@ class Planet(Body):
 
         T_planet = self.T_model["params"]["T_planet"]
 
-        self.sg.data.Tem = T_planet
+        self.sg._set_cols("Tem", T_planet)
 
         # return self.sg.data.Tem.values
 
@@ -535,11 +535,11 @@ class Planet(Body):
         T_day = self.T_model["params"]["T_day"]
         T_night = self.T_model["params"]["T_night"]
 
-        cond_day = self.sg.data.cos_luz > 0
+        cond_day = self.sg._get_cols("cos_luz") > 0
         cond_night = ~cond_day
 
-        self.sg.data.loc[cond_day, "Tem"] = T_day
-        self.sg.data.loc[cond_night, "Tem"] = T_night
+        self.sg._set_cols("Tem", T_day, cond_day)
+        self.sg._set_cols("Tem", T_night, cond_night)
 
         # return self.sg.data.Tem.values
 
@@ -559,8 +559,8 @@ class Planet(Body):
         d_luz, lamda_luz, phi_luz = science.spherical(vec_luz)
 
         # Longitude, Latitude
-        lamda = self.sg.data["q_equ"].values - lamda_luz + PI / 2  # Long
-        phi = self.sg.data["f_equ"].values - phi_luz  # Lat
+        lamda = self.sg._get_cols("q_equ") - lamda_luz + PI / 2  # Long
+        phi = self.sg._get_cols("f_equ") - phi_luz  # Lat
 
         # Adjust ranges for angles
         lamda = (lamda + np.pi) % (2 * np.pi) - np.pi  # -> [-π, π]
@@ -609,7 +609,7 @@ class Planet(Body):
         mask3 = (lamda > PI / 2) & (lamda <= PI)
         Ts[mask3] = T_night + eta * Delta_T * COS(phi[mask3]) * EXP_3term[mask3]
 
-        self.sg.data["Tem"] = Ts
+        self.sg._set_cols("Tem", Ts)
 
         # return Ts
 
