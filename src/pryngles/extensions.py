@@ -31,12 +31,6 @@ i64 = types.int64
 f64_arr1 = types.Array(f64, 1, "C", readonly=True)
 f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 
-# The Fourier coefficient table (fou) and its spline second-derivative tables (ddf_j, ddf_i,
-# ddddf_ij) all have shape (nmugs, nmugs, nfou, nmat), with axes
-#   i: index along theta    j: index along theta0    m: Fourier term    k: matrix element
-# The two angle axes come first and (m, k) last, so that all the coefficients needed at one
-# grid point are contiguous in memory. That is what fourier_at() reads for every pixel.
-
 # Exclusive upper bound on nmat, i.e. nmat must satisfy 0 < nmat < MAX_NSTOKES.
 # The stokes output of reflection() has nmat + 1 columns (the nmat Stokes elements plus
 # the degree of polarisation), and its scratch arrays (Bplus, SvR) have MAX_NSTOKES entries.
