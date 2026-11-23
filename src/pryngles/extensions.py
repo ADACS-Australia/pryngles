@@ -213,9 +213,7 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
     # "|diff| > tol" would be False for NaN and wrongly keep it.
     shared = True
     for n in range(1, npix):
-        if not (
-            abs(theta[n] - theta[0]) <= SHARED_ANGLE_TOL and abs(theta0[n] - theta0[0]) <= SHARED_ANGLE_TOL
-        ):
+        if not (abs(theta[n] - theta[0]) <= SHARED_ANGLE_TOL and abs(theta0[n] - theta0[0]) <= SHARED_ANGLE_TOL):
             shared = False
             break
 
