@@ -37,7 +37,9 @@ f64_arr4 = types.Array(f64, 4, "C", readonly=True)
 # The two angle axes come first and (m, k) last, so that all the coefficients needed at one
 # grid point are contiguous in memory. That is what fourier_at() reads for every pixel.
 
-# Maximum number of Stokes elements reflection() supports (size of Bplus etc.)
+# Exclusive upper bound on nmat, i.e. nmat must satisfy 0 < nmat < MAX_NSTOKES.
+# The stokes output of reflection() has nmat + 1 columns (the nmat Stokes elements plus
+# the degree of polarisation), and its scratch arrays (Bplus, SvR) have MAX_NSTOKES entries.
 MAX_NSTOKES = 4
 
 # Maximum deviation (in cos(theta) and cos(theta0)) from the first pixel for all
@@ -257,7 +259,9 @@ def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix)
             SvR[k] = theta0[n] * RM[k]
 
         # Rotate Stokes elements Q and U to the actual reference plane.
-        # Note: does this implicitly assume nmat=3 ?
+        # This does not assume nmat=3: SvR has MAX_NSTOKES entries, zero beyond
+        # nmat, so SvR[1] and SvR[2] are always valid and any missing element
+        # is treated as zero.
         cosb2 = np.cos(2 * beta[n])
         sinb2 = np.sin(2 * beta[n])
         SvR2 = cosb2 * SvR[1] + sinb2 * SvR[2]
@@ -335,7 +339,7 @@ class StokesScatterer:
         # Ensure the size is as expected
         if len(data) != nfou * nmugs * nmugs:
             raise RuntimeError(
-                f"Expected a dense file ordered by (m, i, j), "
+                f"Expected a dense file with one row per (m, i, j), "
                 f"but got {len(data)} rows instead of {nfou * nmugs * nmugs}"
             )
 
@@ -379,7 +383,27 @@ class StokesScatterer:
         self.rfou_derivs, self.rtra_derivs = rfou_derivs, rtra_derivs
 
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
-        """ """
+        """
+        Calculate the Stokes vector of each pixel using the reflection or
+        transmission Fourier coefficients.
+
+        Parameters:
+
+            phi, beta, theta0, theta, apix: array (npix,):
+               C-contiguous float64 arrays, all of the same length. phi and
+               beta are in radians; theta0 and theta are cos(theta0) and
+               cos(theta); apix is the pixel area.
+
+            qreflection: bool:
+               If true use the reflection coefficients, otherwise the
+               transmission ones.
+
+        Returns:
+
+            stokes: array (npix, nmat + 1):
+               Row n holds the nmat Stokes elements of pixel n followed by
+               the degree of polarisation.
+        """
         npix = len(phi)
         stokes = np.zeros((npix, self.nmat + 1))
 
