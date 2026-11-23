@@ -54,20 +54,21 @@ def calculate_spline_derivs(xmu, fou):
 
     Natural cubic splines are fitted on the xmu grid along each angle axis.
 
-    Parameters:
+    Parameters
+    ----------
+    xmu : ndarray, shape (nmugs,)
+        Strictly increasing grid of cos(angle) values.
+    fou : ndarray, shape (nmugs, nmugs, nfou, nmat)
+        Fourier coefficients, with axes (i, j, m, k).
 
-        xmu: array (nmugs,):
-           Strictly increasing grid of cos(angle) values.
+    Returns
+    -------
+    dict of ndarray
+        Each array has the same shape as `fou`, with keys:
 
-        fou: array (nmugs, nmugs, nfou, nmat):
-           Fourier coefficients, with axes (i, j, m, k).
-
-    Returns:
-
-        dict with keys, each an array of the same shape as fou:
-           "j":  d2f/dj2 (second derivative along axis 1, theta0)
-           "i":  d2f/di2 (second derivative along axis 0, theta)
-           "ij": d2/dj2 of the "i" table (cross term, d4f/di2dj2)
+        - ``"j"``: d2f/dj2, second derivative along axis 1 (theta0).
+        - ``"i"``: d2f/di2, second derivative along axis 0 (theta).
+        - ``"ij"``: d2/dj2 of the ``"i"`` table (cross term, d4f/di2dj2).
     """
     # fou has axes (i, j, m, k), so the angle axes i and j are axes 0 and 1
 
@@ -87,24 +88,22 @@ def spline_weights(x, xi):
     """
     Find the bracketing index and cubic-spline interpolation weights for xi in x.
 
-    x must be strictly increasing with at least 2 points. Values of xi outside
-    the range of x are clamped to the first/last interval.
+    Parameters
+    ----------
+    x : ndarray, shape (n,)
+        Grid nodes. Must be strictly increasing with at least 2 points.
+    xi : float
+        Point at which to interpolate. Values outside the range of `x` use the
+        first/last interval.
 
-    Parameters:
-
-        x: array (n,):
-           Grid nodes.
-
-        xi: float:
-           Point at which to interpolate.
-
-    Returns:
-
-        i, a, b, c, d:
-           i is the index of the node to the left of xi (0 <= i <= n - 2), and
-           the interpolant is
-              f(xi) = a * f[i] + b * f[i+1] + c * d2f[i] + d * d2f[i+1]
-           where d2f are the spline second derivatives at the nodes.
+    Returns
+    -------
+    i : int
+        Index of the node to the left of `xi`, with 0 <= i <= n - 2.
+    a, b, c, d : float
+        Interpolation weights, such that
+        ``f(xi) = a * f[i] + b * f[i+1] + c * d2f[i] + d * d2f[i+1]``
+        where ``d2f`` are the spline second derivatives at the nodes.
     """
     # Find the closest index that's less than xi
     # Values outside the range of x are clamped to the first/last interval.
@@ -137,8 +136,7 @@ def spline_weights(x, xi):
 )
 def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
     """
-    Return the Fourier coefficients f[m, k] (shape (nfou, nmat)) interpolated
-    at (theta, theta0).
+    Interpolate the Fourier coefficients at (theta, theta0).
 
     To get the coefficient at (theta, theta0), interpolate along j at theta0
     for the two rows bracketing theta, then along i at theta. The second pass
@@ -146,9 +144,18 @@ def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
     ddf_i along j (spline construction along i and interpolation along j
     commute), so no spline is solved per call.
 
-    The arrays are as for reflection(). theta0 and theta are cos(theta0) and
-    cos(theta); values outside the range of xmu use the first/last grid
-    interval (see spline_weights()).
+    Parameters
+    ----------
+    xmu, fou, ddf_j, ddf_i, ddddf_ij : ndarray
+        As for `reflection`.
+    theta0, theta : float
+        cos(theta0) and cos(theta). Values outside the range of `xmu` use the
+        first/last grid interval (see `spline_weights`).
+
+    Returns
+    -------
+    f : ndarray, shape (nfou, nmat)
+        Interpolated Fourier coefficients, indexed by (m, k).
     """
     nfou = fou.shape[2]
     nmat = fou.shape[3]
@@ -210,43 +217,42 @@ def fourier_at(xmu, fou, ddf_j, ddf_i, ddddf_ij, theta0, theta):
 )
 def reflection(xmu, fou, ddf_j, ddf_i, ddddf_ij, phi, beta, theta0, theta, apix):
     """
-    Calculate the Stokes vector for a given geometry (given a table of
-    Fourier coefficients read from a file).
+    Calculate the Stokes vector of each pixel from a table of Fourier coefficients.
 
     It is assumed that the Stokes vector of the incoming sunlight is
     [1, 0, 0, 0], with the flux measured perpendicular to the direction of
     incidence equal to pi.
 
-    Parameters:
+    Parameters
+    ----------
+    xmu : ndarray, shape (nmugs,)
+        Strictly increasing grid of cos(angle) values.
+    fou : ndarray, shape (nmugs, nmugs, nfou, nmat)
+        Fourier coefficients, read from a file.
+    ddf_j, ddf_i, ddddf_ij : ndarray, shape (nmugs, nmugs, nfou, nmat)
+        Precomputed spline second-derivative tables for `fou` on the `xmu` grid.
+    phi, beta : ndarray, shape (npix,)
+        Angles in radians.
+    theta0, theta : ndarray, shape (npix,)
+        cos(theta0) and cos(theta) respectively.
+    apix : ndarray, shape (npix,)
+        Pixel areas.
 
-        xmu: array (nmugs,):
-           Strictly increasing grid of cos(angle) values.
+    Returns
+    -------
+    stokes : ndarray, shape (npix, nmat + 1)
+        Row n holds the nmat Stokes elements of pixel n followed by the degree
+        of polarisation.
 
-        fou, ddf_j, ddf_i, ddddf_ij: array (nmugs, nmugs, nfou, nmat):
-           Fourier coefficients and the precomputed spline second-derivative
-           tables for fou on the xmu grid. Shapes are not checked.
-
-        phi, beta: array (npix,):
-           Angles in radians.
-
-        theta0, theta: array (npix,):
-           cos(theta0) and cos(theta) respectively.
-
-        apix: array (npix,):
-           Pixel areas.
-
-    Returns:
-
-        stokes: array (npix, nmat + 1):
-           Row n holds the nmat Stokes elements of pixel n followed by the
-           degree of polarisation.
-
+    Notes
+    -----
     Pixels are independent, so the loop over them runs in parallel (prange).
-    If all pixels share the same (theta, theta0), to within SHARED_ANGLE_TOL,
-    the interpolated Fourier coefficients are computed only once (at the
-    angles of the first pixel) and reused for every pixel.
+    If all pixels share the same (theta, theta0), to within `SHARED_ANGLE_TOL`,
+    the interpolated Fourier coefficients are computed only once (at the angles
+    of the first pixel) and reused for every pixel.
 
-    Inputs are not validated: see the assumptions listed at the top of the body.
+    Inputs are not validated; see the assumptions listed at the top of the
+    function body.
     """
     nfou = fou.shape[2]
     nmat = fou.shape[3]
@@ -353,28 +359,37 @@ class StokesScatterer:
 
     def __init__(self, filename):
         """
-        Read a file containing fourier coefficients produced by PyMieDAP
+        Read a file containing Fourier coefficients produced by PyMieDAP.
 
-        Parameters:
+        Parameters
+        ----------
+        filename : str
+            Path of the file to read.
 
-           filename: string:
+        Raises
+        ------
+        RuntimeError
+            If the file is not dense (one row per (m, i, j)), or if nfou or nmat
+            are outside the range supported by `reflection`.
 
-        Returns:
-
-            nmugs: int:
-               Number of gaussian integration coefficients.
-
-            nmat: int:
-               Number of matrix.
-
-            nfou: int:
-               Number of coefficients.
-
-            rfou: array (nmugs,nmugs,nfou,nmat):
-               Fourier coefficients for reflection, with axes (i,j,m,k).
-
-            rtra: array (nmugs,nmugs,nfou,nmat):
-               Fourier coefficients for transmission, with axes (i,j,m,k).
+        Attributes
+        ----------
+        nmugs : int
+            Number of Gaussian integration coefficients.
+        nmat : int
+            Number of matrix elements.
+        nfou : int
+            Number of Fourier coefficients.
+        xmu : ndarray, shape (nmugs,)
+            Grid of cos(angle) values.
+        rfou : ndarray, shape (nmugs, nmugs, nfou, nmat)
+            Fourier coefficients for reflection, with axes (i, j, m, k).
+        rtra : ndarray, shape (nmugs, nmugs, nfou, nmat)
+            Fourier coefficients for transmission, with axes (i, j, m, k). Zeros if
+            the file has no transmission data.
+        rfou_derivs, rtra_derivs : dict of ndarray
+            Spline second-derivative tables for `rfou` and `rtra`, as returned by
+            `calculate_spline_derivs`.
         """
         self.filename = filename
 
@@ -441,25 +456,30 @@ class StokesScatterer:
 
     def calculate_stokes(self, phi, beta, theta0, theta, apix, qreflection=1):
         """
-        Calculate the Stokes vector of each pixel using the reflection or
-        transmission Fourier coefficients.
+        Calculate the Stokes vector of each pixel.
 
-        Parameters:
+        Uses the reflection or transmission Fourier coefficients.
 
-            phi, beta, theta0, theta, apix: array (npix,):
-               C-contiguous float64 arrays, all of the same length. phi and
-               beta are in radians; theta0 and theta are cos(theta0) and
-               cos(theta); apix is the pixel area.
+        Parameters
+        ----------
+        phi, beta, theta0, theta, apix : ndarray, shape (npix,)
+            C-contiguous float64 arrays, all of the same length. `phi` and `beta`
+            are in radians; `theta0` and `theta` are cos(theta0) and cos(theta);
+            `apix` is the pixel area.
+        qreflection : bool, optional
+            If true (default) use the reflection coefficients, otherwise the
+            transmission ones.
 
-            qreflection: bool:
-               If true use the reflection coefficients, otherwise the
-               transmission ones.
+        Returns
+        -------
+        stokes : ndarray, shape (npix, nmat + 1)
+            Row n holds the nmat Stokes elements of pixel n followed by the degree
+            of polarisation.
 
-        Returns:
-
-            stokes: array (npix, nmat + 1):
-               Row n holds the nmat Stokes elements of pixel n followed by
-               the degree of polarisation.
+        Raises
+        ------
+        RuntimeError
+            If the input arrays do not all have the same length.
         """
         npix = len(phi)
         stokes = np.zeros((npix, self.nmat + 1))
