@@ -9,8 +9,8 @@ list of the features introduced in each version family of the package.
 
 - **1.0.x versions**:
 
-  - **Performance — spangle data stored as numpy arrays**: light curves are 5.5x faster for WASP-43b-like systems
-    with polarization (7.0 s → 1.3 s for 11 time steps) and 8x faster with diffuse reflection (6.2 s → 0.8 s);
+  - **Performance — spangle data stored as numpy arrays**: light curves are 6x faster for WASP-43b-like systems
+    with polarization (6.6 s → 1.1 s for 11 time steps) and 8x faster with diffuse reflection (5.5 s → 0.7 s);
     spangling is 2x faster.
   - **API change — `Spangler.data` / `System.data` are now snapshots**: the data is stored as one numpy array per
     column, and `.data` builds a new `pandas.DataFrame` on every access. Modifying the returned DataFrame no longer
